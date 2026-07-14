@@ -1,0 +1,185 @@
+/* src/styles/App.css */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --primary-color: #0066cc; /* 해뜰 블루 */
+  --secondary-color: #6c757d;
+  --bg-color: #f8f9fa;
+  --card-bg: #ffffff;
+  --text-color: #333333;
+  --border-color: #e0e0e0;
+  --font-family: "Inter", sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 전체 앱 레이아웃 */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  display: flex;
+  flex: 1;
+  padding: 2rem;
+}
+
+.page-content {
+  flex: 1;
+  margin-left: 2rem; /* 사이드바 여백 */
+  background-color: var(--card-bg);
+  padding: 2rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 2rem;
+  background-color: var(--card-bg);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo {
+  font-weight: 700;
+  color: var(--primary-color);
+  font-size: 1.5rem;
+}
+
+.user-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* 사이드바 */
+.sidebar {
+  width: 250px;
+  background-color: var(--card-bg);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 0;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 2rem;
+  text-decoration: none;
+  color: var(--text-color);
+  font-weight: 500;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  background-color: rgba(0, 102, 204, 0.1);
+  color: var(--primary-color);
+  border-left: 3px solid var(--primary-color);
+}
+
+/* 카드 */
+.card {
+  background-color: var(--card-bg);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.card-title {
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--secondary-color);
+  margin-bottom: 1rem;
+}
+
+/* 버튼 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn:hover {
+  opacity: 0.8;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+}
+
+.btn-secondary {
+  background-color: var(--secondary-color);
+  color: white;
+}
+
+.btn-large {
+  font-size: 1.2rem;
+  padding: 1rem 2rem;
+}
+
+/* 입력 필드 */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--secondary-color);
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+/* 유틸리티 */
+.grid-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+.grid-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+.kpi-value {
+  font-weight: 700;
+  font-size: 2.5rem;
+}
+.kpi-unit {
+  font-size: 1.2rem;
+  color: var(--secondary-color);
+  margin-left: 0.25rem;
+}
