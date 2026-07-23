@@ -1,0 +1,59 @@
+.raw-materials-layout,
+.operating-layout,
+.production-layout {
+  display: grid;
+  grid-template-columns: 258px minmax(0, 1fr);
+  min-height: 100vh;
+  color: #1d2939;
+  background: var(--color-workflow-canvas);
+}
+
+.raw-materials-layout {
+  background: #ffffff;
+}
+
+.workflow-card,
+.operating-card,
+.production-card {
+  background: #fff;
+  border: 1px solid var(--color-workflow-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-workflow);
+}
+
+.workflow-page-heading h1,
+.operating-heading h1,
+.production-heading h1 {
+  margin: 0;
+  color: #101828;
+  letter-spacing: -0.75px;
+}
+
+.workflow-page-heading p,
+.operating-heading p,
+.production-heading p {
+  color: var(--color-workflow-muted);
+}
+
+.raw-materials-page {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 44px 48px 52px;
+  background: #ffffff;
+}
+
+.workflow-page-heading {
+  margin-top: 0;
+}
+
+.workflow-page-heading h1 {
+  font-size: 22px;
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: -0.55px;
+}
+
+.workflow-page-heading p {
+  margin: 8px 0 0;
+  font-size: 12px;
+}

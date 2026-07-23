@@ -1,0 +1,57 @@
+.operating-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 50px;
+  padding: 20px 0;
+}
+
+.operating-cost-summary > div {
+  display: grid;
+  padding: 0 20px;
+  gap: 7px;
+}
+
+.operating-cost-summary span {
+  color: #969094;
+  font-size: 10px;
+}
+
+.operating-cost-summary strong {
+  color: #393336;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.operating-cost-summary__total strong {
+  color: var(--color-brand);
+}
+
+.operating-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 26px;
+}
+
+.workflow-back-button {
+  color: #475467;
+  background: #fff;
+  border: 1px solid #d0d5dd;
+}
+
+.workflow-back-button:hover {
+  border-color: #98a2b3;
+}
+
+.workflow-coral-button {
+  min-width: 112px;
+  color: #fff;
+  background: var(--color-coral);
+  border: 1px solid var(--color-coral);
+}
+
+.workflow-coral-button:hover {
+  background: var(--color-coral-hover);
+  border-color: var(--color-coral-hover);
+}
+

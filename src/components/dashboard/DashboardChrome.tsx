@@ -1,17 +1,10 @@
-import { Icon } from '../../components/common/Icon'
-
+import { Icon } from '../common/Icon'
 
 type DashboardHeaderProps = {
-  period: string
-  onChangePeriod: () => void
   onDownload: () => void
 }
 
-export function DashboardHeader({
-  period,
-  onChangePeriod,
-  onDownload,
-}: DashboardHeaderProps) {
+export function DashboardHeader({ onDownload }: DashboardHeaderProps) {
   return (
     <div className="dashboard-header" id="dashboard">
       <div>
@@ -20,10 +13,6 @@ export function DashboardHeader({
       </div>
 
       <div className="dashboard-header__actions">
-        <button className="button button--secondary" type="button" onClick={onChangePeriod}>
-          <Icon name="calendar" size={17} />
-          <span>{period}</span>
-        </button>
         <button className="button button--primary" type="button" onClick={onDownload}>
           <Icon name="download" size={17} />
           <span>보고서 다운로드</span>

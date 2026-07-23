@@ -1,0 +1,54 @@
+.exchange-card__primary p {
+  display: flex;
+  align-items: center;
+  margin: 13px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.currency-list {
+  display: grid;
+  margin-top: 31px;
+}
+
+.currency-empty {
+  display: grid;
+  min-height: 150px;
+  margin: 0;
+  place-items: center;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+}
+
+.currency-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  min-height: 56px;
+  gap: 8px;
+  border-bottom: 1px solid #ebe7e6;
+  font-size: 14px;
+}
+
+.currency-row:last-child {
+  border-bottom: 0;
+}
+
+.currency-code {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  color: #383333;
+  background: #eceaea;
+  border-radius: 50%;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.currency-row strong {
+  font-size: 14px;
+  font-weight: 700;
+}
+

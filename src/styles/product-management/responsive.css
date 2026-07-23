@@ -1,0 +1,101 @@
+@media (max-width: 1040px) {
+  .recipe-library-page,
+  .product-create-page,
+  .product-detail-page {
+    padding-inline: 32px;
+  }
+
+  .recipe-builder {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-preview {
+    position: static;
+  }
+
+  .product-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 719px) {
+  .product-management-layout {
+    padding-bottom: 72px;
+  }
+
+  .recipe-library-page,
+  .product-create-page,
+  .product-detail-page {
+    min-height: 0;
+    padding: 28px 16px 96px;
+  }
+
+  .recipe-library-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .recipe-search {
+    width: 100%;
+  }
+
+  .recipe-library {
+    margin-top: 42px;
+  }
+
+  .recipe-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .product-create-fab {
+    right: 18px;
+    bottom: 88px;
+  }
+
+  .product-info-fields,
+  .ingredient-catalog,
+  .extra-cost-fields,
+  .product-cost-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .product-detail-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .product-detail-header > div:last-child {
+    justify-items: start;
+  }
+
+  .product-cost-overview section {
+    border-right: 0;
+    border-bottom: 1px solid #ededed;
+  }
+
+  .product-cost-overview section:last-child {
+    border-bottom: 0;
+  }
+
+  .material-cost-list > div {
+    grid-template-columns: minmax(0, 1fr) 70px 90px;
+  }
+
+  .ingredient-catalog > p {
+    grid-column: auto;
+  }
+
+  .recipe-builder-section,
+  .cost-preview {
+    padding: 18px;
+  }
+
+  .recipe-cart-item {
+    grid-template-columns: minmax(0, 1fr) 120px 28px;
+    padding: 12px 0;
+  }
+
+  .recipe-cart-item b {
+    display: none;
+  }
+}

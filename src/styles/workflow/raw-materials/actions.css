@@ -1,0 +1,62 @@
+.workflow-outline-button,
+.workflow-primary-button,
+.workflow-back-button,
+.workflow-coral-button,
+.production-back,
+.production-finish {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 39px;
+  padding: 0 16px;
+  gap: 7px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 700;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.workflow-outline-button:active,
+.workflow-primary-button:active,
+.workflow-back-button:active,
+.workflow-coral-button:active,
+.production-back:active,
+.production-finish:active {
+  transform: translateY(1px);
+}
+
+.raw-materials-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 124px;
+  margin-top: 8px;
+  padding: 31px 0 10px;
+  gap: 24px;
+}
+
+.raw-materials-footer > div:last-child {
+  display: flex;
+  gap: 10px;
+}
+
+.workflow-outline-button {
+  color: #4b454a;
+  background: #fff;
+  border: 1px solid #d4cfd2;
+}
+
+.workflow-outline-button:hover {
+  border-color: #9e969b;
+}
+
+.workflow-primary-button {
+  color: #fff;
+  background: var(--color-brand);
+  border: 1px solid var(--color-brand);
+}
+
+.workflow-primary-button:hover {
+  background: var(--color-brand-hover);
+}

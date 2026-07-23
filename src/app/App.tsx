@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import '../styles/dashboard.css'
 import '../styles/workflow.css'
+import '../styles/product-management.css'
 import { DashboardPage } from '../pages/dashboard/DashboardPage'
 import {
   hashForRoute,
@@ -10,12 +11,48 @@ import {
 import { OperatingCostEntryPage } from '../pages/operating-cost-entry/OperatingCostEntryPage'
 import { ProductionResultPage } from '../pages/production-result/ProductionResultPage'
 import { RawMaterialEntryPage } from '../pages/raw-material-entry/RawMaterialEntryPage'
+import { InsightDetailPage } from '../pages/dashboard/InsightDetailPage'
+import { ProductManagementPage } from '../pages/product-management/ProductManagementPage'
+import { ProductCreatePage } from '../pages/product-management/ProductCreatePage'
+import {
+  initialRecipeProducts,
+  RECIPE_PRODUCTS_STORAGE_KEY,
+  type RecipeProduct,
+} from '../pages/product-management/productManagementData'
+import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
+
+const SELECTED_PRODUCT_STORAGE_KEY = 'sunshine.selected-recipe-product'
+
+function loadRecipeProducts() {
+  if (typeof window === 'undefined') return initialRecipeProducts
+
+  try {
+    const storedProducts = JSON.parse(
+      window.localStorage.getItem(RECIPE_PRODUCTS_STORAGE_KEY) ?? 'null',
+    ) as RecipeProduct[] | null
+    if (
+      Array.isArray(storedProducts) &&
+      storedProducts.length > 0 &&
+      storedProducts.every((product) => Array.isArray(product.ingredients))
+    ) return storedProducts
+  } catch {
+    // 저장 데이터가 손상된 경우 안전하게 기본 제품을 사용합니다.
+  }
+
+  return initialRecipeProducts
+}
 
 function App() {
   const [route, setRoute] = useState<AppRoute>(() =>
     routeFromHash(typeof window === 'undefined' ? '' : window.location.hash),
   )
   const [message, setMessage] = useState('')
+  const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>(loadRecipeProducts)
+  const [selectedProductId, setSelectedProductId] = useState(() =>
+    typeof window === 'undefined'
+      ? initialRecipeProducts[0].id
+      : window.localStorage.getItem(SELECTED_PRODUCT_STORAGE_KEY) ?? initialRecipeProducts[0].id,
+  )
   const messageTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
@@ -27,6 +64,14 @@ function App() {
       window.clearTimeout(messageTimer.current)
     }
   }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem(RECIPE_PRODUCTS_STORAGE_KEY, JSON.stringify(recipeProducts))
+  }, [recipeProducts])
+
+  useEffect(() => {
+    window.localStorage.setItem(SELECTED_PRODUCT_STORAGE_KEY, selectedProductId)
+  }, [selectedProductId])
 
   const announce = (nextMessage: string) => {
     window.clearTimeout(messageTimer.current)
@@ -49,6 +94,39 @@ function App() {
     page = <OperatingCostEntryPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'data-entry-3') {
     page = <ProductionResultPage onNavigate={navigate} onAction={announce} />
+  } else if (route === 'product-management') {
+    page = (
+      <ProductManagementPage
+        products={recipeProducts}
+        onNavigate={navigate}
+        onSelectProduct={(productId) => {
+          setSelectedProductId(productId)
+          navigate('product-detail')
+        }}
+      />
+    )
+  } else if (route === 'product-create') {
+    page = (
+      <ProductCreatePage
+        nextProductNumber={recipeProducts.length + 1}
+        onNavigate={navigate}
+        onCreate={(product) => {
+          setRecipeProducts((current) => [product, ...current])
+          announce(`${product.name} 레시피를 저장했습니다.`)
+          navigate('product-management')
+        }}
+      />
+    )
+  } else if (route === 'product-detail') {
+    const selectedProduct = recipeProducts.find((product) => product.id === selectedProductId)
+      ?? recipeProducts[0]
+    page = <ProductDetailPage product={selectedProduct} onNavigate={navigate} />
+  } else if (
+    route === 'exchange-rate-detail' ||
+    route === 'cost-trend-detail' ||
+    route === 'defect-status-detail'
+  ) {
+    page = <InsightDetailPage route={route} onNavigate={navigate} />
   } else {
     page = <DashboardPage onNavigate={navigate} onAction={announce} />
   }

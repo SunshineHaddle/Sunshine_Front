@@ -1,0 +1,181 @@
+@media (max-width: 1179px) {
+  .raw-materials-layout,
+  .operating-layout,
+  .production-layout {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1050px) {
+  .raw-materials-entry-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .raw-materials-page,
+  .operating-page,
+  .production-page {
+    padding-right: 32px;
+    padding-left: 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .production-cost-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-composition {
+    padding-top: 24px;
+    padding-left: 0;
+    border-top: 1px solid #ece9ea;
+    border-left: 0;
+  }
+
+  .cost-composition__body {
+    grid-template-columns: 160px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 719px) {
+  .raw-materials-layout,
+  .operating-layout,
+  .production-layout {
+    display: block;
+    padding-bottom: 72px;
+  }
+
+  .raw-materials-page,
+  .operating-page,
+  .production-page {
+    padding-right: 24px;
+    padding-left: 24px;
+  }
+
+  .raw-materials-entry-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+}
+
+@media (max-width: 680px) {
+  .raw-materials-page,
+  .operating-page,
+  .production-page {
+    padding: 28px 16px 30px;
+  }
+
+  .workflow-page-heading {
+    margin-top: 0;
+  }
+
+  .workflow-page-heading h1,
+  .operating-heading h1,
+  .production-heading h1 {
+    font-size: 22px;
+  }
+
+  .workflow-page-heading p,
+  .operating-heading p,
+  .production-heading p {
+    line-height: 1.55;
+  }
+
+  .raw-materials-entry-grid {
+    grid-template-columns: 1fr;
+    margin-top: 28px;
+    overflow: visible;
+  }
+
+  .upload-card {
+    min-height: 0;
+  }
+
+  .material-preview {
+    padding-right: 0;
+    padding-left: 0;
+  }
+
+  .material-preview__heading {
+    padding-right: 2px;
+    padding-left: 2px;
+  }
+
+  .material-preview__labels {
+    display: none;
+  }
+
+  .material-preview__row {
+    grid-template-columns: minmax(0, 1fr) minmax(76px, 0.65fr) 36px;
+  }
+
+  .material-preview__row label:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .raw-materials-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .raw-materials-footer > div:last-child {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .workflow-primary-button,
+  .workflow-outline-button {
+    width: 100%;
+  }
+
+  .operating-page {
+    padding-top: 38px;
+  }
+
+  .production-page {
+    width: auto;
+    padding-top: 38px;
+  }
+
+  .production-heading p {
+    margin-top: 8px;
+  }
+
+  .production-cost-layout,
+  .production-cost-details,
+  .production-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .production-cost-layout {
+    gap: 30px;
+  }
+
+  .cost-composition__body {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-composition svg {
+    justify-self: center;
+  }
+
+  .production-grand-total {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .production-grand-total strong {
+    font-size: 22px;
+  }
+
+  .production-footer {
+    align-items: stretch;
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .production-finish,
+  .production-back {
+    width: 100%;
+  }
+}

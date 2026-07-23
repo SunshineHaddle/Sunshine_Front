@@ -15,6 +15,7 @@ export type IconName =
   | 'dashboard'
   | 'data'
   | 'download'
+  | 'droplet'
   | 'exchange'
   | 'filter'
   | 'factory'
@@ -22,6 +23,7 @@ export type IconName =
   | 'home'
   | 'info'
   | 'logout'
+  | 'landmark'
   | 'more'
   | 'report'
   | 'search'
@@ -94,6 +96,7 @@ const paths: Record<IconName, ReactNode> = {
       <path d="m7 10 5 5 5-5M5 21h14" />
     </>
   ),
+  droplet: <path d="M12 3s6 6.2 6 11a6 6 0 0 1-12 0c0-4.8 6-11 6-11Z" />,
   exchange: (
     <>
       <path d="M20 7a9 9 0 0 0-15.5-2L2 8" />
@@ -134,6 +137,11 @@ const paths: Record<IconName, ReactNode> = {
   logout: (
     <>
       <path d="M10 4H4v16h6M14 8l4 4-4 4M9 12h9" />
+    </>
+  ),
+  landmark: (
+    <>
+      <path d="m3 9 9-5 9 5M5 10h14M6 10v7M10 10v7M14 10v7M18 10v7M4 18h16M3 21h18" />
     </>
   ),
   more: (
