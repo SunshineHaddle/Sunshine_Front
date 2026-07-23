@@ -1,4 +1,4 @@
-import { Icon } from '../../components/common/Icon'
+import { Icon } from '../common/Icon'
 
 type Currency = {
   code: string

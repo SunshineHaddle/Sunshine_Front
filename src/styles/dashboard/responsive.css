@@ -1,0 +1,220 @@
+@media (max-width: 1179px) {
+  .dashboard-app {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .sidebar {
+    width: 84px;
+    padding: 22px 14px;
+  }
+
+  .sidebar__brand {
+    display: none;
+  }
+
+  .navigation-item span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .sidebar__navigation {
+    margin-inline: 0;
+  }
+
+  .navigation-item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .sidebar__subnavigation {
+    display: none;
+  }
+
+  .dashboard-content {
+    padding-inline: 32px;
+  }
+
+  .summary-grid {
+    grid-template-columns: minmax(0, 1.75fr) minmax(260px, 1fr);
+  }
+
+  .exchange-card__unit {
+    display: none;
+  }
+}
+
+@media (max-width: 899px) {
+  .dashboard-content {
+    padding: 28px 24px 56px;
+  }
+
+  .dashboard-header {
+    align-items: flex-start;
+    margin-bottom: 36px;
+  }
+
+  .dashboard-header__actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exchange-card__unit {
+    display: inline;
+  }
+
+  .exchange-card {
+    height: auto;
+  }
+
+  .insight-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .insight-card:last-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 719px) {
+  .dashboard-app {
+    display: block;
+    padding-bottom: 72px;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 20;
+    display: block;
+    width: 100%;
+    height: 72px;
+    min-height: 0;
+    padding: 8px 12px max(8px, env(safe-area-inset-bottom));
+    background: rgba(255, 255, 255, 0.96);
+    border-top: 1px solid var(--color-border);
+    border-right: 0;
+    backdrop-filter: blur(16px);
+  }
+
+  .sidebar__navigation {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    height: 100%;
+    margin: 0;
+    gap: 4px;
+  }
+
+  .navigation-item {
+    min-height: 52px;
+    border-radius: 10px;
+  }
+
+  .navigation-item.is-active {
+    color: var(--color-brand);
+    background: #eee9e8;
+  }
+
+  .dashboard-content {
+    min-height: 0;
+    padding: 24px 16px 40px;
+  }
+
+  .dashboard-header {
+    display: grid;
+    margin-bottom: 30px;
+  }
+
+  .dashboard-header h1 {
+    font-size: 26px;
+  }
+
+  .dashboard-header p {
+    font-size: 14px;
+  }
+
+  .dashboard-header__actions {
+    justify-content: flex-start;
+  }
+
+  .cost-chart-card {
+    height: 350px;
+    padding-inline: 16px;
+  }
+
+  .cost-line-chart {
+    margin-right: -8px;
+    margin-left: -8px;
+  }
+
+  .exchange-card {
+    padding-inline: 20px;
+  }
+
+  .exchange-card__value strong {
+    font-size: clamp(46px, 16vw, 62px);
+  }
+
+  .insight-section__heading {
+    align-items: flex-start;
+  }
+
+  .insight-section__heading > span {
+    display: none;
+  }
+
+  .insight-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-card:last-child {
+    grid-column: auto;
+  }
+
+  .insight-card__metric strong {
+    font-size: 32px;
+  }
+
+  .insight-detail-placeholder {
+    grid-template-columns: 1fr;
+    padding: 24px;
+    gap: 24px;
+  }
+
+  .profitability-card__heading {
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 18px;
+    gap: 14px;
+  }
+
+  .profitability-card__heading h2 {
+    font-size: 17px;
+  }
+
+  .profitability-card__actions {
+    width: 100%;
+  }
+
+  .table-action {
+    flex: 1;
+  }
+
+  .profitability-card__footer {
+    padding-inline: 14px;
+  }
+
+  .toast {
+    right: 16px;
+    bottom: 88px;
+  }
+}

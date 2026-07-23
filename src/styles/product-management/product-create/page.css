@@ -1,0 +1,45 @@
+.product-create-page {
+  padding-top: 34px;
+}
+
+.product-create-back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 8px 0 2px;
+  gap: 4px;
+  color: #777;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.product-create-back:hover {
+  color: #222;
+  background: #f0f0f0;
+}
+
+.product-create-header {
+  margin-top: 22px;
+}
+
+.product-create-header h1,
+.product-create-header p {
+  margin: 0;
+}
+
+.product-create-header h1 {
+  color: #1d1d1d;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.8px;
+}
+
+.product-create-header p {
+  margin-top: 7px;
+  color: #858585;
+  font-size: 12px;
+}
+

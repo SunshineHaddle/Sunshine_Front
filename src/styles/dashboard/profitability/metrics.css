@@ -1,0 +1,158 @@
+.product-name,
+.product-variant,
+.metric-primary,
+.metric-unit {
+  display: block;
+}
+
+.product-name {
+  font-weight: 700;
+  letter-spacing: -0.15px;
+}
+
+.product-variant,
+.metric-unit {
+  margin-top: 3px;
+  color: var(--color-text-subtle);
+  font-size: 9.5px;
+  font-weight: 500;
+}
+
+.metric-primary {
+  font-weight: 500;
+}
+
+.money-cell,
+.rate-cell,
+.defect-cell,
+.margin-pill {
+  font-variant-numeric: tabular-nums;
+}
+
+.money-cell {
+  color: #2f2a2a;
+  font-weight: 550;
+}
+
+.money-cell--sale {
+  color: #171414;
+  font-weight: 750;
+}
+
+.margin-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  min-height: 21px;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.margin-pill--good {
+  color: #087f5b;
+  background: #c9f3e6;
+}
+
+.margin-pill--watch {
+  color: #9a6700;
+  background: #fff0bd;
+}
+
+.margin-pill--loss {
+  color: #c92a2a;
+  background: #ffe0de;
+}
+
+.rate-cell {
+  color: #3f3939;
+  font-weight: 500;
+}
+
+.defect-cell--normal {
+  color: #20a648;
+}
+
+.defect-cell--watch {
+  color: #d28700;
+}
+
+.defect-cell--risk {
+  color: #ed4545;
+}
+
+.product-status {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  box-shadow: none;
+}
+
+.product-status--normal {
+  background: #22c55e;
+}
+
+.product-status--watch {
+  background: #f59e0b;
+}
+
+.product-status--risk {
+  background: #ff5757;
+}
+
+.profitability-empty {
+  height: 320px;
+  color: var(--color-text-subtle);
+  text-align: center !important;
+}
+
+.profitability-card__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 8px 16px 8px 20px;
+  color: #9b9492;
+  font-size: 10px;
+}
+
+.table-pagination {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.table-pagination button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  color: #403a3a;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 10px;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.table-pagination button:hover:not(:disabled):not(.is-current) {
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+}
+
+.table-pagination button.is-current {
+  color: #fff;
+  background: #152238;
+  font-weight: 700;
+}
+
+.table-pagination button:disabled {
+  cursor: default;
+  opacity: 0.32;
+}
+

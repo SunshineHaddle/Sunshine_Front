@@ -1,0 +1,222 @@
+.summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.08fr) minmax(280px, 1fr);
+  gap: 24px;
+}
+
+.card {
+  min-width: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: none;
+}
+
+.cost-chart-card,
+.exchange-card {
+  height: 370px;
+}
+
+.cost-chart-card {
+  padding: 24px 24px 18px;
+}
+
+.card-heading h2,
+.profitability-card h2,
+.exchange-card h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: -0.35px;
+}
+
+.card-heading p {
+  margin: 4px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+}
+
+.chart-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.chart-period-toggle {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  background: #f1efef;
+  border-radius: 6px;
+}
+
+.chart-period-toggle button {
+  min-width: 52px;
+  height: 28px;
+  padding: 0 10px;
+  color: #777171;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chart-period-toggle button:hover {
+  color: #252020;
+}
+
+.chart-period-toggle button.is-active {
+  color: #fff;
+  background: #2e2929;
+}
+
+.cost-line-chart {
+  height: 265px;
+  margin-top: 14px;
+}
+
+.cost-line-chart svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.cost-line-chart__grid {
+  stroke: #e8e5e5;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.cost-line-chart__axis {
+  fill: #888181;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-line-chart__line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.cost-line-chart__line--management {
+  stroke: var(--color-brand);
+}
+
+.cost-line-chart__line--manufacturing {
+  stroke: #5e5858;
+}
+
+.cost-line-chart__point {
+  stroke: #fff;
+  stroke-width: 2;
+  transition: r 140ms ease;
+  vector-effect: non-scaling-stroke;
+}
+
+.cost-line-chart__point:hover {
+  r: 6px;
+}
+
+.cost-line-chart__point--management {
+  fill: var(--color-brand);
+}
+
+.cost-line-chart__point--manufacturing {
+  fill: #5e5858;
+}
+
+.cost-line-chart__direct-label {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cost-line-chart__direct-label--management {
+  fill: var(--color-brand);
+}
+
+.cost-line-chart__direct-label--manufacturing {
+  fill: #5e5858;
+}
+
+.cost-line-chart__direct-value {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-card {
+  padding: 24px;
+  overflow: hidden;
+}
+
+.exchange-card__heading,
+.exchange-card__heading h2 {
+  display: flex;
+  align-items: center;
+}
+
+.exchange-card__heading {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.exchange-card__heading h2 {
+  gap: 8px;
+}
+
+.exchange-card__heading h2 svg {
+  color: var(--color-brand);
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 7px;
+  color: #777171;
+  background: #efeded;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.exchange-card__primary {
+  margin-top: 20px;
+}
+
+.exchange-card__value {
+  display: flex;
+  align-items: baseline;
+  min-width: max-content;
+  color: var(--color-text);
+  line-height: 0.95;
+  letter-spacing: -1.3px;
+  white-space: nowrap;
+}
+
+.exchange-card__value strong {
+  font-size: 62px;
+  font-weight: 750;
+}
+
+.exchange-card__decimal {
+  margin-left: 3px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.exchange-card__unit {
+  margin-left: 10px;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.15px;
+}

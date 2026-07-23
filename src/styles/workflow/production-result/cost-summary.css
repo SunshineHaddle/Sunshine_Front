@@ -1,0 +1,155 @@
+.production-cost-section,
+.production-result-section {
+  margin-top: 34px;
+}
+
+.production-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #ece9ea;
+}
+
+.production-section-heading h2,
+.production-section-heading p {
+  margin: 0;
+}
+
+.production-section-heading h2 {
+  color: #302b2e;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.production-section-heading p {
+  margin-top: 5px;
+  color: #9b9598;
+  font-size: 11px;
+}
+
+.production-section-heading > span {
+  color: #746e71;
+  font-size: 11px;
+}
+
+.production-cost-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 40px;
+  padding: 24px 0 26px;
+}
+
+.production-cost-details {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 40px;
+}
+
+.cost-summary-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.cost-summary-title-row > div {
+  display: grid;
+  gap: 4px;
+}
+
+.cost-summary-title-row span {
+  color: #847e81;
+  font-size: 11px;
+}
+
+.cost-summary-title-row strong {
+  color: #292426;
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.cost-summary-title-row button {
+  padding: 3px 0;
+  color: var(--color-brand);
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+}
+
+.material-cost-table {
+  max-height: 194px;
+  margin: 17px 0 0;
+  overflow-x: auto;
+  overflow-y: auto;
+}
+
+.material-cost-table table {
+  width: 100%;
+  min-width: 390px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.material-cost-table th,
+.material-cost-table td {
+  height: 38px;
+  padding: 0 8px;
+  overflow: hidden;
+  border-bottom: 1px solid #f0edef;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.material-cost-table th {
+  height: 30px;
+  color: #9b9598;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.material-cost-table td {
+  color: #514b4e;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.material-cost-table th:first-child,
+.material-cost-table td:first-child {
+  width: 34%;
+  padding-left: 0;
+  text-align: left;
+}
+
+.material-cost-table th:last-child,
+.material-cost-table td:last-child {
+  padding-right: 0;
+  color: #3d383a;
+  font-weight: 600;
+}
+
+.material-cost-table__empty td { color: #c5c0c2; }
+
+.production-operating-summary dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 42px;
+  gap: 18px;
+  border-bottom: 1px solid #f0edef;
+}
+
+.production-operating-summary dl {
+  margin: 17px 0 0;
+}
+
+.production-operating-summary dt,
+.production-operating-summary dd {
+  margin: 0;
+  font-size: 12px;
+}
+
+.production-operating-summary dt { color: #777174; }
+.production-operating-summary dd { color: #3d383a; font-weight: 600; font-variant-numeric: tabular-nums; }

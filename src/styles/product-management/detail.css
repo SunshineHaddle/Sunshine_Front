@@ -1,0 +1,206 @@
+.product-detail-page {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 34px 48px 90px;
+  background: #fbfbfb;
+}
+
+.product-detail-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-top: 22px;
+  gap: 32px;
+}
+
+.product-detail-header h1,
+.product-detail-header p {
+  margin: 0;
+}
+
+.product-detail-header h1 {
+  color: #1d1d1d;
+  font-size: 27px;
+  font-weight: 650;
+  letter-spacing: -0.8px;
+}
+
+.product-detail-header p {
+  margin-top: 7px;
+  color: #858585;
+  font-size: 12px;
+}
+
+.product-detail-header > div:last-child {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.product-detail-header > div:last-child span {
+  color: #888;
+  font-size: 10px;
+}
+
+.product-detail-header > div:last-child strong {
+  color: #1f1f1f;
+  font-size: 25px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.7px;
+}
+
+.product-cost-overview {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 34px;
+  background: #fff;
+  border: 1px solid #e7e7e7;
+}
+
+.product-cost-overview section {
+  display: grid;
+  min-height: 126px;
+  padding: 22px;
+  align-content: center;
+  border-right: 1px solid #ededed;
+}
+
+.product-cost-overview section:last-child {
+  border-right: 0;
+}
+
+.product-cost-overview span,
+.product-cost-overview strong,
+.product-cost-overview small {
+  display: block;
+}
+
+.product-cost-overview span {
+  color: #777;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.product-cost-overview strong {
+  margin-top: 11px;
+  color: #222;
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-cost-overview small {
+  margin-top: 5px;
+  color: #aaa;
+  font-size: 9px;
+}
+
+.product-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(260px, 0.7fr);
+  align-items: start;
+  margin-top: 18px;
+  gap: 18px;
+}
+
+.product-cost-panel {
+  padding: 22px;
+  background: #fff;
+  border: 1px solid #e7e7e7;
+}
+
+.product-cost-panel > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.product-cost-panel header h2,
+.product-cost-panel header p {
+  margin: 0;
+}
+
+.product-cost-panel header h2 {
+  color: #272727;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.product-cost-panel header p {
+  margin-top: 4px;
+  color: #999;
+  font-size: 10px;
+}
+
+.product-cost-panel header > strong {
+  color: #333;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.material-cost-list {
+  margin-top: 20px;
+}
+
+.material-cost-list > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 100px 120px;
+  align-items: center;
+  min-height: 49px;
+  border-top: 1px solid #ededed;
+  font-size: 10.5px;
+}
+
+.material-cost-list__head {
+  min-height: 34px !important;
+  color: #999;
+  font-size: 9px !important;
+}
+
+.material-cost-list strong {
+  color: #333;
+  font-size: 10.5px;
+}
+
+.material-cost-list span {
+  color: #777;
+}
+
+.material-cost-list b {
+  color: #333;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.indirect-cost-panel dl {
+  display: grid;
+  margin: 22px 0 0;
+  gap: 15px;
+}
+
+.indirect-cost-panel dl div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.indirect-cost-panel dt,
+.indirect-cost-panel dd {
+  margin: 0;
+  font-size: 10.5px;
+}
+
+.indirect-cost-panel dt { color: #777; }
+.indirect-cost-panel dd { color: #333; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.indirect-cost-panel dl .indirect-cost-panel__total {
+  margin-top: 5px;
+  padding-top: 16px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.indirect-cost-panel__total dd {
+  font-size: 13px;
+}
+

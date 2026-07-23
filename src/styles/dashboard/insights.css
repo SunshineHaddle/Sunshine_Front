@@ -1,0 +1,190 @@
+.insight-section {
+  margin-top: 28px;
+}
+
+.insight-section__heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 14px;
+  gap: 24px;
+}
+
+.insight-section__heading h2 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+}
+
+.insight-section__heading p,
+.insight-section__heading > span {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
+.insight-section__heading p {
+  margin: 4px 0 0;
+}
+
+.insight-section__heading > span {
+  flex: 0 0 auto;
+}
+
+.insight-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.insight-card {
+  position: relative;
+  min-height: 232px;
+  padding: 18px 20px 16px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.insight-card::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 3px;
+  background: currentColor;
+  content: '';
+  opacity: 0.82;
+}
+
+.insight-card--blue { color: #2868b2; }
+.insight-card--brand { color: var(--color-brand); }
+.insight-card--amber { color: #b36a16; }
+
+.insight-card__topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.insight-card__icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: currentColor;
+  background: color-mix(in srgb, currentColor 11%, white);
+  border-radius: 10px;
+}
+
+.insight-card__icon--blue { color: #2868b2; }
+.insight-card__icon--brand { color: var(--color-brand); }
+.insight-card__icon--amber { color: #b36a16; }
+
+.insight-card__topline button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 2px 0 8px;
+  gap: 2px;
+  color: #665f5f;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+
+.insight-card__topline button:hover {
+  color: currentColor;
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.insight-card__copy {
+  margin-top: 17px;
+}
+
+.insight-card__copy h3 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.insight-card__copy p {
+  margin: 4px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
+.insight-card__metric {
+  display: flex;
+  align-items: baseline;
+  margin-top: 13px;
+  gap: 5px;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.insight-card__metric strong {
+  font-size: clamp(27px, 2.2vw, 34px);
+  font-weight: 720;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.insight-card__metric span {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.insight-card__sparkline {
+  position: absolute;
+  right: 18px;
+  bottom: 17px;
+  width: 42%;
+  height: 44px;
+  overflow: visible;
+}
+
+.insight-card__grid {
+  fill: none;
+  stroke: #e6e1df;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.insight-card__line {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.insight-card__point {
+  fill: currentColor;
+  vector-effect: non-scaling-stroke;
+}
+
+.insight-card__change {
+  display: flex;
+  align-items: center;
+  margin: 21px 0 0;
+  gap: 5px;
+  font-size: 10px;
+}
+
+.insight-card__change strong {
+  color: currentColor;
+  font-weight: 750;
+}
+
+.insight-card__change span {
+  color: var(--color-text-subtle);
+}
+

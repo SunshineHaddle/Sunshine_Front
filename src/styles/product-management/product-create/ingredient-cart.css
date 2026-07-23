@@ -1,0 +1,157 @@
+.ingredient-catalog {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 12px;
+  border-top: 1px solid #efefef;
+  border-left: 1px solid #efefef;
+}
+
+.ingredient-catalog > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 57px;
+  padding: 9px 10px 9px 13px;
+  gap: 10px;
+  border-right: 1px solid #efefef;
+  border-bottom: 1px solid #efefef;
+}
+
+.ingredient-catalog span,
+.ingredient-catalog strong,
+.ingredient-catalog small {
+  display: block;
+}
+
+.ingredient-catalog strong {
+  color: #333;
+  font-size: 11px;
+}
+
+.ingredient-catalog small {
+  margin-top: 3px;
+  color: #969696;
+  font-size: 9px;
+}
+
+.ingredient-catalog button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  padding: 0;
+  place-items: center;
+  color: #fff;
+  background: #252525;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.ingredient-catalog > p {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 22px;
+  color: #888;
+  text-align: center;
+  font-size: 11px;
+}
+
+.recipe-cart__empty {
+  display: grid;
+  min-height: 120px;
+  margin-top: 18px;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  color: #aaa;
+  background: #fafafa;
+}
+
+.recipe-cart__empty p {
+  margin: 0;
+  font-size: 10.5px;
+}
+
+.recipe-cart__items {
+  margin-top: 18px;
+}
+
+.recipe-cart-item {
+  display: grid;
+  grid-template-columns: minmax(130px, 1fr) 145px 100px 30px;
+  align-items: center;
+  min-height: 68px;
+  gap: 14px;
+  border-top: 1px solid #ededed;
+}
+
+.recipe-cart-item > div strong,
+.recipe-cart-item > div small {
+  display: block;
+}
+
+.recipe-cart-item > div strong {
+  color: #333;
+  font-size: 11px;
+}
+
+.recipe-cart-item > div small {
+  margin-top: 3px;
+  color: #999;
+  font-size: 9px;
+}
+
+.recipe-cart-item label {
+  position: relative;
+  display: block;
+}
+
+.recipe-cart-item label span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.recipe-cart-item input {
+  width: 100%;
+  padding-right: 35px;
+  font-variant-numeric: tabular-nums;
+}
+
+.recipe-cart-item em {
+  position: absolute;
+  top: 13px;
+  right: 10px;
+  color: #888;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.recipe-cart-item b {
+  color: #333;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.recipe-cart-item > button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  color: #999;
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.recipe-cart-item > button:hover {
+  color: #222;
+  background: #f2f2f2;
+}
+
