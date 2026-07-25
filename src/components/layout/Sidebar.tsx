@@ -27,7 +27,6 @@ export function Sidebar({ activeRoute, onNavigate }: SidebarProps) {
                 ? activeRoute.startsWith('product-')
               : item.route === 'dashboard'
                 ? activeRoute === 'dashboard' || [
-                    'exchange-rate-detail',
                     'cost-trend-detail',
                     'defect-status-detail',
                   ].includes(activeRoute)
