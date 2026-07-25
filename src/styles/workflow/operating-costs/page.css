@@ -3,7 +3,7 @@
   min-height: 100vh;
   padding: 44px 48px 52px;
   color: #272326;
-  background: #fff;
+  background: #fbfbfb;
 }
 
 .operating-heading {
@@ -24,13 +24,6 @@
   letter-spacing: -0.55px;
 }
 
-.operating-heading h1 span {
-  color: #746f72;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0;
-}
-
 .operating-heading p {
   margin-top: 8px;
   color: #8b8589;
@@ -47,7 +40,7 @@
   color: #575154;
   background: #fafafa;
   border: 1px solid #e5e2e3;
-  border-radius: 999px;
+  border-radius: 6px;
 }
 
 .operating-month-picker input {
@@ -70,7 +63,7 @@
   color: #625c60;
   background: #fff;
   border: 1px dashed #c9c4c6;
-  border-radius: 28px;
+  border-radius: 8px;
   cursor: pointer;
   text-align: center;
   transition: border-color 140ms ease, background-color 140ms ease;
@@ -111,4 +104,3 @@
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
 }
-

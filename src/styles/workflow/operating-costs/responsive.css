@@ -18,11 +18,6 @@
     flex-direction: column;
   }
 
-  .operating-heading h1 span {
-    display: block;
-    margin-top: 5px;
-  }
-
   .operating-month-picker {
     width: 100%;
   }
@@ -31,7 +26,7 @@
     min-height: 145px;
     margin-top: 26px;
     padding: 24px 16px;
-    border-radius: 20px;
+    border-radius: 8px;
   }
 
   .operating-cost-groups {

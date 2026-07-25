@@ -77,12 +77,26 @@
   margin-top: 18px;
 }
 
+.recipe-cart__labels,
 .recipe-cart-item {
   display: grid;
-  grid-template-columns: minmax(130px, 1fr) 145px 100px 30px;
+  grid-template-columns: minmax(110px, 1fr) 125px 125px 105px 30px;
+  gap: 12px;
+}
+
+.recipe-cart__labels {
+  padding: 0 0 8px;
+  color: #918b8f;
+  font-size: 9px;
+}
+
+.recipe-cart__labels span:nth-last-child(-n + 2) {
+  text-align: right;
+}
+
+.recipe-cart-item {
   align-items: center;
   min-height: 68px;
-  gap: 14px;
   border-top: 1px solid #ededed;
 }
 
@@ -117,7 +131,7 @@
 
 .recipe-cart-item input {
   width: 100%;
-  padding-right: 35px;
+  padding-right: 30px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -154,4 +168,3 @@
   color: #222;
   background: #f2f2f2;
 }
-

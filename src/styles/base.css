@@ -22,7 +22,7 @@
   --color-workflow-canvas: #fafafa;
   --shadow-card: 0 1px 2px rgba(45, 30, 30, 0.04), 0 4px 12px rgba(45, 30, 30, 0.045);
   --shadow-workflow: 0 1px 3px rgba(16, 24, 40, 0.04), 0 6px 16px rgba(16, 24, 40, 0.035);
-  --radius-card: 12px;
+  --radius-card: 8px;
   --radius-control: 8px;
   --font-ui: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', sans-serif;
 

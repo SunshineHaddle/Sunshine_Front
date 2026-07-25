@@ -9,14 +9,12 @@ export type MaterialPreviewRow = {
 
 export type MaterialPreview = {
   rows: MaterialPreviewRow[]
-  quantityLabel: string
-  unitCostLabel: string
 }
 
 type MaterialColumn = 'name' | 'quantity' | 'unitCost'
 
 const columnAliases: Record<MaterialColumn, string[]> = {
-  name: ['자재명', '재료명', '재료이름', '원재료명', '품목명', 'material', 'name'],
+  name: ['품명', '자재명', '재료명', '재료이름', '원재료명', '품목명', 'material', 'name'],
   quantity: ['수량', '중량', '사용량', 'quantity', 'qty'],
   unitCost: ['단가', '원가', '단위원가', 'unitcost', 'price'],
 }
@@ -82,7 +80,7 @@ export async function parseMaterialFile(file: File): Promise<MaterialPreview> {
   ))
 
   if (headerRowIndex < 0) {
-    throw new Error('자재명, 수량, 단가 열을 찾을 수 없습니다.')
+    throw new Error('품명, 수량, 단가 열을 찾을 수 없습니다.')
   }
 
   const headers = rawRows[headerRowIndex]
@@ -102,9 +100,5 @@ export async function parseMaterialFile(file: File): Promise<MaterialPreview> {
     throw new Error('표시할 원재료 데이터가 없습니다.')
   }
 
-  return {
-    rows,
-    quantityLabel: String(headers[quantityIndex] || '수량'),
-    unitCostLabel: String(headers[unitCostIndex] || '단가'),
-  }
+  return { rows }
 }

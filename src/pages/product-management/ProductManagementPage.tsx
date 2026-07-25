@@ -19,7 +19,7 @@ export function ProductManagementPage({
   const normalizedQuery = query.trim().toLocaleLowerCase('ko-KR')
   const filteredProducts = useMemo(
     () => products.filter((product) =>
-      !normalizedQuery || [product.id, product.name, product.description].some((value) =>
+      !normalizedQuery || [product.id, product.name, ...product.ingredients.map((ingredient) => ingredient.name)].some((value) =>
         value.toLocaleLowerCase('ko-KR').includes(normalizedQuery),
       ),
     ),
@@ -33,7 +33,7 @@ export function ProductManagementPage({
       <main className="recipe-library-page">
         <header className="recipe-library-header">
           <div>
-            <h1>제품 및 레시피 관리</h1>
+            <h1>제품 관리</h1>
             <p>재료 비용, 수율 목표 및 제조 사양을 관리합니다.</p>
           </div>
           <label className="recipe-search">
@@ -59,12 +59,8 @@ export function ProductManagementPage({
               <article className="recipe-card" key={product.id}>
                 <div className="recipe-card__topline">
                   <h3>{product.name}</h3>
-                  <span className={`recipe-card__state recipe-card__state--${product.status}`}>
-                    <Icon name={product.status === 'active' ? 'check' : 'box'} size={15} />
-                    <span className="visually-hidden">{product.status === 'active' ? '운영 중' : '검토 중'}</span>
-                  </span>
                 </div>
-                <p>{product.description}</p>
+                <p>({product.ingredients.map((ingredient) => ingredient.name).join(', ')})</p>
                 <footer>
                   <span>수율: {product.yieldRate.toFixed(1)}%</span>
                   <button type="button" aria-label={`${product.name} 원가 상세 보기`} onClick={() => onSelectProduct(product.id)}>
@@ -73,6 +69,23 @@ export function ProductManagementPage({
                 </footer>
               </article>
             ))}
+            {!normalizedQuery && (
+              <button
+                className="recipe-card recipe-card--create"
+                type="button"
+                onClick={() => onNavigate('product-create')}
+              >
+                <span className="recipe-card--create__label">
+                  <span className="recipe-card--create__icon">
+                    <Icon name="add" size={20} />
+                  </span>
+                  <span>
+                    <strong>제품 추가</strong>
+                    <small>새 제품과 레시피 등록</small>
+                  </span>
+                </span>
+              </button>
+            )}
           </div>
 
           {filteredProducts.length === 0 && (
@@ -80,13 +93,6 @@ export function ProductManagementPage({
           )}
         </section>
 
-        <button
-          className="product-create-fab"
-          type="button"
-          onClick={() => onNavigate('product-create')}
-        >
-          <Icon name="add" size={18} /> 제품 추가
-        </button>
       </main>
     </div>
   )

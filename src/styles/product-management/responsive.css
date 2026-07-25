@@ -47,11 +47,6 @@
     grid-template-columns: 1fr;
   }
 
-  .product-create-fab {
-    right: 18px;
-    bottom: 88px;
-  }
-
   .product-info-fields,
   .ingredient-catalog,
   .extra-cost-fields,
@@ -91,8 +86,16 @@
   }
 
   .recipe-cart-item {
-    grid-template-columns: minmax(0, 1fr) 120px 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
     padding: 12px 0;
+  }
+
+  .recipe-cart__labels {
+    display: none;
+  }
+
+  .recipe-cart-item > div {
+    grid-column: 1 / 3;
   }
 
   .recipe-cart-item b {

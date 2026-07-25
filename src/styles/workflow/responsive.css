@@ -90,6 +90,15 @@
     min-height: 0;
   }
 
+  .material-template {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .material-template__download {
+    width: 100%;
+  }
+
   .material-preview {
     padding-right: 0;
     padding-left: 0;
@@ -110,6 +119,29 @@
 
   .material-preview__row label:first-child {
     grid-column: 1 / -1;
+  }
+
+  .material-preview__field-label {
+    position: static;
+    display: block;
+    width: auto;
+    height: auto;
+    margin: 0 0 6px 4px;
+    overflow: visible;
+    clip: auto;
+    color: #918b8f;
+    font-size: 10px;
+    white-space: normal;
+  }
+
+  .material-preview__number-field em {
+    top: auto;
+    bottom: 13px;
+    transform: none;
+  }
+
+  .material-preview__row button {
+    align-self: end;
   }
 
   .raw-materials-footer {

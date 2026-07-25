@@ -42,25 +42,26 @@ export function InsightSummaryCards({ onNavigate }: InsightSummaryCardsProps) {
           <h2 id="insight-section-title">핵심 지표</h2>
           <p>환율, 제조 원가, 품질 변화를 빠르게 확인하세요.</p>
         </div>
-        <span>최근 업데이트 14:30</span>
       </div>
 
       <div className="insight-grid">
         {dashboardInsights.map((insight) => (
-          <article
+          <button
             className={`card insight-card insight-card--${insight.tone}`}
             key={insight.id}
+            type="button"
+            aria-label={`${insight.title} 상세 보기`}
+            onClick={() => onNavigate(insight.route)}
           >
             <div className="insight-card__topline">
               <span className="insight-card__icon"><Icon name={insight.icon} size={19} /></span>
-              <button type="button" onClick={() => onNavigate(insight.route)}>
-                상세페이지 <Icon name="chevron-right" size={14} />
-              </button>
-            </div>
-
-            <div className="insight-card__copy">
-              <h3>{insight.title}</h3>
-              <p>{insight.description}</p>
+              <div className="insight-card__copy">
+                <h3>{insight.title}</h3>
+                <p>{insight.description}</p>
+              </div>
+              <span className="insight-card__navigate-icon" aria-hidden="true">
+                <Icon name="chevron-right" size={18} />
+              </span>
             </div>
 
             <div className="insight-card__metric">
@@ -68,13 +69,14 @@ export function InsightSummaryCards({ onNavigate }: InsightSummaryCardsProps) {
               <span>{insight.unit}</span>
             </div>
 
-            <Sparkline insight={insight} />
-
-            <p className="insight-card__change">
-              <strong>{insight.change}</strong>
-              <span>{insight.changeLabel}</span>
-            </p>
-          </article>
+            <div className="insight-card__footer">
+              <p className="insight-card__change">
+                <strong>{insight.change}</strong>
+                <span>{insight.changeLabel}</span>
+              </p>
+              <Sparkline insight={insight} />
+            </div>
+          </button>
         ))}
       </div>
     </section>

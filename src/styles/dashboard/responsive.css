@@ -108,7 +108,7 @@
 
   .sidebar__navigation {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     height: 100%;
     margin: 0;
     gap: 4px;
@@ -116,7 +116,7 @@
 
   .navigation-item {
     min-height: 52px;
-    border-radius: 10px;
+    border-radius: 8px;
   }
 
   .navigation-item.is-active {

@@ -1,0 +1,680 @@
+.product-cost-analysis {
+  margin-top: 28px;
+  scroll-margin-top: 24px;
+  color: var(--color-text);
+  background: #fff;
+  border: 1px solid var(--color-border);
+}
+
+.product-cost-analysis__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 24px 26px 20px;
+  gap: 32px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.product-cost-analysis__eyebrow {
+  margin: 0 0 7px;
+  color: var(--color-brand);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.4px;
+}
+
+.product-cost-analysis__header h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 720;
+  letter-spacing: -0.55px;
+}
+
+.product-cost-analysis__header > div > span {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.product-cost-analysis__owner {
+  display: flex;
+  margin: 0;
+  gap: 32px;
+}
+
+.product-cost-analysis__owner div {
+  display: grid;
+  gap: 4px;
+}
+
+.product-cost-analysis__owner dt {
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.product-cost-analysis__owner dd {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.cost-analysis-filter {
+  display: grid;
+  grid-template-columns: minmax(145px, 0.7fr) minmax(190px, 1fr) minmax(220px, 1.3fr) auto;
+  align-items: end;
+  padding: 18px 26px;
+  gap: 12px;
+  background: #faf9f9;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cost-analysis-filter--product {
+  grid-template-columns: minmax(180px, 260px) auto minmax(0, 1fr);
+}
+
+.cost-analysis-filter--product > p {
+  justify-self: end;
+  margin: 0;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.cost-analysis-filter label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+}
+
+.cost-analysis-filter label > span:first-child {
+  color: #5e5757;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cost-analysis-filter input,
+.cost-analysis-filter select,
+.cost-report-options input[type='month'] {
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  color: var(--color-text);
+  background: #fff;
+  border: 1px solid #dcd7d5;
+  border-radius: 3px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.cost-analysis-filter__search-field {
+  position: relative;
+  display: block;
+}
+
+.cost-analysis-filter__search-field svg {
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  color: #857e7e;
+}
+
+.cost-analysis-filter__search-field input {
+  padding-left: 35px;
+}
+
+.cost-analysis-filter__submit {
+  min-width: 88px;
+  height: 38px;
+  padding: 0 16px;
+  color: #fff;
+  background: #242020;
+  border: 1px solid #242020;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cost-analysis-filter__submit:hover {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.cost-analysis-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cost-analysis-kpis article {
+  position: relative;
+  display: grid;
+  min-height: 138px;
+  align-content: center;
+  padding: 22px 26px;
+  gap: 10px;
+  border-right: 1px solid var(--color-border);
+}
+
+.cost-analysis-kpis article:last-child {
+  border-right: 0;
+}
+
+.cost-analysis-kpis article > span {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.cost-analysis-kpis strong {
+  font-size: clamp(25px, 2.2vw, 34px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: -1px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.cost-analysis-kpis__price {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.cost-analysis-kpis__price input {
+  width: min(100%, 150px);
+  padding: 0;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid #cfc8c6;
+  border-radius: 0;
+  font: inherit;
+  font-size: clamp(25px, 2.2vw, 34px);
+  font-variant-numeric: tabular-nums;
+  font-weight: 760;
+  letter-spacing: -1px;
+  line-height: 1;
+}
+
+.cost-analysis-kpis__price input:focus {
+  border-color: var(--color-brand);
+  outline: 0;
+}
+
+.cost-analysis-kpis small {
+  margin-left: 5px;
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.cost-analysis-kpis em {
+  width: max-content;
+  color: #736c6c;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 650;
+}
+
+.cost-analysis-kpis em.is-up,
+.cost-analysis-kpis .is-warning em {
+  color: var(--color-brand);
+}
+
+.cost-analysis-kpis article.is-warning::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-brand);
+  content: '';
+}
+
+.cost-analysis-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cost-analysis-panel {
+  min-width: 0;
+  min-height: 218px;
+  padding: 24px 26px;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.cost-analysis-panel:nth-child(2) {
+  border-right: 0;
+}
+
+.cost-analysis-panel:last-child {
+  grid-column: 1 / -1;
+  min-height: 178px;
+  border-right: 0;
+  border-bottom: 0;
+}
+
+.cost-analysis-panel__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.cost-analysis-panel__heading h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.cost-analysis-panel__heading p {
+  margin: 5px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.cost-analysis-panel__heading > strong {
+  color: var(--color-brand);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.cost-composition__bar {
+  display: flex;
+  height: 18px;
+  margin-top: 32px;
+  overflow: hidden;
+  background: #eeeae8;
+}
+
+.cost-composition__segment--material,
+.cost-composition__dot--material { background: #292323; }
+.cost-composition__segment--labor,
+.cost-composition__dot--labor { background: var(--color-brand); }
+.cost-composition__segment--indirect,
+.cost-composition__dot--indirect { background: #8a777c; }
+.cost-composition__segment--finance,
+.cost-composition__dot--finance { background: #b9aaad; }
+.cost-composition__segment--other,
+.cost-composition__dot--other { background: #ded7d8; }
+
+.cost-composition__legend {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 22px;
+  gap: 10px;
+}
+
+.cost-composition__legend > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.cost-composition__dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-top: 3px;
+}
+
+.cost-composition__legend p {
+  display: grid;
+  margin: 0;
+  gap: 3px;
+  color: var(--color-text-subtle);
+  font-size: 9px;
+}
+
+.cost-composition__legend strong {
+  color: var(--color-text);
+  font-size: 11px;
+}
+
+.labor-trend__change {
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.labor-trend svg {
+  display: block;
+  width: 100%;
+  height: 88px;
+  margin-top: 17px;
+  overflow: visible;
+}
+
+.labor-trend line {
+  stroke: #ece8e6;
+  stroke-width: 1;
+}
+
+.labor-trend polyline {
+  fill: none;
+  stroke: var(--color-brand);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.5;
+  vector-effect: non-scaling-stroke;
+}
+
+.labor-trend circle {
+  fill: var(--color-brand);
+  stroke: #fff;
+  stroke-width: 2;
+}
+
+.labor-trend__months {
+  display: flex;
+  justify-content: space-between;
+  color: #918a8a;
+  font-size: 9px;
+}
+
+.cost-rate-status {
+  display: grid;
+  grid-template-columns: minmax(210px, 0.45fr) minmax(240px, 1fr);
+  align-items: center;
+  column-gap: 38px;
+}
+
+.cost-rate-status .cost-analysis-panel__heading {
+  grid-row: 1 / 3;
+}
+
+.cost-rate-status__badge {
+  display: inline-flex;
+  min-height: 22px;
+  align-items: center;
+  padding: 0 7px;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.cost-rate-status__number {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.cost-rate-status__number strong {
+  font-size: 28px;
+  letter-spacing: -0.8px;
+}
+
+.cost-rate-status__number span,
+.cost-rate-status > p {
+  color: var(--color-text-subtle);
+  font-size: 10px;
+}
+
+.cost-rate-status__track {
+  position: relative;
+  height: 8px;
+  margin-top: 9px;
+  background: #eeeae8;
+}
+
+.cost-rate-status__track span {
+  display: block;
+  height: 100%;
+  background: var(--color-brand);
+}
+
+.cost-rate-status__track i {
+  position: absolute;
+  top: -4px;
+  width: 2px;
+  height: 16px;
+  background: #292323;
+}
+
+.cost-rate-status > p {
+  grid-column: 2;
+  margin: 9px 0 0;
+}
+
+.cost-analysis-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 26px;
+}
+
+.cost-analysis-actions__text {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  gap: 5px;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cost-analysis-actions__text:hover {
+  color: var(--color-brand);
+}
+
+.cost-analysis-actions__text svg {
+  transition: transform 150ms ease;
+}
+
+.cost-analysis-actions__text svg.is-open {
+  transform: rotate(90deg);
+}
+
+.cost-analysis-data,
+.cost-report-options {
+  padding: 20px 26px;
+  background: #faf9f9;
+  border-top: 1px solid var(--color-border);
+}
+
+.cost-analysis-data table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: left;
+}
+
+.cost-analysis-data th,
+.cost-analysis-data td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e7e2e0;
+}
+
+.cost-analysis-data th {
+  color: var(--color-text-subtle);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.cost-report-options {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(280px, 1fr) auto;
+  align-items: end;
+  gap: 28px;
+}
+
+.cost-report-options__period {
+  display: grid;
+  grid-template-columns: 1fr 12px 1fr;
+  align-items: end;
+  gap: 8px;
+}
+
+.cost-report-options__period > span:first-child {
+  grid-column: 1 / -1;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cost-report-options__period label {
+  display: grid;
+  gap: 5px;
+  color: #746d6d;
+  font-size: 9px;
+}
+
+.cost-report-options fieldset {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 0;
+  padding: 0;
+  gap: 8px 14px;
+  border: 0;
+}
+
+.cost-report-options legend {
+  width: 100%;
+  margin-bottom: 7px;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.cost-report-options fieldset label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+}
+
+.cost-report-options__buttons {
+  display: flex;
+  gap: 7px;
+}
+
+@media (max-width: 1050px) {
+  .cost-analysis-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cost-analysis-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cost-analysis-kpis article:nth-child(2) {
+    border-right: 0;
+  }
+
+  .cost-analysis-kpis article:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .cost-report-options {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (max-width: 719px) {
+  .product-cost-analysis__header,
+  .cost-analysis-actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .product-cost-analysis__owner {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cost-analysis-filter,
+  .cost-analysis-kpis,
+  .cost-analysis-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-analysis-filter__submit {
+    width: 100%;
+  }
+
+  .cost-analysis-kpis article,
+  .cost-analysis-kpis article:nth-child(2) {
+    min-height: 116px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .cost-analysis-panel,
+  .cost-analysis-panel:nth-child(2),
+  .cost-analysis-panel:last-child {
+    grid-column: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .cost-composition__legend {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cost-rate-status {
+    display: block;
+  }
+
+  .cost-rate-status__number {
+    margin-top: 24px;
+  }
+
+  .cost-rate-status > p {
+    margin-top: 10px;
+  }
+
+  .cost-analysis-actions .button {
+    width: 100%;
+  }
+
+  .cost-report-options__period {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-report-options__period > span[aria-hidden='true'] {
+    display: none;
+  }
+
+  .cost-report-options__buttons {
+    width: 100%;
+  }
+
+  .cost-report-options__buttons .button {
+    flex: 1;
+  }
+}
+
+@media print {
+  .sidebar,
+  .dashboard-header,
+  .summary-grid,
+  .insight-section,
+  .profitability-card,
+  .cost-analysis-filter,
+  .cost-analysis-actions,
+  .toast {
+    display: none !important;
+  }
+
+  .dashboard-app,
+  .dashboard-content {
+    display: block;
+    padding: 0;
+    background: #fff;
+  }
+
+  .product-cost-analysis {
+    margin: 0;
+  }
+}
