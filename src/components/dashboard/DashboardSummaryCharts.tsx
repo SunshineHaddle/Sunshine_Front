@@ -8,9 +8,18 @@ type Currency = {
 
 const currencies: Currency[] = []
 
-export function ExchangeRateCard() {
+type ExchangeRateCardProps = {
+  onOpen: () => void
+}
+
+export function ExchangeRateCard({ onOpen }: ExchangeRateCardProps) {
   return (
-    <section className="card exchange-card" aria-labelledby="exchange-card-title">
+    <button
+      className="card exchange-card exchange-card--link"
+      type="button"
+      aria-labelledby="exchange-card-title"
+      onClick={onOpen}
+    >
       <div className="exchange-card__heading">
         <h2 id="exchange-card-title">
           <Icon name="exchange" size={23} />
@@ -37,6 +46,7 @@ export function ExchangeRateCard() {
           </div>
         ))}
       </div>
-    </section>
+      <span className="exchange-card__open">환율 산출 열기 <Icon name="chevron-right" size={14} /></span>
+    </button>
   )
 }

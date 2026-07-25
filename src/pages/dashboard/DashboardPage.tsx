@@ -18,9 +18,18 @@ export function DashboardPage({ onNavigate, onAction }: DashboardPageProps) {
 
   const filteredProducts = products.filter((item) => !attentionOnly || item.status !== 'normal')
 
+  const openInsight = (route: AppRoute) => {
+    if (route === 'cost-trend-detail') {
+      onNavigate('product-management')
+      return
+    }
+
+    onNavigate(route)
+  }
+
   const downloadReport = () => {
     const report = [
-      'Cost Analysis System Report',
+      '보고서',
       '',
       '제품별 수익성 현황:',
       ...products.map(
@@ -88,10 +97,10 @@ export function DashboardPage({ onNavigate, onAction }: DashboardPageProps) {
 
           <div className="summary-grid">
             <MonthlyCostChart />
-            <ExchangeRateCard />
+            <ExchangeRateCard onOpen={() => onNavigate('exchange-rate-detail')} />
           </div>
 
-          <InsightSummaryCards onNavigate={onNavigate} />
+          <InsightSummaryCards onNavigate={openInsight} />
 
           <ProductProfitabilityTable
             items={filteredProducts}

@@ -46,6 +46,12 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
     ))
   }
 
+  const updateUnitPrice = (id: string, unitPrice: number) => {
+    setSelectedIngredients((current) => current.map((ingredient) =>
+      ingredient.id === id ? { ...ingredient, unitPrice: Math.max(0, unitPrice) } : ingredient,
+    ))
+  }
+
   const removeIngredient = (id: string) => {
     setSelectedIngredients((current) => current.filter((item) => item.id !== id))
   }
@@ -63,16 +69,16 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
       name: productName.trim(),
       description: description.trim() || `${selectedIngredients.length}개 재료로 구성된 신규 레시피.`,
       yieldRate: 100,
-      materialCost: Math.round(totalMaterialCost),
+      materialCost: totalMaterialCost,
       ingredientCount: selectedIngredients.length,
       status: 'review',
       ingredients: selectedIngredients.map((ingredient) => ({
         name: ingredient.name,
         usage: ingredient.usage,
         unit: ingredient.unit,
-        cost: Math.round(ingredient.unitPrice * ingredient.usage),
+        cost: ingredient.unitPrice * ingredient.usage,
       })),
-      laborCost: Math.round(laborCost),
+      laborCost,
       indirectCosts: [
         { name: '전기세', amount: indirectCosts.electricity },
         { name: '식대', amount: indirectCosts.meal },
@@ -86,6 +92,6 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
     hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts,
     totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, removeIngredient, updateIndirectCost, saveRecipe,
+    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost, saveRecipe,
   }
 }

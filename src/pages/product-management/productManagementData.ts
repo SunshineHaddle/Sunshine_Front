@@ -3,7 +3,7 @@ export type RecipeProductStatus = 'active' | 'review'
 export type RecipeIngredientCost = {
   name: string
   usage: number
-  unit: 'kg' | 'L'
+  unit: 'kg'
   cost: number
 }
 
@@ -28,7 +28,7 @@ export type RecipeProduct = {
 export type IngredientCatalogItem = {
   id: string
   name: string
-  unit: 'kg' | 'L'
+  unit: 'kg'
   unitPrice: number
 }
 
@@ -67,7 +67,7 @@ export const ingredientCatalog: IngredientCatalogItem[] = [
   { id: 'MAT-002', name: '무', unit: 'kg', unitPrice: 1_500 },
   { id: 'MAT-003', name: '고춧가루', unit: 'kg', unitPrice: 12_800 },
   { id: 'MAT-004', name: '다진 마늘', unit: 'kg', unitPrice: 8_200 },
-  { id: 'MAT-005', name: '멸치액젓', unit: 'L', unitPrice: 5_400 },
+  { id: 'MAT-005', name: '멸치액젓', unit: 'kg', unitPrice: 5_400 },
   { id: 'MAT-006', name: '새우젓', unit: 'kg', unitPrice: 8_900 },
   { id: 'MAT-007', name: '천일염', unit: 'kg', unitPrice: 1_200 },
   { id: 'MAT-008', name: '대파', unit: 'kg', unitPrice: 4_300 },

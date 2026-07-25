@@ -38,9 +38,14 @@ function loadRecipeProducts() {
       Array.isArray(storedProducts) &&
       storedProducts.length > 0 &&
       storedProducts.every((product) => Array.isArray(product.ingredients))
-    ) return storedProducts
+    ) {
+      return storedProducts.map((product) => ({
+        ...product,
+        ingredients: product.ingredients.map((ingredient) => ({ ...ingredient, unit: 'kg' as const })),
+      }))
+    }
   } catch {
-    // 저장 데이터가 손상된 경우 안전하게 기본 제품을 사용합니다.
+    return initialRecipeProducts
   }
 
   return initialRecipeProducts
@@ -124,15 +129,18 @@ function App() {
   } else if (route === 'product-detail') {
     const selectedProduct = recipeProducts.find((product) => product.id === selectedProductId)
       ?? recipeProducts[0]
-    page = <ProductDetailPage product={selectedProduct} onNavigate={navigate} />
+    page = (
+      <ProductDetailPage
+        product={selectedProduct}
+        onNavigate={navigate}
+        onAction={announce}
+      />
+    )
   } else if (route === 'exchange-rate-detail') {
     page = <ExchangeRateCalculatorPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'user-management') {
     page = <UserManagementPage onNavigate={navigate} onAction={announce} />
-  } else if (
-    route === 'cost-trend-detail' ||
-    route === 'defect-status-detail'
-  ) {
+  } else if (route === 'defect-status-detail') {
     page = <InsightDetailPage route={route} onNavigate={navigate} />
   } else {
     page = <DashboardPage onNavigate={navigate} onAction={announce} />

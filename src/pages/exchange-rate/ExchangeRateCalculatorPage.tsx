@@ -73,7 +73,7 @@ const loadMaterialRows = (): ExchangeMaterialRow[] => {
 
     if (parsed.length > 0) materials = parsed
   } catch {
-    // 원재료 임시 저장값이 손상된 경우 화면용 기본 데이터를 사용합니다.
+    materials = fallbackMaterials
   }
 
   let savedSettings: Record<string, { marginRate?: number; currency?: CurrencyCode }> = {}
@@ -82,7 +82,7 @@ const loadMaterialRows = (): ExchangeMaterialRow[] => {
       window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}',
     ) as typeof savedSettings
   } catch {
-    // 산출 설정이 손상된 경우 기본 마진율과 통화를 사용합니다.
+    savedSettings = {}
   }
 
   return materials.map((material, index) => ({

@@ -44,8 +44,7 @@ export function InsightDetailPage({ route, onNavigate }: InsightDetailPageProps)
               <strong>{insight.value} <small>{insight.unit}</small></strong>
             </div>
             <div>
-              <h2 id="detail-ready-title">상세 페이지 연결이 완료되었습니다.</h2>
-              <p>이 영역에 API 데이터, 기간 필터, 상세 차트를 연결할 수 있습니다.</p>
+              <h2 id="detail-ready-title">각 페이지로 이동.</h2>
             </div>
           </section>
         </main>

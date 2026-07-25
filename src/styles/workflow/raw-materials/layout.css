@@ -5,11 +5,11 @@
   grid-template-columns: 258px minmax(0, 1fr);
   min-height: 100vh;
   color: #1d2939;
-  background: var(--color-workflow-canvas);
+  background: #fbfbfb;
 }
 
 .raw-materials-layout {
-  background: #ffffff;
+  background: #fbfbfb;
 }
 
 .workflow-card,
@@ -39,7 +39,7 @@
   min-width: 0;
   min-height: 100vh;
   padding: 44px 48px 52px;
-  background: #ffffff;
+  background: #fbfbfb;
 }
 
 .workflow-page-heading {

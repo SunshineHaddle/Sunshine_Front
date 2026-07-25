@@ -13,7 +13,7 @@ type ProductCreatePageProps = {
 const currencyFormatter = new Intl.NumberFormat('ko-KR', {
   style: 'currency',
   currency: 'KRW',
-  maximumFractionDigits: 0,
+  maximumFractionDigits: 4,
 })
 
 export function ProductCreatePage({
@@ -27,7 +27,7 @@ export function ProductCreatePage({
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
     hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts,
     totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, removeIngredient, updateIndirectCost, saveRecipe,
+    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost, saveRecipe,
   } = recipe
 
   return (
@@ -81,16 +81,24 @@ export function ProductCreatePage({
             <section className="recipe-builder-section recipe-cart" aria-labelledby="recipe-cart-title">
               <div className="recipe-builder-section__heading">
                 <span>03</span>
-                <div><h2 id="recipe-cart-title">추가된 재료</h2><p>제품 1개 기준 사용량을 입력합니다.</p></div>
+                <div><h2 id="recipe-cart-title">추가된 재료</h2><p>수량은 kg, 단가는 원 기준이며 소수점 입력이 가능합니다.</p></div>
               </div>
               {selectedIngredients.length === 0 ? (
                 <div className="recipe-cart__empty"><Icon name="box" size={22} /><p>추가된 재료가 없습니다.</p></div>
               ) : (
                 <div className="recipe-cart__items">
+                  <div className="recipe-cart__labels" aria-hidden="true">
+                    <span>품명</span>
+                    <span>수량(kg)</span>
+                    <span>단가(원)</span>
+                    <span>금액(원)</span>
+                    <span>관리</span>
+                  </div>
                   {selectedIngredients.map((ingredient) => (
                     <div className="recipe-cart-item" key={ingredient.id}>
-                      <div><strong>{ingredient.name}</strong><small>{currencyFormatter.format(ingredient.unitPrice)} / {ingredient.unit}</small></div>
-                      <label><span>사용량</span><input min="0" step="0.01" type="number" value={ingredient.usage} onChange={(event) => updateUsage(ingredient.id, Number(event.target.value))} /><em>{ingredient.unit}</em></label>
+                      <div><strong>{ingredient.name}</strong></div>
+                      <label><span>수량(kg)</span><input aria-label={`${ingredient.name} 수량(kg)`} min="0" step="any" type="number" value={ingredient.usage} onChange={(event) => updateUsage(ingredient.id, Number(event.target.value))} /><em>kg</em></label>
+                      <label><span>단가(원)</span><input aria-label={`${ingredient.name} 단가(원)`} min="0" step="any" type="number" value={ingredient.unitPrice} onChange={(event) => updateUnitPrice(ingredient.id, Number(event.target.value))} /><em>원</em></label>
                       <b>{currencyFormatter.format(ingredient.unitPrice * ingredient.usage)}</b>
                       <button type="button" aria-label={`${ingredient.name} 삭제`} onClick={() => removeIngredient(ingredient.id)}><Icon name="trash" size={16} /></button>
                     </div>

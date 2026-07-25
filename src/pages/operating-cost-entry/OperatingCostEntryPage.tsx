@@ -57,7 +57,7 @@ export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEn
       <main className="operating-page">
         <header className="operating-heading">
           <div>
-            <h1>2단계: 현장 운영비 <span>(Step 2: Operational Costs)</span></h1>
+            <h1>2단계: 현장 운영비</h1>
             <p>제조 공정을 위한 인건비와 운영 간접비를 입력하세요.</p>
           </div>
           <label className="operating-month-picker">

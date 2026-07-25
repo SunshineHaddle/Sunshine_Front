@@ -51,7 +51,7 @@ export function routeFromHash(hash: string): AppRoute {
     case 'users':
       return 'user-management'
     case 'dashboard/cost-trend':
-      return 'cost-trend-detail'
+      return 'dashboard'
     case 'dashboard/defect-status':
       return 'defect-status-detail'
     case 'products':
@@ -78,7 +78,7 @@ export function hashForRoute(route: AppRoute) {
     case 'user-management':
       return '#users'
     case 'cost-trend-detail':
-      return '#dashboard/cost-trend'
+      return '#dashboard'
     case 'defect-status-detail':
       return '#dashboard/defect-status'
     case 'product-management':
