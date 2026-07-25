@@ -6,6 +6,7 @@ export type AppRoute =
   | 'data-entry-2'
   | 'data-entry-3'
   | 'exchange-rate-detail'
+  | 'user-management'
   | 'cost-trend-detail'
   | 'defect-status-detail'
   | 'product-management'
@@ -27,6 +28,8 @@ export const navigationItems: NavigationDefinition[] = [
   { label: '대시보드', icon: 'dashboard', route: 'dashboard' },
   { label: '제품 관리', icon: 'box', route: 'product-management' },
   { label: '데이터 입력', icon: 'data', route: 'data-entry-1' },
+  { label: '환율 산출', icon: 'exchange', route: 'exchange-rate-detail' },
+  { label: '사용자 관리', icon: 'users', route: 'user-management' },
 ]
 
 export const dataEntrySteps: DataEntryStep[] = [
@@ -45,6 +48,8 @@ export function routeFromHash(hash: string): AppRoute {
       return 'data-entry-3'
     case 'dashboard/exchange-rate':
       return 'exchange-rate-detail'
+    case 'users':
+      return 'user-management'
     case 'dashboard/cost-trend':
       return 'cost-trend-detail'
     case 'dashboard/defect-status':
@@ -70,6 +75,8 @@ export function hashForRoute(route: AppRoute) {
       return '#data-entry/3'
     case 'exchange-rate-detail':
       return '#dashboard/exchange-rate'
+    case 'user-management':
+      return '#users'
     case 'cost-trend-detail':
       return '#dashboard/cost-trend'
     case 'defect-status-detail':

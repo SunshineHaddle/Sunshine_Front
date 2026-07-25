@@ -20,6 +20,10 @@ import {
   type RecipeProduct,
 } from '../pages/product-management/productManagementData'
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
+import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
+import { UserManagementPage } from '../pages/user-management/UserManagementPage'
+import '../styles/exchange-rate.css'
+import '../styles/user-management.css'
 
 const SELECTED_PRODUCT_STORAGE_KEY = 'sunshine.selected-recipe-product'
 
@@ -121,8 +125,11 @@ function App() {
     const selectedProduct = recipeProducts.find((product) => product.id === selectedProductId)
       ?? recipeProducts[0]
     page = <ProductDetailPage product={selectedProduct} onNavigate={navigate} />
+  } else if (route === 'exchange-rate-detail') {
+    page = <ExchangeRateCalculatorPage onNavigate={navigate} onAction={announce} />
+  } else if (route === 'user-management') {
+    page = <UserManagementPage onNavigate={navigate} onAction={announce} />
   } else if (
-    route === 'exchange-rate-detail' ||
     route === 'cost-trend-detail' ||
     route === 'defect-status-detail'
   ) {

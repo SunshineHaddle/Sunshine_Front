@@ -1,0 +1,501 @@
+.exchange-calculator-layout {
+  background: #fbfbfb;
+}
+
+.exchange-calculator-page {
+  min-width: 0;
+  min-height: 100vh;
+  padding: 36px clamp(20px, 2.6vw, 40px) 64px;
+  background: #fbfbfb;
+}
+
+.exchange-calculator-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  gap: 32px;
+}
+
+.exchange-calculator-header h1 {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 34px;
+  font-weight: 650;
+  letter-spacing: -1.2px;
+  line-height: 1.2;
+}
+
+.exchange-calculator-header p {
+  max-width: 650px;
+  margin: 8px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.exchange-calculator-header__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 10px;
+}
+
+.exchange-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 0 20px;
+  gap: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 750;
+  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.exchange-action:active {
+  transform: translateY(1px);
+}
+
+.exchange-action--secondary {
+  color: #383234;
+  background: #fff;
+  border: 0;
+}
+
+.exchange-action--secondary:hover {
+  background: #f7f7f7;
+}
+
+.exchange-action--primary {
+  color: #fff;
+  background: #242020;
+  border: 0;
+}
+
+.exchange-action--primary:hover {
+  background: var(--color-brand);
+}
+
+.exchange-table-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #cfcac7;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.exchange-table-scroll {
+  overflow-x: auto;
+}
+
+.exchange-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  color: #242020;
+  font-variant-numeric: tabular-nums;
+  table-layout: fixed;
+}
+
+.exchange-table th,
+.exchange-table td {
+  padding: 20px 14px;
+  border-right: 1px solid #e7e4e2;
+  border-bottom: 1px solid #e7e4e2;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.exchange-table tr > :last-child {
+  border-right: 0;
+}
+
+.exchange-table th:first-child,
+.exchange-table td:first-child {
+  width: 19%;
+  padding-left: 24px;
+  text-align: left;
+}
+
+.exchange-table th:nth-child(2) { width: 13%; }
+.exchange-table th:nth-child(3) { width: 14%; }
+.exchange-table th:nth-child(4) { width: 14%; }
+.exchange-table th:nth-child(5) { width: 24%; }
+.exchange-table th:nth-child(6) {
+  width: 16%;
+  padding-right: 24px;
+}
+
+.exchange-table td:last-child {
+  padding-right: 24px;
+}
+
+.exchange-table thead {
+  background: #fff;
+}
+
+.exchange-table thead th {
+  height: 82px;
+  color: #554e50;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.exchange-table tbody tr {
+  background: #fff;
+  border: 0;
+}
+
+.exchange-table tbody td {
+  height: 78px;
+  font-size: 13px;
+}
+
+.exchange-table tbody td:first-child strong,
+.exchange-table tbody td:first-child span {
+  display: block;
+}
+
+.exchange-table tbody td:first-child strong {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.exchange-table tbody td:first-child span {
+  margin-top: 4px;
+  color: #8a8385;
+  font-size: 10px;
+}
+
+.exchange-number {
+  color: #3c3537;
+}
+
+.exchange-margin-field {
+  position: relative;
+  display: inline-block;
+  width: min(100%, 88px);
+}
+
+.exchange-margin-field input {
+  width: 100%;
+  height: 36px;
+  padding: 0 30px 0 13px;
+  color: #2b2627;
+  background: #f7f7f7;
+  border: 0;
+  border-radius: 6px;
+  outline: 0;
+  text-align: right;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.exchange-margin-field input::-webkit-inner-spin-button {
+  appearance: none;
+}
+
+.exchange-margin-field em {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  color: #8a8385;
+  font-size: 10px;
+  font-style: normal;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.exchange-sale-price,
+.exchange-local-price {
+  font-size: 13px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.exchange-currency-field {
+  position: relative;
+  display: inline-block;
+  width: min(100%, 160px);
+}
+
+.exchange-currency-field::after {
+  position: absolute;
+  top: 50%;
+  right: 13px;
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid #777174;
+  border-bottom: 1.5px solid #777174;
+  content: '';
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+
+.exchange-currency-field select {
+  width: 100%;
+  height: 38px;
+  padding: 0 28px 0 10px;
+  color: #302a2c;
+  background: #f7f7f7;
+  border: 0;
+  border-radius: 6px;
+  outline: 0;
+  appearance: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10.5px;
+}
+
+.exchange-currency-field select:focus-visible {
+  outline: 3px solid rgba(186, 0, 54, 0.25);
+  outline-offset: 2px;
+}
+
+.exchange-table tfoot {
+  background: #fff;
+  border: 0;
+}
+
+.exchange-table tfoot th,
+.exchange-table tfoot td {
+  height: 94px;
+  border-bottom: 0;
+}
+
+.exchange-table tfoot th {
+  font-size: 12px;
+  text-align: left;
+}
+
+.exchange-table tfoot td > strong,
+.exchange-table tfoot td > span {
+  display: block;
+}
+
+.exchange-table tfoot td > strong {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.exchange-table tfoot td > span {
+  margin-top: 3px;
+  color: #7f787a;
+  font-size: 10px;
+}
+
+.exchange-add-material {
+  display: flex;
+  width: 100%;
+  min-height: 58px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: #665f61;
+  background: #fff;
+  border: 0;
+  border-top: 1px solid #e7e4e2;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+.exchange-add-material:hover {
+  color: var(--color-brand);
+  background: #fff;
+}
+
+.exchange-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 24px;
+  gap: 16px;
+}
+
+.exchange-status-grid article {
+  position: relative;
+  min-height: 116px;
+  padding: 22px 24px;
+  overflow: hidden;
+  background: #fff;
+  border: 0;
+  border-radius: 8px;
+}
+
+.exchange-status-grid article > span {
+  display: block;
+  color: #5e5759;
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.exchange-status-grid article > strong {
+  display: block;
+  margin-top: 12px;
+  color: #252123;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.4px;
+}
+
+.exchange-status-grid article > strong small {
+  color: #8a8385;
+  font-size: 10px;
+}
+
+.exchange-status-grid article > small {
+  display: block;
+  margin-top: 7px;
+  color: #8a8385;
+  font-size: 9.5px;
+}
+
+.exchange-status-grid article > em {
+  position: absolute;
+  right: 18px;
+  bottom: 19px;
+  color: var(--color-brand);
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+@media (max-width: 1179px) {
+  .exchange-calculator-page {
+    padding-inline: 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .exchange-calculator-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .exchange-status-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 719px) {
+  .exchange-calculator-layout {
+    display: block;
+    padding-bottom: 72px;
+  }
+
+  .exchange-calculator-page {
+    min-height: 0;
+    padding: 28px 16px 40px;
+  }
+
+  .exchange-calculator-header {
+    margin-bottom: 22px;
+    gap: 20px;
+  }
+
+  .exchange-calculator-header h1 {
+    font-size: 28px;
+  }
+
+  .exchange-calculator-header__actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .exchange-action {
+    min-height: 42px;
+    padding-inline: 12px;
+    font-size: 10.5px;
+  }
+
+  .exchange-table-card {
+    border-radius: 0;
+  }
+
+  .exchange-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+
+  .exchange-table thead {
+    display: none;
+  }
+
+  .exchange-table tbody,
+  .exchange-table tbody tr,
+  .exchange-table tbody td {
+    display: block;
+  }
+
+  .exchange-table tbody tr {
+    display: grid;
+    padding: 18px;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 18px;
+  }
+
+  .exchange-table tbody td,
+  .exchange-table tbody td:first-child,
+  .exchange-table tbody td:last-child {
+    width: auto;
+    height: auto;
+    padding: 0;
+    border-right: 0;
+    border-bottom: 0;
+    text-align: left;
+  }
+
+  .exchange-table tbody tr {
+    border-bottom: 1px solid #e7e4e2;
+  }
+
+  .exchange-table tbody td::before {
+    display: block;
+    margin-bottom: 6px;
+    color: #918a8c;
+    content: attr(data-label);
+    font-size: 9px;
+    font-weight: 650;
+  }
+
+  .exchange-table tbody td:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .exchange-margin-field,
+  .exchange-currency-field {
+    width: 100%;
+  }
+
+  .exchange-table tfoot,
+  .exchange-table tfoot tr,
+  .exchange-table tfoot th,
+  .exchange-table tfoot td {
+    display: block;
+  }
+
+  .exchange-table tfoot tr {
+    padding: 18px;
+  }
+
+  .exchange-table tfoot th,
+  .exchange-table tfoot td {
+    height: auto;
+    padding: 0;
+    border-right: 0;
+    text-align: left;
+  }
+
+  .exchange-table tfoot td {
+    margin-top: 12px;
+  }
+
+  .exchange-status-grid article {
+    min-height: 108px;
+  }
+}
