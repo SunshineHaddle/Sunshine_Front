@@ -22,8 +22,10 @@ import {
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
 import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
 import { UserManagementPage } from '../pages/user-management/UserManagementPage'
+import { LoginPage } from '../pages/login/LoginPage'
 import '../styles/exchange-rate.css'
 import '../styles/user-management.css'
+import '../styles/login.css'
 
 const SELECTED_PRODUCT_STORAGE_KEY = 'sunshine.selected-recipe-product'
 
@@ -52,6 +54,7 @@ function loadRecipeProducts() {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [route, setRoute] = useState<AppRoute>(() =>
     routeFromHash(typeof window === 'undefined' ? '' : window.location.hash),
   )
@@ -93,6 +96,10 @@ function App() {
     const nextHash = hashForRoute(nextRoute)
     if (window.location.hash !== nextHash) window.location.hash = nextHash
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  if (!isAuthenticated) {
+    return <LoginPage onLogin={() => setIsAuthenticated(true)} />
   }
 
   let page: ReactNode
