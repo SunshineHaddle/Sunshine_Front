@@ -5,12 +5,13 @@ import {
 
 type CostCompositionChartProps = {
   summary: ProductionCostSummary
+  compact?: boolean
 }
 
 const radius = 58
 const circumference = 2 * Math.PI * radius
 
-export function CostCompositionChart({ summary }: CostCompositionChartProps) {
+export function CostCompositionChart({ summary, compact = false }: CostCompositionChartProps) {
   const segments = [
     { label: '원재료비', value: summary.materialCost, color: '#ba0036' },
     { label: '인건비', value: summary.laborCost, color: '#3e5c76' },
@@ -21,7 +22,7 @@ export function CostCompositionChart({ summary }: CostCompositionChartProps) {
   let accumulatedLength = 0
 
   return (
-    <article className="cost-composition" aria-labelledby="cost-composition-title">
+    <article className={`cost-composition${compact ? ' cost-composition--compact' : ''}`} aria-labelledby="cost-composition-title">
       <div className="cost-composition__heading">
         <span id="cost-composition-title">원가 구성</span>
         <strong>{formatProductionWon(total)}</strong>

@@ -41,9 +41,6 @@
     grid-template-columns: minmax(0, 1.75fr) minmax(260px, 1fr);
   }
 
-  .exchange-card__unit {
-    display: none;
-  }
 }
 
 @media (max-width: 899px) {
@@ -56,25 +53,22 @@
     margin-bottom: 36px;
   }
 
-  .dashboard-header__actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
   .summary-grid {
     grid-template-columns: 1fr;
   }
 
-  .exchange-card__unit {
-    display: inline;
-  }
-
-  .exchange-card {
+  .final-cost-summary-card {
     height: auto;
+    min-height: 370px;
   }
 
   .insight-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-report__settings {
+    grid-template-columns: 1fr;
+    gap: 26px;
   }
 
   .insight-card:last-child {
@@ -142,26 +136,32 @@
     font-size: 14px;
   }
 
-  .dashboard-header__actions {
-    justify-content: flex-start;
+  .cost-chart-section {
+    height: auto;
   }
 
   .cost-chart-card {
-    height: 350px;
+    height: auto;
     padding-inline: 16px;
   }
 
   .cost-line-chart {
     margin-right: -8px;
     margin-left: -8px;
+    width: calc(100% + 16px);
+    height: 260px;
   }
 
-  .exchange-card {
+  .product-cost-carousel {
     padding-inline: 20px;
   }
 
-  .exchange-card__value strong {
-    font-size: clamp(46px, 16vw, 62px);
+  .product-cost-carousel--compact {
+    min-height: 240px;
+  }
+
+  .final-cost-summary-card {
+    padding-inline: 20px;
   }
 
   .insight-section__heading {
@@ -211,6 +211,43 @@
 
   .profitability-card__footer {
     padding-inline: 14px;
+  }
+
+  .dashboard-report {
+    padding: 22px 18px;
+  }
+
+  .dashboard-ai-summary {
+    padding: 20px 18px;
+  }
+
+  .dashboard-ai-summary header {
+    align-items: flex-start;
+  }
+
+  .dashboard-ai-summary__topics {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-report__settings {
+    margin-top: 24px;
+  }
+
+  .dashboard-report__period > div,
+  .dashboard-report__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-report__period > div > span {
+    display: none;
+  }
+
+  .dashboard-report__options {
+    display: grid;
+  }
+
+  .dashboard-report__options label {
+    width: 100%;
   }
 
   .toast {

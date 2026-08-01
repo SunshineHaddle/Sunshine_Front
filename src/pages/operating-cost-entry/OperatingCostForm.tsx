@@ -14,10 +14,8 @@ type CostTotals = {
 
 type OperatingCostFormProps = {
   costs: OperatingCosts
-  fileName: string
   totals: CostTotals
   onCostChange: (field: CostField, value: string) => void
-  onFileChange: (file: File) => void
 }
 
 type CostInputProps = {
@@ -42,23 +40,9 @@ function CostInput({ field, label, value, icon, suffix, onChange }: CostInputPro
   )
 }
 
-export function OperatingCostForm({ costs, fileName, totals, onCostChange, onFileChange }: OperatingCostFormProps) {
+export function OperatingCostForm({ costs, totals, onCostChange }: OperatingCostFormProps) {
   return (
     <>
-      <label className="operating-excel-upload">
-        <span className="operating-excel-upload__icon"><Icon name="upload" size={25} /></span>
-        <strong>Excel을 통한 비용 가져오기</strong>
-        <small>{fileName || '.xlsx 파일을 드래그 앤 드롭하거나 클릭하여 찾아보기'}</small>
-        <input
-          type="file"
-          accept=".xlsx,.csv"
-          onChange={(event) => {
-            const file = event.target.files?.[0]
-            if (file) onFileChange(file)
-          }}
-        />
-      </label>
-
       <div className="operating-cost-groups">
         <section className="operating-cost-group" aria-labelledby="labor-cost-title">
           <header><Icon name="users" size={18} /><h2 id="labor-cost-title">인건비</h2></header>

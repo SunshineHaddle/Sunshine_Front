@@ -1,18 +1,20 @@
 .recipe-builder {
   display: grid;
-  grid-template-columns: minmax(0, 1.7fr) minmax(270px, 0.65fr);
+  grid-template-columns: minmax(0, 1fr) 320px;
   align-items: start;
-  margin-top: 34px;
+  margin-top: 32px;
   gap: 24px;
 }
 
 .recipe-builder__main {
   display: grid;
-  gap: 16px;
+  gap: 20px;
 }
 
 .recipe-builder-section,
 .cost-preview {
-  background: #fff;
-  border: 1px solid #e7e7e7;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }

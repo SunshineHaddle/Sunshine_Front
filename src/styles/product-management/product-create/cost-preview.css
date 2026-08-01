@@ -5,23 +5,23 @@
 }
 
 .cost-preview__label {
-  color: #888;
-  font-size: 10px;
-  font-weight: 600;
+  color: var(--color-brand);
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .cost-preview h2 {
   margin: 13px 0 0;
-  color: #222;
-  font-size: 20px;
-  font-weight: 650;
+  color: var(--color-text);
+  font-size: 21px;
+  font-weight: 700;
   letter-spacing: -0.4px;
 }
 
 .cost-preview > p {
   margin: 7px 0 0;
-  color: #919191;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: 11px;
   line-height: 1.5;
 }
 
@@ -40,48 +40,58 @@
 .cost-preview dt,
 .cost-preview dd {
   margin: 0;
-  font-size: 10.5px;
+  font-size: 11px;
 }
 
-.cost-preview dt { color: #777; }
-.cost-preview dd { color: #333; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cost-preview dt { color: var(--color-text-subtle); }
+.cost-preview dd { color: var(--color-text); font-weight: 650; font-variant-numeric: tabular-nums; }
 
 .cost-preview dl .cost-preview__total {
   margin-top: 8px;
-  padding-top: 18px;
-  border-top: 1px solid #e7e7e7;
+  padding: 16px;
+  background: var(--color-brand-soft);
+  border-radius: var(--radius-control);
 }
 
 .cost-preview__total dd {
+  color: var(--color-brand);
   font-size: 20px;
   letter-spacing: -0.4px;
 }
 
 .cost-preview > button {
   width: 100%;
-  min-height: 43px;
+  min-height: 44px;
   margin-top: 25px;
   color: #fff;
-  background: #222;
+  background: var(--color-brand);
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   font-size: 11px;
   font-weight: 650;
+  transition: background-color 160ms ease, transform 100ms ease;
+}
+
+.cost-preview > button:hover:not(:disabled) {
+  background: var(--color-brand-hover);
+}
+
+.cost-preview > button:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .cost-preview > button:disabled {
-  color: #999;
-  background: #e9e9e9;
+  color: #aaa3a5;
+  background: var(--color-surface-muted);
   cursor: not-allowed;
 }
 
 .cost-preview > small {
   display: block;
   margin-top: 10px;
-  color: #aaa;
+  color: var(--color-text-subtle);
   font-size: 8.5px;
   line-height: 1.5;
   text-align: center;
 }
-

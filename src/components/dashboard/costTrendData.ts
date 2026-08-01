@@ -29,15 +29,6 @@ const annualCosts: CostPoint[] = [
   { label: '2026', managementTotalCost: 1066, manufacturingCost: 821 },
 ]
 
-export const costChartBounds = {
-  width: 720,
-  height: 255,
-  left: 48,
-  right: 574,
-  top: 18,
-  bottom: 218,
-}
-
 export function getCostTrend(period: CostPeriod) {
   return period === 'monthly' ? monthlyCosts : annualCosts
 }

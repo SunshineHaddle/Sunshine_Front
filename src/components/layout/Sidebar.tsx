@@ -3,14 +3,15 @@ import { Icon } from '../common/Icon'
 
 type SidebarProps = {
   activeRoute: AppRoute
+  hidden?: boolean
   onNavigate: (route: AppRoute) => void
 }
 
-export function Sidebar({ activeRoute, onNavigate }: SidebarProps) {
+export function Sidebar({ activeRoute, hidden = false, onNavigate }: SidebarProps) {
   const isInDataEntryFlow = activeRoute.startsWith('data-entry')
 
   return (
-    <aside className="sidebar" aria-label="주요 메뉴">
+    <aside className="sidebar" aria-label="주요 메뉴" hidden={hidden}>
       <button
         className="sidebar__brand"
         type="button"

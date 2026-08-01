@@ -4,9 +4,13 @@ import {
   dashboardInsights,
   type DashboardInsight,
 } from '../../pages/dashboard/dashboardData'
+import type { RecipeProduct } from '../../pages/product-management/productManagementData'
+import { ProductCostTrendCarousel } from './DashboardSummaryCharts'
 
 type InsightSummaryCardsProps = {
   onNavigate: (route: AppRoute) => void
+  products: RecipeProduct[]
+  onSelectProduct: (productId: string) => void
 }
 
 function Sparkline({ insight }: { insight: DashboardInsight }) {
@@ -34,7 +38,44 @@ function Sparkline({ insight }: { insight: DashboardInsight }) {
   )
 }
 
-export function InsightSummaryCards({ onNavigate }: InsightSummaryCardsProps) {
+function InsightCard({ insight, onNavigate }: { insight: DashboardInsight, onNavigate: (route: AppRoute) => void }) {
+  return (
+    <button
+      className={`card insight-card insight-card--${insight.tone}`}
+      type="button"
+      aria-label={`${insight.title} 상세 보기`}
+      onClick={() => onNavigate(insight.route)}
+    >
+      <div className="insight-card__topline">
+        <span className="insight-card__icon"><Icon name={insight.icon} size={19} /></span>
+        <div className="insight-card__copy">
+          <h3>{insight.title}</h3>
+          <p>{insight.description}</p>
+        </div>
+        <span className="insight-card__navigate-icon" aria-hidden="true">
+          <Icon name="chevron-right" size={18} />
+        </span>
+      </div>
+
+      <div className="insight-card__metric">
+        <strong>{insight.value}</strong>
+        <span>{insight.unit}</span>
+      </div>
+
+      <div className="insight-card__footer">
+        <p className="insight-card__change">
+          <strong>{insight.change}</strong>
+          <span>{insight.changeLabel}</span>
+        </p>
+        <Sparkline insight={insight} />
+      </div>
+    </button>
+  )
+}
+
+export function InsightSummaryCards({ onNavigate, products, onSelectProduct }: InsightSummaryCardsProps) {
+  const [exchangeRate, , defectStatus] = dashboardInsights
+
   return (
     <section className="insight-section" aria-labelledby="insight-section-title">
       <div className="insight-section__heading">
@@ -45,39 +86,9 @@ export function InsightSummaryCards({ onNavigate }: InsightSummaryCardsProps) {
       </div>
 
       <div className="insight-grid">
-        {dashboardInsights.map((insight) => (
-          <button
-            className={`card insight-card insight-card--${insight.tone}`}
-            key={insight.id}
-            type="button"
-            aria-label={`${insight.title} 상세 보기`}
-            onClick={() => onNavigate(insight.route)}
-          >
-            <div className="insight-card__topline">
-              <span className="insight-card__icon"><Icon name={insight.icon} size={19} /></span>
-              <div className="insight-card__copy">
-                <h3>{insight.title}</h3>
-                <p>{insight.description}</p>
-              </div>
-              <span className="insight-card__navigate-icon" aria-hidden="true">
-                <Icon name="chevron-right" size={18} />
-              </span>
-            </div>
-
-            <div className="insight-card__metric">
-              <strong>{insight.value}</strong>
-              <span>{insight.unit}</span>
-            </div>
-
-            <div className="insight-card__footer">
-              <p className="insight-card__change">
-                <strong>{insight.change}</strong>
-                <span>{insight.changeLabel}</span>
-              </p>
-              <Sparkline insight={insight} />
-            </div>
-          </button>
-        ))}
+        <InsightCard insight={exchangeRate} onNavigate={onNavigate} />
+        <ProductCostTrendCarousel compact products={products} onOpen={onSelectProduct} />
+        <InsightCard insight={defectStatus} onNavigate={onNavigate} />
       </div>
     </section>
   )

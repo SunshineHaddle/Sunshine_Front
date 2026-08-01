@@ -1,28 +1,29 @@
 .product-create-page {
-  padding-top: 34px;
+  padding: 32px 48px 96px;
 }
 
 .product-create-back {
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 8px 0 2px;
-  gap: 4px;
-  color: #777;
+  min-height: 40px;
+  padding: 0 10px 0 6px;
+  gap: 6px;
+  color: var(--color-text-subtle);
   background: transparent;
   border: 0;
-  border-radius: 5px;
+  border-radius: var(--radius-control);
   cursor: pointer;
-  font-size: 11px;
+  font-size: 12px;
+  transition: color 160ms ease, background-color 160ms ease;
 }
 
 .product-create-back:hover {
-  color: #222;
-  background: #f0f0f0;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
 }
 
 .product-create-header {
-  margin-top: 22px;
+  margin-top: 20px;
 }
 
 .product-create-header h1,
@@ -31,15 +32,17 @@
 }
 
 .product-create-header h1 {
-  color: #1d1d1d;
-  font-size: 27px;
-  font-weight: 650;
-  letter-spacing: -0.8px;
+  color: var(--color-text);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -1.2px;
+  text-wrap: balance;
 }
 
 .product-create-header p {
-  margin-top: 7px;
-  color: #858585;
-  font-size: 12px;
+  margin-top: 8px;
+  color: var(--color-text-subtle);
+  font-size: 15px;
+  line-height: 1.5;
+  text-wrap: pretty;
 }
-

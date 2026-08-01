@@ -17,7 +17,6 @@ type OperatingCostEntryPageProps = {
 
 type StoredOperatingEntry = {
   month: string
-  fileName: string
   costs: typeof initialOperatingCosts
 }
 
@@ -33,7 +32,6 @@ function loadStoredOperatingEntry(): StoredOperatingEntry | null {
 export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEntryPageProps) {
   const [storedEntry] = useState(loadStoredOperatingEntry)
   const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
-  const [fileName, setFileName] = useState(() => storedEntry?.fileName ?? '')
   const [costs, setCosts] = useState(() => storedEntry?.costs ?? initialOperatingCosts)
   const totals = calculateOperatingCosts(costs)
 
@@ -44,7 +42,7 @@ export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEn
   const goToNextStep = () => {
     window.localStorage.setItem(
       'cost-analysis-operating-costs',
-      JSON.stringify({ month, fileName, costs, totalCost: totals.totalCost }),
+      JSON.stringify({ month, costs, totalCost: totals.totalCost }),
     )
     onAction(`${month.replace('-', '년 ')}월 운영비를 저장했습니다.`)
     onNavigate('data-entry-3')
@@ -69,13 +67,8 @@ export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEn
 
         <OperatingCostForm
           costs={costs}
-          fileName={fileName}
           totals={totals}
           onCostChange={updateCost}
-          onFileChange={(file) => {
-            setFileName(file.name)
-            onAction(`${file.name} 파일을 선택했습니다.`)
-          }}
         />
 
         <footer className="operating-footer">

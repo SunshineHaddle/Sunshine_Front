@@ -1,4 +1,4 @@
-import type { MaterialPreviewRow } from '../../utils/materialFileParser'
+import type { MaterialRow } from '../../utils/materials'
 import {
   calculateOperatingCosts,
   type OperatingCosts,
@@ -6,7 +6,6 @@ import {
 
 type StoredOperatingCosts = {
   month: string
-  fileName: string
   costs: OperatingCosts
 }
 
@@ -20,8 +19,6 @@ export type MaterialCostItem = {
 
 export type ProductionCostSummary = {
   month: string
-  materialFileName: string
-  operatingFileName: string
   materials: MaterialCostItem[]
   materialCost: number
   laborCost: number
@@ -50,18 +47,20 @@ function readStoredJson<T>(key: string): T | null {
 }
 
 function toNumber(value: string | number) {
-  const normalized = String(value).replaceAll(',', '').replace(/[^d.-]/g, '')
+  const normalized = String(value).replaceAll(',', '').replace(/[^\d.-]/g, '')
   return Math.max(0, Number(normalized) || 0)
 }
 
 export function loadProductionCostSummary(): ProductionCostSummary {
-  const storedMaterials = readStoredJson<MaterialPreviewRow[]>('cost-analysis-material-preview') ?? []
+  const storedMaterials = readStoredJson<MaterialRow[]>('cost-analysis-material-preview') ?? []
   const storedOperating = readStoredJson<StoredOperatingCosts>('cost-analysis-operating-costs')
-  const materials = storedMaterials.map((material) => {
-    const quantity = toNumber(material.quantity)
-    const unitCost = toNumber(material.unitCost)
-    return { id: material.id, name: material.name, quantity, unitCost, amount: quantity * unitCost }
-  })
+  const materials = storedMaterials
+    .filter((material) => material.name.trim())
+    .map((material) => {
+      const quantity = toNumber(material.quantity)
+      const unitCost = toNumber(material.unitCost)
+      return { id: material.id, name: material.name, quantity, unitCost, amount: quantity * unitCost }
+    })
   const materialCost = materials.reduce((total, material) => total + material.amount, 0)
   const operatingTotals = storedOperating?.costs
     ? calculateOperatingCosts(storedOperating.costs)
@@ -69,8 +68,6 @@ export function loadProductionCostSummary(): ProductionCostSummary {
 
   return {
     month: storedOperating?.month ?? '',
-    materialFileName: window.localStorage.getItem('cost-analysis-material-file') ?? '',
-    operatingFileName: storedOperating?.fileName ?? '',
     materials,
     materialCost,
     laborCost: operatingTotals.laborCost,
