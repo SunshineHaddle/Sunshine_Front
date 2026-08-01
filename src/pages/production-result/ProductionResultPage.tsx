@@ -19,6 +19,47 @@ export function ProductionResultPage({ onNavigate, onAction }: ProductionResultP
   const [costSummary] = useState(loadProductionCostSummary)
   const { totalProduction, wasteQuantity, yieldRate, error } = calculateYieldRate(production, waste)
 
+  const exportExcel = () => {
+    const rows: (string | number)[][] = [
+      ['3단계 원가 및 생산 결과'],
+      ['기준 월', costSummary.month || '미입력'],
+      [],
+      ['원재료 내역'],
+      ['원재료명', '수량(kg)', '단가(원)', '금액(원)'],
+      ...(costSummary.materials.length > 0
+        ? costSummary.materials.map((material) => [material.name, material.quantity, material.unitCost, material.amount])
+        : [['입력된 원재료 없음']]),
+      ['원재료비 합계', '', '', costSummary.materialCost],
+      [],
+      ['운영비 내역'],
+      ['구분', '금액(원)'],
+      ['인건비', costSummary.laborCost],
+      ['공과금', costSummary.utilityCost],
+      ['기타 간접비', costSummary.indirectCost],
+      ['운영비 합계', costSummary.operatingCost],
+      ['예상 총원가', costSummary.totalCost],
+      [],
+      ['생산 결과'],
+      ['총 생산량(EA)', production ? totalProduction : '미입력'],
+      ['불량 수량(EA)', waste ? wasteQuantity : '미입력'],
+      ['수율(%)', yieldRate === null ? '미입력' : Number(yieldRate.toFixed(1))],
+    ]
+    const csv = rows
+      .map((row) => row.map((value) => {
+        const text = String(value)
+        const safeText = /^[=+\-@]/.test(text) ? `'${text}` : text
+        return `"${safeText.replaceAll('"', '""')}"`
+      }).join(','))
+      .join('\r\n')
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `원가_생산결과_${costSummary.month || new Date().toISOString().slice(0, 7)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    onAction('원가 및 생산 결과 엑셀 파일을 내보냈습니다.')
+  }
+
   const finish = () => {
     if (!costSummary.hasMaterialData) {
       onAction('1단계에서 원재료 데이터를 입력해주세요.')
@@ -53,8 +94,13 @@ export function ProductionResultPage({ onNavigate, onAction }: ProductionResultP
 
       <main className="production-page">
         <header className="production-heading">
-          <h1>3단계: 원가 및 생산 결과 확인</h1>
-          <p>원재료비와 운영비를 검토하고 실제 생산 결과를 등록하세요.</p>
+          <div>
+            <h1>3단계: 원가 및 생산 결과 확인</h1>
+            <p>원재료비와 운영비를 검토하고 실제 생산 결과를 등록하세요.</p>
+          </div>
+          <button className="workflow-outline-button production-export" type="button" onClick={exportExcel}>
+            <Icon name="excel" size={17} /> 엑셀 내보내기
+          </button>
         </header>
 
         <ProductionCostSummary

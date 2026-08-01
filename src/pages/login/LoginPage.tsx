@@ -1,10 +1,13 @@
 import { useState, type FormEvent } from 'react'
 
-const LOGIN_ID = 'qwer1234'
+const ADMIN_LOGIN_ID = 'qwer1234'
+const WORKER_LOGIN_ID = 'worker1234'
 const LOGIN_PASSWORD = '0000'
 
+export type LoginRole = 'admin' | 'worker'
+
 type LoginPageProps = {
-  onLogin: () => void
+  onLogin: (role: LoginRole) => void
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -15,8 +18,14 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    if (loginId === LOGIN_ID && password === LOGIN_PASSWORD) {
-      onLogin()
+    const role = loginId === ADMIN_LOGIN_ID
+      ? 'admin'
+      : loginId === WORKER_LOGIN_ID
+        ? 'worker'
+        : null
+
+    if (role && password === LOGIN_PASSWORD) {
+      onLogin(role)
       return
     }
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import type { MaterialPreviewRow } from '../../utils/materialFileParser'
+import type { MaterialRow } from '../../utils/materials'
 
 type CurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY'
 
@@ -61,7 +61,7 @@ const loadMaterialRows = (): ExchangeMaterialRow[] => {
   try {
     const stored = JSON.parse(
       window.localStorage.getItem('cost-analysis-material-preview') ?? '[]',
-    ) as MaterialPreviewRow[]
+    ) as MaterialRow[]
     const parsed = stored
       .filter((row) => row.name.trim())
       .map((row) => ({

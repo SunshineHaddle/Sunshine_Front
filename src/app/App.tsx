@@ -22,7 +22,7 @@ import {
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
 import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
 import { UserManagementPage } from '../pages/user-management/UserManagementPage'
-import { LoginPage } from '../pages/login/LoginPage'
+import { LoginPage, type LoginRole } from '../pages/login/LoginPage'
 import '../styles/exchange-rate.css'
 import '../styles/user-management.css'
 import '../styles/login.css'
@@ -54,7 +54,7 @@ function loadRecipeProducts() {
 }
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [loginRole, setLoginRole] = useState<LoginRole | null>(null)
   const [route, setRoute] = useState<AppRoute>(() =>
     routeFromHash(typeof window === 'undefined' ? '' : window.location.hash),
   )
@@ -92,19 +92,37 @@ function App() {
   }
 
   const navigate = (nextRoute: AppRoute) => {
+    if (loginRole === 'worker' && nextRoute !== 'dashboard') return
     setRoute(nextRoute)
     const nextHash = hashForRoute(nextRoute)
     if (window.location.hash !== nextHash) window.location.hash = nextHash
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  if (!isAuthenticated) {
-    return <LoginPage onLogin={() => setIsAuthenticated(true)} />
+  if (!loginRole) {
+    return (
+      <LoginPage
+        onLogin={(role) => {
+          setLoginRole(role)
+          if (role === 'worker') navigate('dashboard')
+        }}
+      />
+    )
   }
 
   let page: ReactNode
 
-  if (route === 'data-entry-1') {
+  if (loginRole === 'worker') {
+    page = (
+      <DashboardPage
+        isWorker
+        recipeProducts={recipeProducts}
+        onNavigate={navigate}
+        onAction={announce}
+        onSelectRecipe={() => {}}
+      />
+    )
+  } else if (route === 'data-entry-1') {
     page = <RawMaterialEntryPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'data-entry-2') {
     page = <OperatingCostEntryPage onNavigate={navigate} onAction={announce} />
@@ -126,6 +144,7 @@ function App() {
       <ProductCreatePage
         nextProductNumber={recipeProducts.length + 1}
         onNavigate={navigate}
+        onAction={announce}
         onCreate={(product) => {
           setRecipeProducts((current) => [product, ...current])
           announce(`${product.name} 레시피를 저장했습니다.`)
@@ -150,7 +169,17 @@ function App() {
   } else if (route === 'defect-status-detail') {
     page = <InsightDetailPage route={route} onNavigate={navigate} />
   } else {
-    page = <DashboardPage onNavigate={navigate} onAction={announce} />
+    page = (
+      <DashboardPage
+        recipeProducts={recipeProducts}
+        onNavigate={navigate}
+        onAction={announce}
+        onSelectRecipe={(productId) => {
+          setSelectedProductId(productId)
+          navigate('product-detail')
+        }}
+      />
+    )
   }
 
   return (

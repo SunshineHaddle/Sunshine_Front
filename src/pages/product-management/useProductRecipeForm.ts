@@ -4,6 +4,10 @@ import {
   type IngredientCatalogItem,
   type RecipeProduct,
 } from './productManagementData'
+import {
+  DEFAULT_RECIPE_STORAGE_KEY,
+  parseDefaultRecipe,
+} from '../../utils/materials'
 
 export type SelectedIngredient = IngredientCatalogItem & { usage: number }
 export type IndirectCosts = { electricity: number; meal: number; interest: number }
@@ -21,6 +25,13 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
   const [hourlyWage, setHourlyWage] = useState(12_000)
   const [laborHours, setLaborHours] = useState(1.5)
   const [indirectCosts, setIndirectCosts] = useState<IndirectCosts>({ electricity: 1_200, meal: 1_000, interest: 500 })
+  const [hasDefaultRecipe, setHasDefaultRecipe] = useState(() => {
+    try {
+      return Boolean(parseDefaultRecipe(window.localStorage.getItem(DEFAULT_RECIPE_STORAGE_KEY)))
+    } catch {
+      return false
+    }
+  })
 
   const availableIngredients = useMemo(() => {
     const query = ingredientQuery.trim().toLocaleLowerCase('ko-KR')
@@ -60,6 +71,33 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
     setIndirectCosts((current) => ({ ...current, [field]: Math.max(0, value) }))
   }
 
+  const saveDefaultRecipe = () => {
+    if (selectedIngredients.length === 0) return false
+    try {
+      window.localStorage.setItem(DEFAULT_RECIPE_STORAGE_KEY, JSON.stringify(selectedIngredients))
+      setHasDefaultRecipe(true)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const loadDefaultRecipe = () => {
+    try {
+      const storedRecipe = parseDefaultRecipe(window.localStorage.getItem(DEFAULT_RECIPE_STORAGE_KEY))
+      if (!storedRecipe) {
+        setHasDefaultRecipe(false)
+        return false
+      }
+      setSelectedIngredients(storedRecipe)
+      setIngredientQuery('')
+      return true
+    } catch {
+      setHasDefaultRecipe(false)
+      return false
+    }
+  }
+
   const saveRecipe = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!productName.trim() || selectedIngredients.length === 0) return
@@ -90,8 +128,9 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
   return {
     productName, setProductName, description, setDescription,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts,
+    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts, hasDefaultRecipe,
     totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost, saveRecipe,
+    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost,
+    saveDefaultRecipe, loadDefaultRecipe, saveRecipe,
   }
 }

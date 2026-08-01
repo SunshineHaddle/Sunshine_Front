@@ -8,6 +8,7 @@ type ProductCreatePageProps = {
   nextProductNumber: number
   onNavigate: (route: AppRoute) => void
   onCreate: (product: RecipeProduct) => void
+  onAction: (message: string) => void
 }
 
 const currencyFormatter = new Intl.NumberFormat('ko-KR', {
@@ -20,14 +21,16 @@ export function ProductCreatePage({
   nextProductNumber,
   onNavigate,
   onCreate,
+  onAction,
 }: ProductCreatePageProps) {
   const recipe = useProductRecipeForm({ nextProductNumber, onCreate })
   const {
     productName, setProductName, description, setDescription,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts,
+    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts, hasDefaultRecipe,
     totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost, saveRecipe,
+    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost,
+    saveDefaultRecipe, loadDefaultRecipe, saveRecipe,
   } = recipe
 
   return (
@@ -61,6 +64,14 @@ export function ProductCreatePage({
               <div className="recipe-builder-section__heading">
                 <span>02</span>
                 <div><h2 id="ingredient-search-title">재료 추가</h2><p>재료를 검색하고 + 버튼으로 담으세요.</p></div>
+                <button
+                  className="recipe-default-load"
+                  type="button"
+                  disabled={!hasDefaultRecipe}
+                  onClick={() => onAction(loadDefaultRecipe() ? '기본 레시피를 불러왔습니다.' : '저장된 기본 레시피가 없습니다.')}
+                >
+                  불러오기
+                </button>
               </div>
               <label className="ingredient-search-field">
                 <Icon name="search" size={17} />
@@ -75,6 +86,15 @@ export function ProductCreatePage({
                   </div>
                 ))}
                 {availableIngredients.length === 0 && <p>추가할 수 있는 재료가 없습니다.</p>}
+              </div>
+              <div className="recipe-default-actions">
+                <button
+                  type="button"
+                  disabled={selectedIngredients.length === 0}
+                  onClick={() => onAction(saveDefaultRecipe() ? '기본 레시피를 저장했습니다.' : '기본 레시피를 저장하지 못했습니다.')}
+                >
+                  기본 레시피로 저장
+                </button>
               </div>
             </section>
 

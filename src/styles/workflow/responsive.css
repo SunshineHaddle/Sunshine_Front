@@ -68,6 +68,12 @@
     margin-top: 0;
   }
 
+  .production-heading {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
   .workflow-page-heading h1,
   .operating-heading h1,
   .production-heading h1 {
@@ -86,27 +92,19 @@
     overflow: visible;
   }
 
-  .upload-card {
-    min-height: 0;
-  }
-
-  .material-template {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .material-template__download {
-    width: 100%;
-  }
-
   .material-preview {
     padding-right: 0;
     padding-left: 0;
   }
 
   .material-preview__heading {
+    grid-template-columns: 1fr 1fr;
     padding-right: 2px;
     padding-left: 2px;
+  }
+
+  .material-preview__title {
+    grid-column: 1 / -1;
   }
 
   .material-preview__labels {

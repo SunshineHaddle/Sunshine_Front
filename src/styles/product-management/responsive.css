@@ -27,7 +27,15 @@
   .product-create-page,
   .product-detail-page {
     min-height: 0;
-    padding: 28px 16px 96px;
+    padding: 24px 16px 96px;
+  }
+
+  .product-create-header h1 {
+    font-size: 26px;
+  }
+
+  .product-create-header p {
+    font-size: 14px;
   }
 
   .recipe-library-header {
@@ -85,8 +93,12 @@
     padding: 18px;
   }
 
+  .recipe-builder {
+    margin-top: 24px;
+  }
+
   .recipe-cart-item {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 40px;
     padding: 12px 0;
   }
 
@@ -100,5 +112,10 @@
 
   .recipe-cart-item b {
     display: none;
+  }
+
+  .recipe-default-actions {
+    display: grid;
+    grid-template-columns: 1fr;
   }
 }
