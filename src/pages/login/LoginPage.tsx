@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 
 const ADMIN_LOGIN_ID = 'qwer1234'
 const WORKER_LOGIN_ID = 'worker1234'
-const LOGIN_PASSWORD = '0000'
+const LOGIN_PASSWORD = '00001'
 
 export type LoginRole = 'admin' | 'worker'
 
