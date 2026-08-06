@@ -4,7 +4,6 @@
   margin-top: 33px;
 }
 
-/* 엑셀 업로드 영역 */
 .production-upload {
   display: flex;
   align-items: center;
@@ -103,7 +102,6 @@
   display: none;
 }
 
-/* 제품 목록 */
 .production-list {
   padding: 24px 24px 28px;
   background: #fff;
@@ -337,7 +335,6 @@
   pointer-events: none;
 }
 
-/* 빈 상태 */
 .production-empty {
   display: grid;
   justify-items: center;
@@ -373,7 +370,6 @@
   font-size: 12px;
 }
 
-/* 비활성 버튼 */
 .workflow-outline-button:disabled,
 .workflow-primary-button:disabled {
   cursor: not-allowed;

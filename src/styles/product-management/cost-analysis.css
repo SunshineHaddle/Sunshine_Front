@@ -10,7 +10,7 @@
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  padding: 24px 26px 20px;
+  padding: 24px 4px 20px;
   gap: 32px;
   border-bottom: 1px solid var(--color-border);
 }
@@ -40,12 +40,14 @@
 .product-cost-analysis__owner {
   display: flex;
   margin: 0;
-  gap: 32px;
+  gap: 48px;
 }
 
 .product-cost-analysis__owner div {
   display: grid;
   gap: 4px;
+  justify-items: end;
+  text-align: right;
 }
 
 .product-cost-analysis__owner dt {

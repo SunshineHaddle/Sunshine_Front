@@ -31,12 +31,10 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
     const file = event.target.files?.[0]
     if (!file) return
 
-    // 실제 엑셀 파싱은 아직 구현하지 않으며, 업로드 시 샘플 제품을 레시피별로 펼쳐 보여준다.
     setFileName(file.name)
     setRows(buildSampleProductionRows())
     onAction(`${file.name}에서 제품을 불러왔습니다. 제품별 생산량을 입력하세요.`)
 
-    // 같은 파일을 다시 선택해도 onChange가 발생하도록 초기화한다.
     event.target.value = ''
   }
 

@@ -19,7 +19,6 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
   const [ingredientQuery, setIngredientQuery] = useState('')
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
 
-  // 새 재료 직접 입력
   const [newIngredientName, setNewIngredientName] = useState('')
   const [newIngredientPrice, setNewIngredientPrice] = useState('')
   const [newIngredientUnit, setNewIngredientUnit] = useState<IngredientUnit>('kg')

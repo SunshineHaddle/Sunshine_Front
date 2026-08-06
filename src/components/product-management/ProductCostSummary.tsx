@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '../common/Icon'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductCostAnalysisState } from './useProductCostAnalysis'
+import { MonthlyUnitPriceTrend } from './MonthlyUnitPriceTrend'
 
 type ProductCostSummaryProps = {
   product: RecipeProduct
@@ -22,7 +23,7 @@ const unitPriceFormatter = new Intl.NumberFormat('ko-KR', {
 })
 
 export function ProductCostSummary({ product, state, onAction }: ProductCostSummaryProps) {
-  const { draftMonth, setDraftMonth, setActiveMonth, monthLabel } = state
+  const { draftMonth, setDraftMonth, activeMonth, setActiveMonth, monthLabel } = state
 
   const indirectCost = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
   const subMaterialCost = product.laborCost + indirectCost
@@ -32,7 +33,17 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
   const [yieldInput, setYieldInput] = useState('')
   const [yieldKg, setYieldKg] = useState<number | null>(null)
 
+  const [selectedMetric, setSelectedMetric] = useState<'material' | 'sub' | 'total'>('total')
+
   const unitPrice = yieldKg && yieldKg > 0 ? totalCost / yieldKg : null
+
+  const trend = {
+    material: { value: product.materialCost, label: '재료비', formatValue: (v: number) => currencyFormatter.format(v) },
+    sub: { value: subMaterialCost, label: '부자재비', formatValue: (v: number) => currencyFormatter.format(v) },
+    total: unitPrice != null
+      ? { value: unitPrice, label: 'kg당 단가', formatValue: (v: number) => unitPriceFormatter.format(v) }
+      : { value: totalCost, label: '총 금액', formatValue: (v: number) => currencyFormatter.format(v) },
+  }[selectedMetric]
 
   const applyFilters = () => {
     setActiveMonth(draftMonth)
@@ -73,9 +84,49 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
       </div>
 
       <div className="product-cost-overview product-cost-overview--embedded">
-        <section><span>재료비</span><strong>{currencyFormatter.format(product.materialCost)}</strong><small>{product.ingredients.length}개 재료</small></section>
-        <section><span>부자재비</span><strong>{currencyFormatter.format(subMaterialCost)}</strong><small>인건비·간접비 포함</small></section>
-        <section className="product-cost-overview__total">
+        <section
+          className={`product-cost-overview__item${selectedMetric === 'material' ? ' is-selected' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-pressed={selectedMetric === 'material'}
+          onClick={() => setSelectedMetric('material')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSelectedMetric('material')
+            }
+          }}
+        >
+          <span>재료비</span><strong>{currencyFormatter.format(product.materialCost)}</strong><small>{product.ingredients.length}개 재료</small>
+        </section>
+        <section
+          className={`product-cost-overview__item${selectedMetric === 'sub' ? ' is-selected' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-pressed={selectedMetric === 'sub'}
+          onClick={() => setSelectedMetric('sub')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSelectedMetric('sub')
+            }
+          }}
+        >
+          <span>부자재비</span><strong>{currencyFormatter.format(subMaterialCost)}</strong><small>인건비·간접비 포함</small>
+        </section>
+        <section
+          className={`product-cost-overview__total product-cost-overview__item${selectedMetric === 'total' ? ' is-selected' : ''}`}
+          role="button"
+          tabIndex={0}
+          aria-pressed={selectedMetric === 'total'}
+          onClick={() => setSelectedMetric('total')}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              setSelectedMetric('total')
+            }
+          }}
+        >
           <span className="product-cost-overview__total-label">
             {unitPrice != null ? 'kg당 단가' : '총 금액'}
             <button
@@ -83,7 +134,12 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
               className="product-cost-overview__yield-edit"
               aria-label="생산량 입력하여 kg당 단가 계산"
               aria-expanded={isEditingYield}
-              onClick={() => (isEditingYield ? setIsEditingYield(false) : openYieldEditor())}
+              onClick={(event) => {
+                event.stopPropagation()
+                setSelectedMetric('total')
+                if (isEditingYield) setIsEditingYield(false)
+                else openYieldEditor()
+              }}
             >
               <Icon name="edit" size={13} />
             </button>
@@ -94,7 +150,7 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
               : currencyFormatter.format(totalCost)}
           </strong>
           {isEditingYield ? (
-            <div className="product-cost-overview__yield-editor">
+            <div className="product-cost-overview__yield-editor" onClick={(event) => event.stopPropagation()}>
               <div className="product-cost-overview__yield-field">
                 <input
                   type="number"
@@ -129,6 +185,14 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
           )}
         </section>
       </div>
+
+      <MonthlyUnitPriceTrend
+        currentValue={trend.value}
+        label={trend.label}
+        productId={`${product.id}-${selectedMetric}`}
+        anchorMonth={activeMonth}
+        formatValue={trend.formatValue}
+      />
     </div>
   )
 }

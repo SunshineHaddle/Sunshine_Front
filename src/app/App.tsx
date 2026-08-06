@@ -159,6 +159,13 @@ function App() {
         product={selectedProduct}
         onNavigate={navigate}
         onAction={announce}
+        onUpdateImage={(imageUrl) =>
+          setRecipeProducts((current) =>
+            current.map((item) =>
+              item.id === selectedProduct.id ? { ...item, imageUrl } : item,
+            ),
+          )
+        }
       />
     )
   } else if (route === 'exchange-rate-detail') {

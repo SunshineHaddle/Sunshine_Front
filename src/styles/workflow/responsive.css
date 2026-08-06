@@ -144,8 +144,7 @@
   }
 
   .production-cost-layout,
-  .production-cost-details,
-  .production-fields {
+  .production-cost-details {
     grid-template-columns: 1fr;
   }
 

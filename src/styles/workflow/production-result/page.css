@@ -13,15 +13,6 @@
   gap: 24px;
 }
 
-.production-export {
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
-
-.production-export svg {
-  color: #217346;
-}
-
 .production-heading h1,
 .production-heading p {
   margin: 0;
