@@ -2,15 +2,19 @@ import { useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
+import type { RecipeProduct } from '../product-management/productManagementData'
 import { OperatingCostForm } from './OperatingCostForm'
+import { recordDataEntryCompletion } from '../../utils/dataEntryLog'
 import {
   calculateOperatingCosts,
   getCurrentMonth,
   initialOperatingCosts,
+  sumProductFees,
   type CostField,
 } from './operatingCostModel'
 
 type OperatingCostEntryPageProps = {
+  products?: RecipeProduct[]
   onNavigate: (route: AppRoute) => void
   hideSidebar?: boolean
   onAction: (message: string) => void
@@ -30,21 +34,92 @@ function loadStoredOperatingEntry(): StoredOperatingEntry | null {
   }
 }
 
-export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
+export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
   const [storedEntry] = useState(loadStoredOperatingEntry)
   const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
-  const [costs, setCosts] = useState(() => storedEntry?.costs ?? initialOperatingCosts)
+  const [costs, setCosts] = useState(() => ({
+    ...initialOperatingCosts,
+    ...storedEntry?.costs,
+    productFees: storedEntry?.costs?.productFees ?? {},
+    customItems: storedEntry?.costs?.customItems ?? [],
+  }))
   const totals = calculateOperatingCosts(costs)
+  const laborShareTotal = sumProductFees(costs.productFees)
+  const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
   }
 
+  const updateProductFee = (productId: string, value: string) => {
+    setCosts((current) => ({
+      ...current,
+      productFees: { ...current.productFees, [productId]: value },
+    }))
+  }
+
+  const equalizeProductFees = () => {
+    if (products.length === 0) return
+    const even = Math.floor((100 / products.length) * 10) / 10
+    const shares: Record<string, string> = {}
+    let remaining = 100
+    products.forEach((product, index) => {
+      const share = index === products.length - 1
+        ? Math.round(remaining * 10) / 10
+        : even
+      remaining -= share
+      shares[product.id] = String(share)
+    })
+    setCosts((current) => ({ ...current, productFees: shares }))
+  }
+
+  const addCustomItem = () => {
+    const id = `custom-${Date.now()}`
+    setCosts((current) => ({
+      ...current,
+      customItems: [...current.customItems, { id, name: '', productFees: {} }],
+    }))
+  }
+
+  const updateCustomItemName = (id: string, name: string) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.map((item) => (item.id === id ? { ...item, name } : item)),
+    }))
+  }
+
+  const updateCustomItemFee = (id: string, productId: string, value: string) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.map((item) => (
+        item.id === id
+          ? { ...item, productFees: { ...item.productFees, [productId]: value } }
+          : item
+      )),
+    }))
+  }
+
+  const removeCustomItem = (id: string) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.filter((item) => item.id !== id),
+    }))
+  }
+
   const goToNextStep = () => {
+    if (!isLaborShareValid) {
+      onAction(`제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`)
+      return
+    }
     window.localStorage.setItem(
       'cost-analysis-operating-costs',
       JSON.stringify({ month, costs, totalCost: totals.totalCost }),
     )
+    if (hideSidebar) {
+      recordDataEntryCompletion('worker1234')
+      onAction('데이터 입력을 완료했습니다. 완료 시각이 기록되었습니다.')
+      return
+    }
     onAction(`${month.replace('-', '년 ')}월 운영비를 저장했습니다.`)
     onNavigate('data-entry-3')
   }
@@ -57,7 +132,7 @@ export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = fal
         <header className="operating-heading">
           <div>
             <h1>2단계: 현장 운영비</h1>
-            <p>제조 공정을 위한 인건비와 운영 간접비를 입력하세요.</p>
+            <p>제조 공정의 인건비와 운영 항목을 입력하세요.</p>
           </div>
           <label className="operating-month-picker">
             <span className="visually-hidden">비용 기준 월</span>
@@ -67,17 +142,23 @@ export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = fal
         </header>
 
         <OperatingCostForm
+          products={products}
           costs={costs}
-          totals={totals}
           onCostChange={updateCost}
+          onProductFeeChange={updateProductFee}
+          onEqualizeProductFees={equalizeProductFees}
+          onAddCustomItem={addCustomItem}
+          onUpdateCustomItemName={updateCustomItemName}
+          onUpdateCustomItemFee={updateCustomItemFee}
+          onRemoveCustomItem={removeCustomItem}
         />
 
         <footer className="operating-footer">
           <button className="workflow-back-button" type="button" onClick={() => onNavigate('data-entry-1')}><Icon name="chevron-left" size={16} /> 이전 단계</button>
           {hideSidebar ? (
-            <button className="workflow-coral-button" type="button" onClick={goToNextStep}>저장 <Icon name="chevron-right" size={16} /></button>
+            <button className="workflow-coral-button" type="button" onClick={goToNextStep} disabled={!isLaborShareValid}>저장 <Icon name="chevron-right" size={16} /></button>
           ) : (
-            <button className="workflow-coral-button" type="button" onClick={goToNextStep}>다음 단계 <Icon name="chevron-right" size={16} /></button>
+            <button className="workflow-coral-button" type="button" onClick={goToNextStep} disabled={!isLaborShareValid}>다음 단계 <Icon name="chevron-right" size={16} /></button>
           )}
         </footer>
       </main>

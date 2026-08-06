@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductionCostSummary } from '../../pages/production-result/productionResultModel'
 import { CostCompositionChart } from '../../pages/production-result/CostCompositionChart'
@@ -24,6 +24,7 @@ const exchangeCurrencyCodes = Object.keys(exchangeRates) as ExchangeCurrencyCode
 type ProductCostTrendCarouselProps = {
   products: RecipeProduct[]
   onOpen: (productId: string) => void
+  onRename?: (productId: string, name: string) => void
   compact?: boolean
 }
 
@@ -80,9 +81,53 @@ function getProductCostTrend(product: RecipeProduct, productIndex: number) {
   }
 }
 
-export function ProductCostTrendCarousel({ products, onOpen, compact = false }: ProductCostTrendCarouselProps) {
+type ProductNameFieldProps = {
+  name: string
+  editable: boolean
+  onCommit: (value: string) => void
+}
+
+function ProductNameField({ name, editable, onCommit }: ProductNameFieldProps) {
+  const [draft, setDraft] = useState(name)
+
+  useEffect(() => {
+    setDraft(name)
+  }, [name])
+
+  if (!editable) {
+    return <strong className="product-cost-slide__name">{name}</strong>
+  }
+
+  const commit = () => {
+    const trimmed = draft.trim()
+    if (trimmed && trimmed !== name) onCommit(trimmed)
+    else setDraft(name)
+  }
+
+  return (
+    <input
+      className="product-cost-slide__name-input"
+      value={draft}
+      aria-label="제품명 편집"
+      onChange={(event) => setDraft(event.target.value)}
+      onBlur={commit}
+      onPointerDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter') event.currentTarget.blur()
+        else if (event.key === 'Escape') {
+          setDraft(name)
+          event.currentTarget.blur()
+        }
+      }}
+    />
+  )
+}
+
+export function ProductCostTrendCarousel({ products, onOpen, onRename, compact = false }: ProductCostTrendCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
+  const [dragOffset, setDragOffset] = useState(0)
+  const dragState = useRef<{ startX: number; width: number } | null>(null)
   const monthLabels = getMonthLabels()
   const cardClassName = `card product-cost-carousel${compact ? ' product-cost-carousel--compact' : ''}`
 
@@ -110,6 +155,30 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
   const goToNext = () =>
     setActiveIndex((current) => (current + 1) % products.length)
 
+  const handleDragStart = (clientX: number, width: number) => {
+    if (products.length < 2) return
+    dragState.current = { startX: clientX, width }
+    setIsPaused(true)
+  }
+
+  const handleDragMove = (clientX: number) => {
+    if (!dragState.current) return
+    setDragOffset(clientX - dragState.current.startX)
+  }
+
+  const handleDragEnd = () => {
+    if (!dragState.current) return
+    const { width } = dragState.current
+    const threshold = Math.max(width * 0.2, 40)
+    if (dragOffset <= -threshold) goToNext()
+    else if (dragOffset >= threshold) goToPrevious()
+    dragState.current = null
+    setDragOffset(0)
+    setIsPaused(false)
+  }
+
+  const trackTransform = `translateX(calc(-${visibleIndex * 100}% + ${dragOffset}px))`
+
   return (
     <section
       className={cardClassName}
@@ -134,8 +203,21 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
         )}
       </div>
 
-      <div className="product-cost-carousel__viewport">
-        <div className="product-cost-carousel__track" style={{ transform: `translateX(-${visibleIndex * 100}%)` }}>
+      <div
+        className={`product-cost-carousel__viewport${products.length > 1 ? ' is-draggable' : ''}`}
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return
+          handleDragStart(event.clientX, event.currentTarget.offsetWidth)
+        }}
+        onPointerMove={(event) => handleDragMove(event.clientX)}
+        onPointerUp={handleDragEnd}
+        onPointerCancel={handleDragEnd}
+        onPointerLeave={() => dragState.current && handleDragEnd()}
+      >
+        <div
+          className="product-cost-carousel__track"
+          style={{ transform: trackTransform, transition: dragState.current ? 'none' : undefined }}
+        >
           {products.map((product, index) => {
             const trend = getProductCostTrend(product, index)
             const changeDirection = trend.changeRate >= 0 ? '상승' : '하락'
@@ -143,7 +225,13 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
             return (
               <article className="product-cost-slide" aria-hidden={index !== visibleIndex} key={product.id}>
                 <div className="product-cost-slide__product">
-                  <div><strong>{product.name}</strong></div>
+                  <div>
+                    <ProductNameField
+                      name={product.name}
+                      editable={Boolean(onRename) && index === visibleIndex}
+                      onCommit={(value) => onRename?.(product.id, value)}
+                    />
+                  </div>
                   <button type="button" onClick={() => onOpen(product.id)} tabIndex={index === visibleIndex ? 0 : -1}>
                     상세 보기 <Icon name="chevron-right" size={14} />
                   </button>

@@ -116,16 +116,16 @@ function App() {
   if (loginRole === 'worker') {
     page =
       route === 'data-entry-2' ? (
-        <OperatingCostEntryPage hideSidebar onNavigate={navigate} onAction={announce} />
+        <OperatingCostEntryPage products={recipeProducts} hideSidebar onNavigate={navigate} onAction={announce} />
       ) : (
         <RawMaterialEntryPage hideSidebar onNavigate={navigate} onAction={announce} />
       )
   } else if (route === 'data-entry-1') {
     page = <RawMaterialEntryPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'data-entry-2') {
-    page = <OperatingCostEntryPage onNavigate={navigate} onAction={announce} />
+    page = <OperatingCostEntryPage products={recipeProducts} onNavigate={navigate} onAction={announce} />
   } else if (route === 'data-entry-3') {
-    page = <ProductionResultPage onNavigate={navigate} onAction={announce} />
+    page = <ProductionResultPage products={recipeProducts} onNavigate={navigate} onAction={announce} />
   } else if (route === 'product-management') {
     page = (
       <ProductManagementPage
@@ -169,7 +169,7 @@ function App() {
       />
     )
   } else if (route === 'exchange-rate-detail') {
-    page = <ExchangeRateCalculatorPage onNavigate={navigate} onAction={announce} />
+    page = <ExchangeRateCalculatorPage products={recipeProducts} onNavigate={navigate} onAction={announce} />
   } else if (route === 'user-management') {
     page = <UserManagementPage onNavigate={navigate} onAction={announce} />
   } else {
@@ -182,6 +182,11 @@ function App() {
           setSelectedProductId(productId)
           navigate('product-detail')
         }}
+        onRenameProduct={(productId, name) =>
+          setRecipeProducts((current) =>
+            current.map((item) => (item.id === productId ? { ...item, name } : item)),
+          )
+        }
       />
     )
   }

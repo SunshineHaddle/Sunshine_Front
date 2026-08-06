@@ -3,7 +3,6 @@ import {
   formatProductionWon,
   type ProductionCostSummary as CostSummary,
 } from './productionResultModel'
-import { CostCompositionChart } from './CostCompositionChart'
 
 type ProductionCostSummaryProps = {
   summary: CostSummary
@@ -11,76 +10,106 @@ type ProductionCostSummaryProps = {
   onEditOperatingCosts: () => void
 }
 
+const percentFormatter = new Intl.NumberFormat('ko-KR', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
 export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatingCosts }: ProductionCostSummaryProps) {
+  const sharePercent = (amount: number) => (summary.totalCost > 0 ? (amount / summary.totalCost) * 100 : 0)
+
   return (
     <section className="production-cost-section" aria-labelledby="cost-summary-title">
       <header className="production-section-heading">
         <div>
           <h2 id="cost-summary-title">최종 원가 확인</h2>
-          <p>앞 단계에서 입력한 비용을 한 번에 검토하세요.</p>
+          <p>앞 단계에서 입력한 수불자료와 운영비를 한 번에 검토하세요.</p>
         </div>
         {summary.month && <span>{summary.month.replace('-', '년 ')}월 기준</span>}
       </header>
 
-      <div className="production-cost-layout">
-        <div className="production-cost-details">
-          <article className="material-cost-summary">
-            <div className="cost-summary-title-row">
-              <div><span>원재료비</span><strong>{formatProductionWon(summary.materialCost)}</strong></div>
-              <button type="button" onClick={onEditMaterials}>수정</button>
-            </div>
-
-            <div className="material-cost-table">
-              <table>
-                <thead>
-                  <tr><th>품명</th><th>수량</th><th>단가</th><th>재료비</th></tr>
-                </thead>
-                <tbody>
-                  {summary.materials.map((material) => (
-                    <tr key={material.id}>
-                      <td>{material.name}</td>
-                      <td>{material.quantity.toLocaleString('ko-KR')}</td>
-                      <td>{formatProductionWon(material.unitCost)}</td>
-                      <td>{formatProductionWon(material.amount)}</td>
-                    </tr>
-                  ))}
-                  {!summary.hasMaterialData && (
-                    <tr className="material-cost-table__empty"><td>—</td><td>—</td><td>—</td><td>—</td></tr>
-                  )}
-                </tbody>
-              </table>
-              {summary.hasMaterialData && (
-                <div className="material-cost-table__total">
-                  <span>재료비 합계</span>
-                  <strong>{formatProductionWon(summary.materialCost)}</strong>
-                </div>
-              )}
-            </div>
-          </article>
-
-          <article className="production-operating-summary">
-            <div className="cost-summary-title-row">
-              <div><span>운영비</span><strong>{formatProductionWon(summary.operatingCost)}</strong></div>
-              <button type="button" onClick={onEditOperatingCosts}>수정</button>
-            </div>
-            <dl>
-              <div><dt>인건비</dt><dd>{formatProductionWon(summary.laborCost)}</dd></div>
-              <div><dt>공과금</dt><dd>{formatProductionWon(summary.utilityCost)}</dd></div>
-              <div><dt>기타 간접비</dt><dd>{formatProductionWon(summary.indirectCost)}</dd></div>
-            </dl>
-            {!summary.hasOperatingData && (
-              <button className="production-empty-state" type="button" onClick={onEditOperatingCosts}>
-                <Icon name="add" size={16} /> 2단계에서 운영비를 입력하세요.
-              </button>
-            )}
-          </article>
+      <article className="result-products">
+        <div className="cost-summary-title-row">
+          <div><span>제품별 원재료비</span><strong>{formatProductionWon(summary.materialCost)}</strong></div>
+          <button type="button" onClick={onEditMaterials}>1단계 수정</button>
         </div>
 
-        <CostCompositionChart summary={summary} />
-      </div>
+        {summary.products.length === 0 ? (
+          <p className="result-products__empty">등록된 제품이 없습니다.</p>
+        ) : (
+          <div className="result-products__list">
+            {summary.products.map((product) => (
+              <div className="result-product" key={product.id}>
+                <div className="result-product__head">
+                  <div className="result-product__title">
+                    <strong>{product.name}</strong>
+                    <span>생산량 {product.production ? `${Number(product.production).toLocaleString('ko-KR')}kg` : '미입력'}</span>
+                  </div>
+                  <div className="result-product__figures">
+                    <span>가공비 {formatProductionWon(product.processingFee)}</span>
+                    <strong>{formatProductionWon(product.materialCost)}</strong>
+                  </div>
+                </div>
+                <table className="result-product__table">
+                  <thead>
+                    <tr><th>품명</th><th>수량</th><th>단가</th><th>금액</th></tr>
+                  </thead>
+                  <tbody>
+                    {product.materials.map((material) => (
+                      <tr key={material.name}>
+                        <td>{material.name}</td>
+                        <td>{material.usage.toLocaleString('ko-KR')} {material.unit}</td>
+                        <td>{material.unitPrice != null ? formatProductionWon(material.unitPrice) : '-'}</td>
+                        <td>{formatProductionWon(material.cost)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        )}
+      </article>
+
+      <article className="production-operating-summary">
+        <div className="cost-summary-title-row">
+          <div><span>운영비</span><strong>{formatProductionWon(summary.operatingCost)}</strong></div>
+          <button type="button" onClick={onEditOperatingCosts}>2단계 수정</button>
+        </div>
+        <dl>
+          <div>
+            <dt>총 인건비</dt>
+            <dd>
+              {formatProductionWon(summary.laborTotal)}
+              <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(summary.laborTotal))}%)</span>
+            </dd>
+          </div>
+          {summary.utilityLines.map((line) => (
+            <div key={line.label}>
+              <dt>{line.label}</dt>
+              <dd>
+                {formatProductionWon(line.amount)}
+                <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(line.amount))}%)</span>
+              </dd>
+            </div>
+          ))}
+          <div className="production-operating-summary__total">
+            <dt>운영비 합계</dt>
+            <dd>
+              {formatProductionWon(summary.operatingCost)}
+              <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(summary.operatingCost))}%)</span>
+            </dd>
+          </div>
+        </dl>
+        {!summary.hasOperatingData && (
+          <button className="production-empty-state" type="button" onClick={onEditOperatingCosts}>
+            <Icon name="add" size={16} /> 2단계에서 운영비를 입력하세요.
+          </button>
+        )}
+      </article>
 
       <div className="production-grand-total">
-        <span>예상 총원가<small>원재료비 + 인건비 + 공과금 + 기타 간접비</small></span>
+        <span>예상 총원가<small>제품별 원재료비 + 운영비</small></span>
         <strong>{formatProductionWon(summary.totalCost)}</strong>
       </div>
     </section>

@@ -253,6 +253,19 @@
   overflow: hidden;
 }
 
+.product-cost-carousel__viewport.is-draggable {
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.product-cost-carousel__viewport.is-draggable:active {
+  cursor: grabbing;
+}
+
+.product-cost-carousel__viewport.is-draggable:active .product-cost-slide {
+  user-select: none;
+}
+
 .product-cost-carousel__track {
   display: flex;
   transition: transform 420ms ease;
@@ -290,6 +303,33 @@
 .product-cost-slide__product span {
   color: var(--color-text-subtle);
   font-size: 10px;
+}
+
+.product-cost-slide__name-input {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding: 2px 6px;
+  color: var(--color-text);
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  cursor: text;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.product-cost-slide__name-input:hover {
+  background: rgba(186, 0, 54, 0.05);
+  border-color: rgba(186, 0, 54, 0.18);
+}
+
+.product-cost-slide__name-input:focus {
+  background: #fff;
+  border-color: rgba(186, 0, 54, 0.42);
 }
 
 .product-cost-slide__product button {

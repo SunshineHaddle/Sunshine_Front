@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
+import { formatCompletionTime, loadLatestCompletion } from '../../utils/dataEntryLog'
 
 type UserRole = '시스템 관리자' | '데이터 입력' | '검토자'
 
@@ -19,32 +20,38 @@ type UserManagementPageProps = {
   onAction: (message: string) => void
 }
 
-const initialUsers: ManagedUser[] = [
-  {
-    id: 'admin-user',
-    initial: 'A',
-    name: '관리자 사용자',
-    lastActive: '방금 전',
-    role: '시스템 관리자',
-    active: true,
-  },
-  {
-    id: 'field-worker-a',
-    initial: 'F',
-    name: '현장 작업자 A',
-    lastActive: '2시간 전',
-    role: '데이터 입력',
-    active: true,
-  },
-  {
-    id: 'manager-b',
-    initial: 'M',
-    name: '매니저 B',
-    lastActive: '14일 전',
-    role: '검토자',
-    active: false,
-  },
-]
+const buildInitialUsers = (): ManagedUser[] => {
+  const workerCompletion = loadLatestCompletion('worker1234')
+
+  return [
+    {
+      id: 'admin-user',
+      initial: 'A',
+      name: '관리자 (qwer1234)',
+      lastActive: '방금 전',
+      role: '시스템 관리자',
+      active: true,
+    },
+    {
+      id: 'field-worker-a',
+      initial: 'W',
+      name: '실무자 (worker1234)',
+      lastActive: workerCompletion
+        ? `${formatCompletionTime(workerCompletion.completedAt)} 데이터 입력 완료`
+        : '데이터 입력 대기',
+      role: '데이터 입력',
+      active: true,
+    },
+    {
+      id: 'manager-b',
+      initial: 'M',
+      name: '매니저 B',
+      lastActive: '14일 전',
+      role: '검토자',
+      active: false,
+    },
+  ]
+}
 
 const roleClassNames: Record<UserRole, string> = {
   '시스템 관리자': 'is-admin',
@@ -56,7 +63,7 @@ export function UserManagementPage({
   onNavigate,
   onAction,
 }: UserManagementPageProps) {
-  const [users, setUsers] = useState(initialUsers)
+  const [users, setUsers] = useState(buildInitialUsers)
 
   const addUser = () => {
     const userNumber = users.length + 1
