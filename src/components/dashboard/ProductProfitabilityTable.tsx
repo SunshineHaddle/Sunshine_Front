@@ -8,7 +8,6 @@ type ProductProfitabilityTableProps = {
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
 
-// 규격 문자열(예: '5kg', '500g')에서 단위만 추출. 없으면 'kg' 기본값.
 function getQuantityUnit(specification: string) {
   const match = specification.match(/[a-zA-Z]+/)
   return match ? match[0] : 'kg'

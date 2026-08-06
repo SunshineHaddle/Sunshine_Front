@@ -33,7 +33,7 @@ export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatin
             <div className="material-cost-table">
               <table>
                 <thead>
-                  <tr><th>원재료명</th><th>수량</th><th>단가</th><th>금액</th></tr>
+                  <tr><th>품명</th><th>수량</th><th>단가</th><th>재료비</th></tr>
                 </thead>
                 <tbody>
                   {summary.materials.map((material) => (
@@ -49,6 +49,12 @@ export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatin
                   )}
                 </tbody>
               </table>
+              {summary.hasMaterialData && (
+                <div className="material-cost-table__total">
+                  <span>재료비 합계</span>
+                  <strong>{formatProductionWon(summary.materialCost)}</strong>
+                </div>
+              )}
             </div>
           </article>
 

@@ -1,5 +1,4 @@
-.production-cost-section,
-.production-result-section {
+.production-cost-section {
   margin-top: 34px;
 }
 
@@ -131,6 +130,28 @@
 }
 
 .material-cost-table__empty td { color: #c5c0c2; }
+
+.material-cost-table__total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e7e7e7;
+}
+
+.material-cost-table__total span {
+  color: #6a6467;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.material-cost-table__total strong {
+  color: #ba0036;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 
 .production-operating-summary dl div {
   display: flex;

@@ -80,28 +80,4 @@ export function loadProductionCostSummary(): ProductionCostSummary {
   }
 }
 
-export function calculateYieldRate(production: string, waste: string) {
-  const totalProduction = Number(production)
-  const wasteQuantity = Number(waste)
-
-  if (!production || !waste || totalProduction <= 0) {
-    return { totalProduction, wasteQuantity, yieldRate: null, error: '' }
-  }
-  if (wasteQuantity < 0 || wasteQuantity > totalProduction) {
-    return {
-      totalProduction,
-      wasteQuantity,
-      yieldRate: null,
-      error: '불량 수량은 총 생산량보다 클 수 없습니다.',
-    }
-  }
-
-  return {
-    totalProduction,
-    wasteQuantity,
-    yieldRate: ((totalProduction - wasteQuantity) / totalProduction) * 100,
-    error: '',
-  }
-}
-
 export const formatProductionWon = (value: number) => `${Math.round(value).toLocaleString('ko-KR')}원`

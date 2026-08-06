@@ -89,3 +89,24 @@
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
+
+.cost-composition__legend-total {
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid #ececec;
+}
+
+.cost-composition__legend-total span {
+  grid-column: 2;
+}
+
+.cost-composition__legend-total strong,
+.cost-composition__legend-total b {
+  color: #ba0036;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cost-composition__legend-total small {
+  color: #b98;
+}

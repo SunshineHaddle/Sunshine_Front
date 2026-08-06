@@ -55,7 +55,6 @@ const recipeCosts = (primaryIngredient: string, materialCost: number) => {
   }
 }
 
-// 포기김치 수불자료(원문) — 품명 / 수량(kg) / 단가(원) / 금액(원)
 const poggiIngredients: RecipeIngredientCost[] = [
   { name: '배추', usage: 606_248, unit: 'kg', unitPrice: 865, cost: 601_306_148 },
   { name: '무', usage: 50_847, unit: 'kg', unitPrice: 508, cost: 25_822_662 },
@@ -91,7 +90,7 @@ export const initialRecipeProducts: RecipeProduct[] = [
     ],
   },
   { id: 'SKU-2024-002', name: '맛김치', description: '소매 포장용 빠른 발효 한입 크기 조각.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Korean_cuisine-Kimchi-08.jpg', yieldRate: 91.8, materialCost: 4_500, ingredientCount: 7, status: 'review', ...recipeCosts('배추', 4_500) },
-  { id: 'SKU-2024-003', name: '총각무김치', description: '아삭한 식감을 살린 총각무 기본 레시피.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/87/Korean_cuisine-Chonggak_kimchi-01.jpg', yieldRate: 93.5, materialCost: 7_800, ingredientCount: 7, status: 'active', ...recipeCosts('총각무', 7_800) },
+  { id: 'SKU-2024-003', name: '총각무김치', description: '아삭한 식감을 살린 총각무 기본 레시피.', imageUrl: '/products/chonggak.jpg', yieldRate: 93.5, materialCost: 7_800, ingredientCount: 7, status: 'active', ...recipeCosts('총각무', 7_800) },
   { id: 'SKU-2024-004', name: '백김치', description: '고춧가루 없이 담백하게 숙성한 배추김치.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Korean.cuisine-Baek.kimchi-02.jpg', yieldRate: 95.1, materialCost: 13_600, ingredientCount: 9, status: 'active', ...recipeCosts('배추', 13_600) },
   { id: 'SKU-2024-005', name: '깍두기', description: '급식 및 외식 채널용 대용량 무김치.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/01/Kkakdugi%2C_radish_kimchi%2C_by_comicpie_in_Toronto.jpg', yieldRate: 92.6, materialCost: 11_400, ingredientCount: 6, status: 'review', ...recipeCosts('무', 11_400) },
   { id: 'SKU-2024-006', name: '열무김치', description: '여름철 생산용 가벼운 발효 레시피.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d8/Yeolmu-kimchi.jpg', yieldRate: 90.9, materialCost: 7_200, ingredientCount: 8, status: 'active', ...recipeCosts('열무', 7_200) },

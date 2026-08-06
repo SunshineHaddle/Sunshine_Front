@@ -64,6 +64,10 @@ export function CostCompositionChart({ summary, compact = false }: CostCompositi
               </li>
             )
           })}
+          <li className="cost-composition__legend-total">
+            <span><strong>총합</strong><small>{formatProductionWon(total)}</small></span>
+            <b>{total > 0 ? '100.0%' : '0.0%'}</b>
+          </li>
         </ul>
       </div>
     </article>
