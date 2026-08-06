@@ -17,6 +17,7 @@ export type IconName =
   | 'data'
   | 'download'
   | 'droplet'
+  | 'edit'
   | 'exchange'
   | 'excel'
   | 'filter'
@@ -100,6 +101,12 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   droplet: <path d="M12 3s6 6.2 6 11a6 6 0 0 1-12 0c0-4.8 6-11 6-11Z" />,
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </>
+  ),
   exchange: (
     <>
       <path d="M20 7a9 9 0 0 0-15.5-2L2 8" />

@@ -79,6 +79,92 @@
   color: var(--color-brand);
 }
 
+.product-cost-overview__total-label {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-cost-overview__yield-edit {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  color: #b98;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.product-cost-overview__yield-edit:hover {
+  color: var(--color-brand);
+  background: #fff;
+  border-color: #e6d4d1;
+}
+
+.product-cost-overview__yield-editor {
+  display: flex;
+  margin-top: 11px;
+  gap: 6px;
+}
+
+.product-cost-overview__yield-field {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  align-items: center;
+  padding: 0 8px;
+  background: #fff;
+  border: 1px solid #e0cfcc;
+  border-radius: 7px;
+}
+
+.product-cost-overview__yield-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 6px 0;
+  color: #222;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: 0;
+  outline: none;
+}
+
+.product-cost-overview__yield-unit {
+  flex: 0 0 auto;
+  color: #999 !important;
+  font-size: 11px !important;
+  font-weight: 600;
+}
+
+.product-cost-overview__yield-apply {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-brand);
+  border: 0;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.product-cost-overview__yield-apply:hover {
+  filter: brightness(0.95);
+}
+
+.product-cost-overview__unit-price {
+  margin-top: 6px;
+  color: var(--color-brand) !important;
+  font-size: 11px !important;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .product-cost-overview section {
   display: grid;
   min-height: 126px;
@@ -173,6 +259,17 @@
   font-size: 10.5px;
 }
 
+.material-cost-list--with-price > div {
+  grid-template-columns: minmax(0, 1fr) 90px 110px 130px;
+}
+
+.material-cost-list--with-price .material-cost-list__head span:not(:first-child),
+.material-cost-list--with-price > div > span,
+.material-cost-list--with-price > div > b {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
 .material-cost-list__head {
   min-height: 34px !important;
   color: #999;
@@ -224,5 +321,12 @@
 
 .indirect-cost-panel__total dd {
   font-size: 13px;
+}
+
+.indirect-cost-panel__share {
+  margin-left: 6px;
+  color: var(--color-brand);
+  font-size: 9.5px;
+  font-weight: 600;
 }
 
