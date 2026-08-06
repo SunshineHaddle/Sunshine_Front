@@ -17,7 +17,7 @@ export function Sidebar({ activeRoute, hidden = false, onNavigate }: SidebarProp
         type="button"
         onClick={() => onNavigate('dashboard')}
       >
-        원가분석 프로그램
+        햇뜰종합식품
       </button>
       <nav className="sidebar__navigation">
         {navigationItems.map((item) => {
