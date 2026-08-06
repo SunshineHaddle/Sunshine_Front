@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
+import type { RecipeProduct } from '../product-management/productManagementData'
 import { ProductionCostSummary } from './ProductionCostSummary'
 import { loadProductionCostSummary } from './productionResultModel'
 
 type ProductionResultPageProps = {
+  products?: RecipeProduct[]
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
 }
 
-export function ProductionResultPage({ onNavigate, onAction }: ProductionResultPageProps) {
-  const [costSummary] = useState(loadProductionCostSummary)
+export function ProductionResultPage({ products = [], onNavigate, onAction }: ProductionResultPageProps) {
+  const [costSummary] = useState(() => loadProductionCostSummary(products))
 
   const finish = () => {
     if (!costSummary.hasMaterialData) {

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
+import type { RecipeProduct } from '../product-management/productManagementData'
 import { OperatingCostForm } from './OperatingCostForm'
 import {
   calculateOperatingCosts,
@@ -11,6 +12,7 @@ import {
 } from './operatingCostModel'
 
 type OperatingCostEntryPageProps = {
+  products?: RecipeProduct[]
   onNavigate: (route: AppRoute) => void
   hideSidebar?: boolean
   onAction: (message: string) => void
@@ -30,14 +32,48 @@ function loadStoredOperatingEntry(): StoredOperatingEntry | null {
   }
 }
 
-export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
+export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
   const [storedEntry] = useState(loadStoredOperatingEntry)
   const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
-  const [costs, setCosts] = useState(() => storedEntry?.costs ?? initialOperatingCosts)
+  const [costs, setCosts] = useState(() => ({
+    ...initialOperatingCosts,
+    ...storedEntry?.costs,
+    productFees: storedEntry?.costs?.productFees ?? {},
+    customItems: storedEntry?.costs?.customItems ?? [],
+  }))
   const totals = calculateOperatingCosts(costs)
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
+  }
+
+  const updateProductFee = (productId: string, value: string) => {
+    setCosts((current) => ({
+      ...current,
+      productFees: { ...current.productFees, [productId]: value },
+    }))
+  }
+
+  const addCustomItem = () => {
+    const id = `custom-${Date.now()}`
+    setCosts((current) => ({
+      ...current,
+      customItems: [...current.customItems, { id, name: '', amount: '0' }],
+    }))
+  }
+
+  const updateCustomItem = (id: string, patch: { name?: string; amount?: string }) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    }))
+  }
+
+  const removeCustomItem = (id: string) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.filter((item) => item.id !== id),
+    }))
   }
 
   const goToNextStep = () => {
@@ -57,7 +93,7 @@ export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = fal
         <header className="operating-heading">
           <div>
             <h1>2단계: 현장 운영비</h1>
-            <p>제조 공정을 위한 인건비와 운영 간접비를 입력하세요.</p>
+            <p>제조 공정의 인건비와 전기·물세를 입력하세요.</p>
           </div>
           <label className="operating-month-picker">
             <span className="visually-hidden">비용 기준 월</span>
@@ -67,9 +103,14 @@ export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = fal
         </header>
 
         <OperatingCostForm
+          products={products}
           costs={costs}
           totals={totals}
           onCostChange={updateCost}
+          onProductFeeChange={updateProductFee}
+          onAddCustomItem={addCustomItem}
+          onUpdateCustomItem={updateCustomItem}
+          onRemoveCustomItem={removeCustomItem}
         />
 
         <footer className="operating-footer">

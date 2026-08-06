@@ -1,20 +1,28 @@
 export type CostField =
-  | 'productionHours'
-  | 'hourlyWage'
+  | 'laborTotal'
   | 'electricity'
   | 'water'
-  | 'fixedCosts'
-  | 'wasteTransport'
 
-export type OperatingCosts = Record<CostField, string>
+export type CustomCostItem = {
+  id: string
+  name: string
+  amount: string
+}
+
+export type OperatingCosts = {
+  laborTotal: string
+  electricity: string
+  water: string
+  productFees: Record<string, string>
+  customItems: CustomCostItem[]
+}
 
 export const initialOperatingCosts: OperatingCosts = {
-  productionHours: '0',
-  hourlyWage: '22500',
+  laborTotal: '0',
   electricity: '0',
   water: '0',
-  fixedCosts: '4500000',
-  wasteTransport: '0',
+  productFees: {},
+  customItems: [],
 }
 
 export function getCurrentMonth() {
@@ -22,17 +30,20 @@ export function getCurrentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
+export function toWonNumber(value: string) {
+  return Math.max(0, Number(value) || 0)
+}
+
 export function calculateOperatingCosts(costs: OperatingCosts) {
-  const toNumber = (value: string) => Math.max(0, Number(value) || 0)
-  const laborCost = toNumber(costs.productionHours) * toNumber(costs.hourlyWage)
-  const utilityCost = toNumber(costs.electricity) + toNumber(costs.water)
-  const indirectCost = toNumber(costs.fixedCosts) + toNumber(costs.wasteTransport)
+  const laborCost = toWonNumber(costs.laborTotal)
+  const customTotal = (costs.customItems ?? []).reduce((sum, item) => sum + toWonNumber(item.amount), 0)
+  const utilityCost = toWonNumber(costs.electricity) + toWonNumber(costs.water) + customTotal
 
   return {
     laborCost,
     utilityCost,
-    indirectCost,
-    totalCost: laborCost + utilityCost + indirectCost,
+    indirectCost: 0,
+    totalCost: laborCost + utilityCost,
   }
 }
 

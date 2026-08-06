@@ -1,6 +1,8 @@
-import type { MaterialRow } from '../../utils/materials'
+import { PRODUCTION_ENTRY_STORAGE_KEY, type ProductionEntryRow } from '../raw-material-entry/productionEntryData'
+import type { RecipeProduct } from '../product-management/productManagementData'
 import {
-  calculateOperatingCosts,
+  toWonNumber,
+  type CustomCostItem,
   type OperatingCosts,
 } from '../operating-cost-entry/operatingCostModel'
 
@@ -9,32 +11,41 @@ type StoredOperatingCosts = {
   costs: OperatingCosts
 }
 
-export type MaterialCostItem = {
+export type ProductMaterialLine = {
+  name: string
+  usage: number
+  unit: string
+  unitPrice?: number
+  cost: number
+}
+
+export type ProductSummaryItem = {
   id: string
   name: string
-  quantity: number
-  unitCost: number
+  production: string
+  materials: ProductMaterialLine[]
+  materialCost: number
+  processingFee: number
+}
+
+export type OperatingLine = {
+  label: string
   amount: number
 }
 
 export type ProductionCostSummary = {
   month: string
-  materials: MaterialCostItem[]
+  products: ProductSummaryItem[]
   materialCost: number
+  laborTotal: number
+  utilityLines: OperatingLine[]
+  operatingCost: number
+  totalCost: number
   laborCost: number
   utilityCost: number
   indirectCost: number
-  operatingCost: number
-  totalCost: number
   hasMaterialData: boolean
   hasOperatingData: boolean
-}
-
-const emptyOperatingTotals = {
-  laborCost: 0,
-  utilityCost: 0,
-  indirectCost: 0,
-  totalCost: 0,
 }
 
 function readStoredJson<T>(key: string): T | null {
@@ -46,36 +57,57 @@ function readStoredJson<T>(key: string): T | null {
   }
 }
 
-function toNumber(value: string | number) {
-  const normalized = String(value).replaceAll(',', '').replace(/[^\d.-]/g, '')
-  return Math.max(0, Number(normalized) || 0)
-}
-
-export function loadProductionCostSummary(): ProductionCostSummary {
-  const storedMaterials = readStoredJson<MaterialRow[]>('cost-analysis-material-preview') ?? []
+export function loadProductionCostSummary(products: RecipeProduct[]): ProductionCostSummary {
+  const entryRows = readStoredJson<ProductionEntryRow[]>(PRODUCTION_ENTRY_STORAGE_KEY) ?? []
   const storedOperating = readStoredJson<StoredOperatingCosts>('cost-analysis-operating-costs')
-  const materials = storedMaterials
-    .filter((material) => material.name.trim())
-    .map((material) => {
-      const quantity = toNumber(material.quantity)
-      const unitCost = toNumber(material.unitCost)
-      return { id: material.id, name: material.name, quantity, unitCost, amount: quantity * unitCost }
-    })
-  const materialCost = materials.reduce((total, material) => total + material.amount, 0)
-  const operatingTotals = storedOperating?.costs
-    ? calculateOperatingCosts(storedOperating.costs)
-    : emptyOperatingTotals
+  const costs = storedOperating?.costs
+
+  const productionById = new Map(entryRows.map((row) => [row.id, row.production]))
+  const feeById = costs?.productFees ?? {}
+
+  const summaryProducts: ProductSummaryItem[] = products.map((product) => {
+    const materials = product.ingredients.map((ingredient) => ({
+      name: ingredient.name,
+      usage: ingredient.usage,
+      unit: ingredient.unit,
+      unitPrice: ingredient.unitPrice,
+      cost: ingredient.cost,
+    }))
+    const materialCost = materials.reduce((total, item) => total + item.cost, 0)
+    return {
+      id: product.id,
+      name: product.name,
+      production: productionById.get(product.id) ?? '',
+      materials,
+      materialCost,
+      processingFee: toWonNumber(feeById[product.id] ?? '0'),
+    }
+  })
+
+  const materialCost = summaryProducts.reduce((total, item) => total + item.materialCost, 0)
+
+  const laborTotal = toWonNumber(costs?.laborTotal ?? '0')
+  const customItems: CustomCostItem[] = costs?.customItems ?? []
+  const utilityLines: OperatingLine[] = [
+    { label: '전기세', amount: toWonNumber(costs?.electricity ?? '0') },
+    { label: '물세', amount: toWonNumber(costs?.water ?? '0') },
+    ...customItems.map((item) => ({ label: item.name || '기타 항목', amount: toWonNumber(item.amount) })),
+  ]
+  const utilityTotal = utilityLines.reduce((total, line) => total + line.amount, 0)
+  const operatingCost = laborTotal + utilityTotal
 
   return {
     month: storedOperating?.month ?? '',
-    materials,
+    products: summaryProducts,
     materialCost,
-    laborCost: operatingTotals.laborCost,
-    utilityCost: operatingTotals.utilityCost,
-    indirectCost: operatingTotals.indirectCost,
-    operatingCost: operatingTotals.totalCost,
-    totalCost: materialCost + operatingTotals.totalCost,
-    hasMaterialData: materials.length > 0,
+    laborTotal,
+    utilityLines,
+    operatingCost,
+    totalCost: materialCost + operatingCost,
+    laborCost: laborTotal,
+    utilityCost: utilityTotal,
+    indirectCost: 0,
+    hasMaterialData: entryRows.length > 0 || products.length > 0,
     hasOperatingData: Boolean(storedOperating),
   }
 }
