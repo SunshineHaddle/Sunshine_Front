@@ -7,10 +7,6 @@
 }
 
 @media (max-width: 1050px) {
-  .raw-materials-entry-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .raw-materials-page,
   .operating-page,
   .production-page {
@@ -50,11 +46,6 @@
     padding-right: 24px;
     padding-left: 24px;
   }
-
-  .raw-materials-entry-grid {
-    grid-template-columns: minmax(0, 1fr);
-    overflow: visible;
-  }
 }
 
 @media (max-width: 680px) {
@@ -86,60 +77,42 @@
     line-height: 1.55;
   }
 
-  .raw-materials-entry-grid {
-    grid-template-columns: 1fr;
+  .production-entry {
     margin-top: 28px;
-    overflow: visible;
   }
 
-  .material-preview {
-    padding-right: 0;
-    padding-left: 0;
+  .production-upload {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
   }
 
-  .material-preview__heading {
-    grid-template-columns: 1fr 1fr;
-    padding-right: 2px;
-    padding-left: 2px;
+  .production-upload__button {
+    width: 100%;
   }
 
-  .material-preview__title {
-    grid-column: 1 / -1;
+  .production-list__meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  .material-preview__labels {
+  .production-list__labels {
     display: none;
   }
 
-  .material-preview__row {
-    grid-template-columns: minmax(0, 1fr) minmax(76px, 0.65fr) 36px;
+  .production-item {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
-  .material-preview__row label:first-child {
-    grid-column: 1 / -1;
+  .production-item__name {
+    min-height: 44px;
+    padding: 0 4px;
   }
 
-  .material-preview__field-label {
-    position: static;
-    display: block;
-    width: auto;
-    height: auto;
-    margin: 0 0 6px 4px;
-    overflow: visible;
-    clip: auto;
-    color: #918b8f;
-    font-size: 10px;
-    white-space: normal;
-  }
-
-  .material-preview__number-field em {
-    top: auto;
-    bottom: 13px;
-    transform: none;
-  }
-
-  .material-preview__row button {
-    align-self: end;
+  .production-item__input input {
+    height: 48px;
   }
 
   .raw-materials-footer {

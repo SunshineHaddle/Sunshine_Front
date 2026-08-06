@@ -4,6 +4,23 @@ import type { ProductionCostSummary } from '../../pages/production-result/produc
 import { CostCompositionChart } from '../../pages/production-result/CostCompositionChart'
 import { Icon } from '../common/Icon'
 
+type ExchangeCurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY'
+
+const exchangeRates: Record<ExchangeCurrencyCode, {
+  flag: string
+  label: string
+  value: string
+  change: string
+  changeTone: 'up' | 'down'
+}> = {
+  USD: { flag: '🇺🇸', label: 'USD/KRW', value: '1,386.40', change: '+0.18%', changeTone: 'up' },
+  JPY: { flag: '🇯🇵', label: 'JPY/KRW', value: '9.05', change: '-0.32%', changeTone: 'down' },
+  EUR: { flag: '🇪🇺', label: 'EUR/KRW', value: '1,455.00', change: '+0.42%', changeTone: 'up' },
+  CNY: { flag: '🇨🇳', label: 'CNY/KRW', value: '185.40', change: '-0.11%', changeTone: 'down' },
+}
+
+const exchangeCurrencyCodes = Object.keys(exchangeRates) as ExchangeCurrencyCode[]
+
 type ProductCostTrendCarouselProps = {
   products: RecipeProduct[]
   onOpen: (productId: string) => void
@@ -16,16 +33,16 @@ type FinalCostSummaryCardProps = {
 }
 
 const trendPatterns = [
-  [0.91, 0.94, 0.93, 0.96, 0.98, 1],
-  [1.06, 1.04, 1.05, 1.02, 1.01, 1],
-  [0.95, 0.94, 0.96, 0.97, 0.96, 1],
+  [0.86, 0.88, 0.87, 0.90, 0.89, 0.92, 0.93, 0.95, 0.94, 0.97, 0.98, 1],
+  [1.12, 1.10, 1.11, 1.08, 1.09, 1.06, 1.05, 1.04, 1.03, 1.02, 1.01, 1],
+  [0.93, 0.95, 0.92, 0.96, 0.94, 0.97, 0.95, 0.98, 0.96, 0.99, 0.97, 1],
 ]
 const numberFormatter = new Intl.NumberFormat('ko-KR')
 
 function getMonthLabels() {
   const today = new Date()
-  return Array.from({ length: 6 }, (_, index) => {
-    const date = new Date(today.getFullYear(), today.getMonth() - 5 + index, 1)
+  return Array.from({ length: 12 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth() - 11 + index, 1)
     return `${date.getMonth() + 1}월`
   })
 }
@@ -40,17 +57,25 @@ function getProductCostTrend(product: RecipeProduct, productIndex: number) {
   const maximum = Math.max(...values)
   const range = Math.max(maximum - minimum, 1)
   const coordinates = values.map((value, index) => ({
-    x: 10 + index * 56,
-    y: 86 - ((value - minimum) / range) * 62,
+    x: 20 + (index / (values.length - 1)) * 860,
+    y: 250 - ((value - minimum) / range) * 180,
   }))
   const previousCost = values.at(-2) ?? currentCost
   const changeRate = ((currentCost - previousCost) / Math.max(previousCost, 1)) * 100
+
+  const baseline = 290
+  const firstX = coordinates[0].x
+  const lastX = coordinates.at(-1)!.x
+  const areaPath = `M ${firstX},${baseline} `
+    + coordinates.map(({ x, y }) => `L ${x},${y}`).join(' ')
+    + ` L ${lastX},${baseline} Z`
 
   return {
     changeRate,
     coordinates,
     currentCost,
     points: coordinates.map(({ x, y }) => `${x},${y}`).join(' '),
+    areaPath,
     values,
   }
 }
@@ -80,6 +105,11 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
 
   const visibleIndex = activeIndex % products.length
 
+  const goToPrevious = () =>
+    setActiveIndex((current) => (current - 1 + products.length) % products.length)
+  const goToNext = () =>
+    setActiveIndex((current) => (current + 1) % products.length)
+
   return (
     <section
       className={cardClassName}
@@ -91,6 +121,17 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
     >
       <div className="product-cost-carousel__heading">
         <h2 id="product-cost-card-title"><Icon name="trend" size={22} />제품별 원가 변동 추이</h2>
+        {products.length > 1 && (
+          <div className="product-cost-carousel__nav">
+            <button type="button" aria-label="이전 제품" onClick={goToPrevious}>
+              <Icon name="chevron-left" size={18} />
+            </button>
+            <span className="product-cost-carousel__counter">{visibleIndex + 1} / {products.length}</span>
+            <button type="button" aria-label="다음 제품" onClick={goToNext}>
+              <Icon name="chevron-right" size={18} />
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="product-cost-carousel__viewport">
@@ -102,7 +143,7 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
             return (
               <article className="product-cost-slide" aria-hidden={index !== visibleIndex} key={product.id}>
                 <div className="product-cost-slide__product">
-                  <div><strong>{product.name}</strong><span>{product.id}</span></div>
+                  <div><strong>{product.name}</strong></div>
                   <button type="button" onClick={() => onOpen(product.id)} tabIndex={index === visibleIndex ? 0 : -1}>
                     상세 보기 <Icon name="chevron-right" size={14} />
                   </button>
@@ -117,11 +158,12 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
                 </div>
 
                 <div className="product-cost-slide__chart">
-                  <svg viewBox="0 0 300 104" role="img" aria-label={`${product.name} 최근 6개월 총원가 추이`}>
-                    {[24, 55, 86].map((y) => <line key={y} x1="10" x2="290" y1={y} y2={y} />)}
+                  <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 6개월 총원가 추이`}>
+                    {[70, 160, 250].map((y) => <line key={y} x1="20" x2="880" y1={y} y2={y} />)}
+                    <path className="product-cost-slide__area" d={trend.areaPath} />
                     <polyline points={trend.points} />
                     {trend.values.map((value, pointIndex) => (
-                      <circle key={`${product.id}-${pointIndex}`} cx={trend.coordinates[pointIndex].x} cy={trend.coordinates[pointIndex].y} r="3">
+                      <circle key={`${product.id}-${pointIndex}`} cx={trend.coordinates[pointIndex].x} cy={trend.coordinates[pointIndex].y} r="6">
                         <title>{`${monthLabels[pointIndex]} ${numberFormatter.format(value)}원`}</title>
                       </circle>
                     ))}
@@ -133,7 +175,35 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
           })}
         </div>
       </div>
+
     </section>
+  )
+}
+
+export function ExchangeRatePill() {
+  const [currency, setCurrency] = useState<ExchangeCurrencyCode>('USD')
+  const rate = exchangeRates[currency]
+
+  return (
+    <div className="exchange-rate-card">
+      <div className="exchange-rate-card__select">
+        <span className="exchange-rate-card__flag" aria-hidden="true">{rate.flag}</span>
+        <select
+          aria-label="환율 통화 선택"
+          value={currency}
+          onChange={(event) => setCurrency(event.target.value as ExchangeCurrencyCode)}
+        >
+          {exchangeCurrencyCodes.map((code) => (
+            <option key={code} value={code}>{exchangeRates[code].label}</option>
+          ))}
+        </select>
+        <Icon name="chevron-down" size={14} />
+      </div>
+      <div className="exchange-rate-card__value">
+        <strong>{rate.value}<small>원</small></strong>
+        <em className={`exchange-rate-card__change is-${rate.changeTone}`}>{rate.change}</em>
+      </div>
+    </div>
   )
 }
 

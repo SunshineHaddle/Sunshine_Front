@@ -11,11 +11,13 @@ export type IconName =
   | 'check'
   | 'chevron-left'
   | 'chevron-right'
+  | 'chevron-down'
   | 'comparison'
   | 'dashboard'
   | 'data'
   | 'download'
   | 'droplet'
+  | 'edit'
   | 'exchange'
   | 'excel'
   | 'filter'
@@ -74,6 +76,7 @@ const paths: Record<IconName, ReactNode> = {
   check: <path d="m5 12 4 4L19 6" />,
   'chevron-left': <path d="m15 18-6-6 6-6" />,
   'chevron-right': <path d="m9 18 6-6-6-6" />,
+  'chevron-down': <path d="m6 9 6 6 6-6" />,
   comparison: (
     <>
       <path d="M4 7h13M14 4l3 3-3 3M20 17H7M10 14l-3 3 3 3" />
@@ -98,6 +101,12 @@ const paths: Record<IconName, ReactNode> = {
     </>
   ),
   droplet: <path d="M12 3s6 6.2 6 11a6 6 0 0 1-12 0c0-4.8 6-11 6-11Z" />,
+  edit: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </>
+  ),
   exchange: (
     <>
       <path d="M20 7a9 9 0 0 0-15.5-2L2 8" />

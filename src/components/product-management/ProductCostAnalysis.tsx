@@ -1,62 +1,25 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Icon } from '../common/Icon'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
+import type { ProductCostAnalysisState } from './useProductCostAnalysis'
 
 type ProductCostAnalysisProps = {
   product: RecipeProduct
+  state: ProductCostAnalysisState
   onAction: (message: string) => void
 }
 
 const laborTrend = [72, 66, 61, 54, 49, 42]
 const numberFormatter = new Intl.NumberFormat('ko-KR')
 
-export function ProductCostAnalysis({ product, onAction }: ProductCostAnalysisProps) {
-  const [draftMonth, setDraftMonth] = useState('2026-06')
-  const [activeMonth, setActiveMonth] = useState(draftMonth)
+export function ProductCostAnalysis({ product, state, onAction }: ProductCostAnalysisProps) {
+  const { costRate, costComposition } = state
+
   const [showDetails, setShowDetails] = useState(false)
   const [showReportOptions, setShowReportOptions] = useState(false)
   const [includeTrend, setIncludeTrend] = useState(true)
   const [includeDetails, setIncludeDetails] = useState(true)
   const [includeCompetitors, setIncludeCompetitors] = useState(false)
-
-  const financeCost = product.indirectCosts
-    .filter((cost) => cost.name.includes('이자') || cost.name.includes('금융'))
-    .reduce((sum, cost) => sum + cost.amount, 0)
-  const otherCost = product.indirectCosts
-    .filter((cost) => cost.name.includes('식대') || cost.name.includes('기타'))
-    .reduce((sum, cost) => sum + cost.amount, 0)
-  const indirectCost = product.indirectCosts.reduce((sum, cost) => sum + cost.amount, 0)
-    - financeCost
-    - otherCost
-  const manufacturingCost = product.materialCost + product.laborCost
-  const totalCost = manufacturingCost + indirectCost + financeCost + otherCost
-  const suggestedSalePrice = Math.max(100, Math.round((totalCost / 0.788) / 100) * 100)
-  const [activeSalePrice, setActiveSalePrice] = useState(suggestedSalePrice)
-  const costRate = (totalCost / Math.max(activeSalePrice, 1)) * 100
-  const margin = activeSalePrice - totalCost
-  const costComposition = useMemo(() => {
-    const costs = [
-      { id: 'material', label: '원재료', amount: product.materialCost },
-      { id: 'labor', label: '노무', amount: product.laborCost },
-      { id: 'indirect', label: '간접', amount: indirectCost },
-      { id: 'finance', label: '금융', amount: financeCost },
-      { id: 'other', label: '기타', amount: otherCost },
-    ]
-
-    return costs.map((item) => ({
-      ...item,
-      value: totalCost > 0 ? (item.amount / totalCost) * 100 : 0,
-    }))
-  }, [financeCost, indirectCost, otherCost, product.laborCost, product.materialCost, totalCost])
-  const monthLabel = useMemo(() => {
-    const [year, month] = activeMonth.split('-')
-    return `${year}년 ${Number(month)}월`
-  }, [activeMonth])
-
-  const applyFilters = () => {
-    setActiveMonth(draftMonth)
-    onAction(`${draftMonth.replace('-', '년 ')}월 원가 분석을 조회했습니다.`)
-  }
 
   const printReport = () => {
     onAction('인쇄 창에서 PDF로 저장할 수 있습니다.')
@@ -86,53 +49,6 @@ export function ProductCostAnalysis({ product, onAction }: ProductCostAnalysisPr
           </div>
         </dl>
       </header>
-
-      <div className="cost-analysis-filter cost-analysis-filter--product" aria-label="원가 분석 조회 조건">
-        <label>
-          <span>분석 월</span>
-          <input
-            type="month"
-            value={draftMonth}
-            onChange={(event) => setDraftMonth(event.target.value)}
-          />
-        </label>
-        <button className="cost-analysis-filter__submit" type="button" onClick={applyFilters}>
-          조회하기
-        </button>
-        <p>{monthLabel} · {product.name} 원가 기준</p>
-      </div>
-
-      <div className="cost-analysis-kpis">
-        <article>
-          <span>제조원가</span>
-          <strong>{numberFormatter.format(manufacturingCost)}<small>원</small></strong>
-          <em className="is-up">+4.2%</em>
-        </article>
-        <article>
-          <span>경영 총원가</span>
-          <strong>{numberFormatter.format(totalCost)}<small>원</small></strong>
-          <em className="is-up">+5.8%</em>
-        </article>
-        <article>
-          <span>판매가</span>
-          <label className="cost-analysis-kpis__price">
-            <input
-              aria-label="판매가"
-              min="1"
-              type="number"
-              value={activeSalePrice}
-              onChange={(event) => setActiveSalePrice(Number(event.target.value))}
-            />
-            <small>원</small>
-          </label>
-          <em>변경 시 원가율과 예상 마진 자동 계산</em>
-        </article>
-        <article className={costRate > 70 ? 'is-warning' : ''}>
-          <span>원가율</span>
-          <strong>{costRate.toFixed(1)}<small>%</small></strong>
-          <em>예상 마진 {numberFormatter.format(margin)}원</em>
-        </article>
-      </div>
 
       <div className="cost-analysis-detail-grid">
         <article className="cost-analysis-panel cost-composition">

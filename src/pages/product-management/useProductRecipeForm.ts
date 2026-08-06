@@ -2,15 +2,11 @@ import { useMemo, useState, type FormEvent } from 'react'
 import {
   ingredientCatalog,
   type IngredientCatalogItem,
+  type IngredientUnit,
   type RecipeProduct,
 } from './productManagementData'
-import {
-  DEFAULT_RECIPE_STORAGE_KEY,
-  parseDefaultRecipe,
-} from '../../utils/materials'
 
 export type SelectedIngredient = IngredientCatalogItem & { usage: number }
-export type IndirectCosts = { electricity: number; meal: number; interest: number }
 
 type UseProductRecipeFormOptions = {
   nextProductNumber: number
@@ -22,16 +18,11 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
   const [description, setDescription] = useState('')
   const [ingredientQuery, setIngredientQuery] = useState('')
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
-  const [hourlyWage, setHourlyWage] = useState(12_000)
-  const [laborHours, setLaborHours] = useState(1.5)
-  const [indirectCosts, setIndirectCosts] = useState<IndirectCosts>({ electricity: 1_200, meal: 1_000, interest: 500 })
-  const [hasDefaultRecipe, setHasDefaultRecipe] = useState(() => {
-    try {
-      return Boolean(parseDefaultRecipe(window.localStorage.getItem(DEFAULT_RECIPE_STORAGE_KEY)))
-    } catch {
-      return false
-    }
-  })
+
+  // 새 재료 직접 입력
+  const [newIngredientName, setNewIngredientName] = useState('')
+  const [newIngredientPrice, setNewIngredientPrice] = useState('')
+  const [newIngredientUnit, setNewIngredientUnit] = useState<IngredientUnit>('kg')
 
   const availableIngredients = useMemo(() => {
     const query = ingredientQuery.trim().toLocaleLowerCase('ko-KR')
@@ -42,13 +33,32 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
   }, [ingredientQuery, selectedIngredients])
 
   const totalMaterialCost = selectedIngredients.reduce((total, ingredient) => total + ingredient.unitPrice * ingredient.usage, 0)
-  const laborCost = hourlyWage * laborHours
-  const totalIndirectCost = Object.values(indirectCosts).reduce((sum, cost) => sum + cost, 0)
-  const totalCost = totalMaterialCost + laborCost + totalIndirectCost
+  const totalCost = totalMaterialCost
 
   const addIngredient = (ingredient: IngredientCatalogItem) => {
     setSelectedIngredients((current) => [...current, { ...ingredient, usage: 0.1 }])
     setIngredientQuery('')
+  }
+
+  const addNewIngredient = () => {
+    const name = newIngredientName.trim()
+    const price = Number(newIngredientPrice)
+    if (!name || !Number.isFinite(price) || price < 0) return false
+
+    setSelectedIngredients((current) => [
+      ...current,
+      {
+        id: `MAT-NEW-${Date.now()}`,
+        name,
+        unit: newIngredientUnit,
+        unitPrice: price,
+        usage: 0.1,
+      },
+    ])
+    setNewIngredientName('')
+    setNewIngredientPrice('')
+    setNewIngredientUnit('kg')
+    return true
   }
 
   const updateUsage = (id: string, usage: number) => {
@@ -65,37 +75,6 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
 
   const removeIngredient = (id: string) => {
     setSelectedIngredients((current) => current.filter((item) => item.id !== id))
-  }
-
-  const updateIndirectCost = (field: keyof IndirectCosts, value: number) => {
-    setIndirectCosts((current) => ({ ...current, [field]: Math.max(0, value) }))
-  }
-
-  const saveDefaultRecipe = () => {
-    if (selectedIngredients.length === 0) return false
-    try {
-      window.localStorage.setItem(DEFAULT_RECIPE_STORAGE_KEY, JSON.stringify(selectedIngredients))
-      setHasDefaultRecipe(true)
-      return true
-    } catch {
-      return false
-    }
-  }
-
-  const loadDefaultRecipe = () => {
-    try {
-      const storedRecipe = parseDefaultRecipe(window.localStorage.getItem(DEFAULT_RECIPE_STORAGE_KEY))
-      if (!storedRecipe) {
-        setHasDefaultRecipe(false)
-        return false
-      }
-      setSelectedIngredients(storedRecipe)
-      setIngredientQuery('')
-      return true
-    } catch {
-      setHasDefaultRecipe(false)
-      return false
-    }
   }
 
   const saveRecipe = (event: FormEvent<HTMLFormElement>) => {
@@ -116,21 +95,18 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
         unit: ingredient.unit,
         cost: ingredient.unitPrice * ingredient.usage,
       })),
-      laborCost,
-      indirectCosts: [
-        { name: '전기세', amount: indirectCosts.electricity },
-        { name: '식대', amount: indirectCosts.meal },
-        { name: '이자 비용', amount: indirectCosts.interest },
-      ],
+      laborCost: 0,
+      indirectCosts: [],
     })
   }
 
   return {
     productName, setProductName, description, setDescription,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts, hasDefaultRecipe,
-    totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost,
-    saveDefaultRecipe, loadDefaultRecipe, saveRecipe,
+    newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
+    newIngredientUnit, setNewIngredientUnit,
+    totalMaterialCost, totalCost,
+    addIngredient, addNewIngredient, updateUsage, updateUnitPrice, removeIngredient,
+    saveRecipe,
   }
 }

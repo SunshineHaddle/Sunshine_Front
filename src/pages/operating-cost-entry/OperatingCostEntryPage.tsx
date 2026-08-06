@@ -12,6 +12,7 @@ import {
 
 type OperatingCostEntryPageProps = {
   onNavigate: (route: AppRoute) => void
+  hideSidebar?: boolean
   onAction: (message: string) => void
 }
 
@@ -29,7 +30,7 @@ function loadStoredOperatingEntry(): StoredOperatingEntry | null {
   }
 }
 
-export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEntryPageProps) {
+export function OperatingCostEntryPage({ onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
   const [storedEntry] = useState(loadStoredOperatingEntry)
   const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
   const [costs, setCosts] = useState(() => storedEntry?.costs ?? initialOperatingCosts)
@@ -50,7 +51,7 @@ export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEn
 
   return (
     <div className="operating-layout">
-      <Sidebar activeRoute="data-entry-2" onNavigate={onNavigate} />
+      {!hideSidebar && <Sidebar activeRoute="data-entry-2" onNavigate={onNavigate} />}
 
       <main className="operating-page">
         <header className="operating-heading">
@@ -73,7 +74,11 @@ export function OperatingCostEntryPage({ onNavigate, onAction }: OperatingCostEn
 
         <footer className="operating-footer">
           <button className="workflow-back-button" type="button" onClick={() => onNavigate('data-entry-1')}><Icon name="chevron-left" size={16} /> 이전 단계</button>
-          <button className="workflow-coral-button" type="button" onClick={goToNextStep}>다음 단계 <Icon name="chevron-right" size={16} /></button>
+          {hideSidebar ? (
+            <button className="workflow-coral-button" type="button" onClick={goToNextStep}>저장 <Icon name="chevron-right" size={16} /></button>
+          ) : (
+            <button className="workflow-coral-button" type="button" onClick={goToNextStep}>다음 단계 <Icon name="chevron-right" size={16} /></button>
+          )}
         </footer>
       </main>
     </div>
