@@ -113,8 +113,10 @@
 
 .operating-cost-labor__products-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 20px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding-left: 16px;
+  border-left: 1.5px solid #e2dedf;
 }
 
 .operating-cost-labor__empty {
@@ -211,4 +213,74 @@
   color: #ba0036;
   border-color: rgba(186, 0, 54, 0.4);
   background: #fdf7f7;
+}
+
+.operating-cost-labor__products-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.operating-cost-labor__products-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.operating-cost-labor__equalize {
+  padding: 4px 12px;
+  color: #6a6467;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #d7d2d5;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.operating-cost-labor__equalize:hover {
+  color: #ba0036;
+  border-color: rgba(186, 0, 54, 0.4);
+  background: #fdf7f7;
+}
+
+.operating-cost-field__label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding-left: 11px;
+  color: #999397;
+  font-size: 10px;
+}
+
+.operating-cost-field__amount {
+  color: #ba0036;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  font-variant-numeric: tabular-nums;
+}
+
+.operating-cost-labor__share-total {
+  color: #b42318;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.operating-cost-labor__share-total.is-valid {
+  color: #067647;
+}
+
+.operating-cost-labor__share-warning {
+  margin: 10px 0 0;
+  color: #b42318;
+  font-size: 11px;
+}
+
+.workflow-coral-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

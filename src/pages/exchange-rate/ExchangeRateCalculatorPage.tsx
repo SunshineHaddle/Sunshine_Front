@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
@@ -46,22 +46,34 @@ const productTotalCost = (product: RecipeProduct) => {
   return product.materialCost + product.laborCost + indirect
 }
 
+type SavedRow = { name?: string; cost?: number; marginRate?: number }
+
 const loadProductRows = (products: RecipeProduct[]): ExchangeMaterialRow[] => {
-  let savedSettings: Record<string, { marginRate?: number }> = {}
+  let saved: Record<string, SavedRow> = {}
   try {
-    savedSettings = JSON.parse(
-      window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}',
-    ) as typeof savedSettings
+    saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}') as typeof saved
   } catch {
-    savedSettings = {}
+    saved = {}
   }
 
-  return products.map((product, index) => ({
+  const productRows = products.map((product, index) => ({
     id: product.id,
-    name: product.name,
-    cost: productTotalCost(product),
-    marginRate: savedSettings[product.id]?.marginRate ?? defaultMargins[index % defaultMargins.length],
+    name: saved[product.id]?.name ?? product.name,
+    cost: saved[product.id]?.cost ?? productTotalCost(product),
+    marginRate: saved[product.id]?.marginRate ?? defaultMargins[index % defaultMargins.length],
   }))
+
+  const productIds = new Set(products.map((product) => product.id))
+  const extraRows = Object.entries(saved)
+    .filter(([id]) => !productIds.has(id))
+    .map(([id, value]) => ({
+      id,
+      name: value.name ?? '새 제품',
+      cost: value.cost ?? 0,
+      marginRate: value.marginRate ?? 20,
+    }))
+
+  return [...productRows, ...extraRows]
 }
 
 const formatKrw = (value: number) => Math.round(value).toLocaleString('ko-KR')
@@ -98,22 +110,12 @@ export function ExchangeRateCalculatorPage({
     setRateUpdatedAt(formatRateTime(new Date()))
   }
 
-  const totalSalePrice = useMemo(
-    () => rows.reduce((total, row) => total + calculateSalePrice(row), 0),
-    [rows],
-  )
-
-  const totalCost = useMemo(
-    () => rows.reduce((total, row) => total + calculateCost(row), 0),
-    [rows],
-  )
-
-  const averageMarginRate = useMemo(
-    () => rows.length > 0
-      ? rows.reduce((total, row) => total + row.marginRate, 0) / rows.length
-      : 0,
-    [rows],
-  )
+  useEffect(() => {
+    const settings = Object.fromEntries(
+      rows.map((row) => [row.id, { name: row.name, cost: row.cost, marginRate: row.marginRate }]),
+    )
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
+  }, [rows])
 
   const updateRow = (id: string, values: Partial<ExchangeMaterialRow>) => {
     setRows((current) => current.map((row) => (
@@ -178,11 +180,27 @@ export function ExchangeRateCalculatorPage({
                 {rows.map((row) => (
                   <tr key={row.id}>
                     <td data-label="제품명">
-                      <strong>{row.name}</strong>
+                      <input
+                        className="exchange-name-input"
+                        type="text"
+                        aria-label="제품명"
+                        value={row.name}
+                        placeholder="제품명"
+                        onChange={(event) => updateRow(row.id, { name: event.target.value })}
+                      />
                       <span>제품 1개 기준</span>
                     </td>
                     <td data-label="계산 원가">
-                      <span className="exchange-number">{formatKrw(calculateCost(row))}</span>
+                      <label className="exchange-cost-field">
+                        <span className="visually-hidden">{row.name} 계산 원가</span>
+                        <input
+                          min="0"
+                          step="any"
+                          type="number"
+                          value={row.cost}
+                          onChange={(event) => updateRow(row.id, { cost: Math.max(0, parseNumber(event.target.value)) })}
+                        />
+                      </label>
                     </td>
                     <td data-label="마진율">
                       <label className="exchange-margin-field">
@@ -209,27 +227,6 @@ export function ExchangeRateCalculatorPage({
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr>
-                  <th scope="row">총 합계</th>
-                  <td>
-                    <strong>{formatKrw(totalCost)}</strong>
-                    <span>KRW</span>
-                  </td>
-                  <td>
-                    <strong>{averageMarginRate.toFixed(1)}%</strong>
-                    <span>평균 마진율</span>
-                  </td>
-                  <td>
-                    <strong>{formatKrw(totalSalePrice)}</strong>
-                    <span>KRW</span>
-                  </td>
-                  <td>
-                    <strong>{currencySettings[selectedCurrency].symbol} {(totalSalePrice / currencySettings[selectedCurrency].rate).toLocaleString('en-US', { minimumFractionDigits: currencySettings[selectedCurrency].fractionDigits, maximumFractionDigits: currencySettings[selectedCurrency].fractionDigits })}</strong>
-                    <span>{selectedCurrency} 합계</span>
-                  </td>
-                </tr>
-              </tfoot>
             </table>
           </div>
           <button className="exchange-add-material" type="button" onClick={addMaterial}>

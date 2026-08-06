@@ -47,7 +47,7 @@
   min-height: 46px;
   padding: 0 20px;
   gap: 8px;
-  border-radius: 8px;
+  border-radius: 0;
   cursor: pointer;
   font-size: 12px;
   font-weight: 750;
@@ -156,7 +156,7 @@
   font-weight: 600;
   background: #fff;
   border: 1px solid #e2dde0;
-  border-radius: 10px;
+  border-radius: 0;
   cursor: pointer;
 }
 
@@ -228,13 +228,24 @@
   height: 36px;
   padding: 0 30px 0 13px;
   color: #2b2627;
-  background: #f7f7f7;
-  border: 0;
-  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
   outline: 0;
   text-align: right;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.exchange-margin-field input:hover {
+  background: #f6f5f5;
+  border-color: #ececec;
+}
+
+.exchange-margin-field input:focus {
+  background: #f6f5f5;
+  border-color: #d9d4d5;
 }
 
 .exchange-margin-field input::-webkit-inner-spin-button {
@@ -285,7 +296,7 @@
   color: #302a2c;
   background: #f7f7f7;
   border: 0;
-  border-radius: 6px;
+  border-radius: 0;
   outline: 0;
   appearance: none;
   cursor: pointer;
@@ -366,7 +377,7 @@
   overflow: hidden;
   background: #fff;
   border: 0;
-  border-radius: 8px;
+  border-radius: 0;
 }
 
 .exchange-status-grid article > span {
@@ -541,4 +552,60 @@
   .exchange-status-grid article {
     min-height: 108px;
   }
+}
+
+.exchange-name-input {
+  display: block;
+  width: 100%;
+  padding: 6px 8px;
+  color: #242020;
+  font-size: 13px;
+  font-weight: 650;
+  background: transparent;
+  border: 1px solid transparent;
+  outline: 0;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.exchange-name-input:hover {
+  background: #f6f5f5;
+  border-color: #ececec;
+}
+
+.exchange-name-input:focus {
+  background: #f6f5f5;
+  border-color: #d9d4d5;
+}
+
+.exchange-cost-field {
+  display: inline-block;
+  width: min(100%, 150px);
+}
+
+.exchange-cost-field input {
+  width: 100%;
+  height: 36px;
+  padding: 0 12px;
+  color: #2b2627;
+  background: transparent;
+  border: 1px solid transparent;
+  outline: 0;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.exchange-cost-field input:hover {
+  background: #f6f5f5;
+  border-color: #ececec;
+}
+
+.exchange-cost-field input:focus {
+  background: #f6f5f5;
+  border-color: #d9d4d5;
+}
+
+.exchange-cost-field input::-webkit-inner-spin-button {
+  appearance: none;
 }

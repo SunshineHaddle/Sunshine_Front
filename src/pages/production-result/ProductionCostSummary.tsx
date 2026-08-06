@@ -10,7 +10,14 @@ type ProductionCostSummaryProps = {
   onEditOperatingCosts: () => void
 }
 
+const percentFormatter = new Intl.NumberFormat('ko-KR', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 1,
+})
+
 export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatingCosts }: ProductionCostSummaryProps) {
+  const sharePercent = (amount: number) => (summary.totalCost > 0 ? (amount / summary.totalCost) * 100 : 0)
+
   return (
     <section className="production-cost-section" aria-labelledby="cost-summary-title">
       <header className="production-section-heading">
@@ -70,10 +77,29 @@ export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatin
           <button type="button" onClick={onEditOperatingCosts}>2단계 수정</button>
         </div>
         <dl>
-          <div><dt>총 인건비</dt><dd>{formatProductionWon(summary.laborTotal)}</dd></div>
+          <div>
+            <dt>총 인건비</dt>
+            <dd>
+              {formatProductionWon(summary.laborTotal)}
+              <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(summary.laborTotal))}%)</span>
+            </dd>
+          </div>
           {summary.utilityLines.map((line) => (
-            <div key={line.label}><dt>{line.label}</dt><dd>{formatProductionWon(line.amount)}</dd></div>
+            <div key={line.label}>
+              <dt>{line.label}</dt>
+              <dd>
+                {formatProductionWon(line.amount)}
+                <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(line.amount))}%)</span>
+              </dd>
+            </div>
           ))}
+          <div className="production-operating-summary__total">
+            <dt>운영비 합계</dt>
+            <dd>
+              {formatProductionWon(summary.operatingCost)}
+              <span className="production-operating-summary__share">({percentFormatter.format(sharePercent(summary.operatingCost))}%)</span>
+            </dd>
+          </div>
         </dl>
         {!summary.hasOperatingData && (
           <button className="production-empty-state" type="button" onClick={onEditOperatingCosts}>

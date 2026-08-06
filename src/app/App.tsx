@@ -182,6 +182,11 @@ function App() {
           setSelectedProductId(productId)
           navigate('product-detail')
         }}
+        onRenameProduct={(productId, name) =>
+          setRecipeProducts((current) =>
+            current.map((item) => (item.id === productId ? { ...item, name } : item)),
+          )
+        }
       />
     )
   }

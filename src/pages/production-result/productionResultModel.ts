@@ -1,6 +1,7 @@
 import { PRODUCTION_ENTRY_STORAGE_KEY, type ProductionEntryRow } from '../raw-material-entry/productionEntryData'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import {
+  sumProductFees,
   toWonNumber,
   type CustomCostItem,
   type OperatingCosts,
@@ -88,11 +89,10 @@ export function loadProductionCostSummary(products: RecipeProduct[]): Production
 
   const laborTotal = toWonNumber(costs?.laborTotal ?? '0')
   const customItems: CustomCostItem[] = costs?.customItems ?? []
-  const utilityLines: OperatingLine[] = [
-    { label: '전기세', amount: toWonNumber(costs?.electricity ?? '0') },
-    { label: '물세', amount: toWonNumber(costs?.water ?? '0') },
-    ...customItems.map((item) => ({ label: item.name || '기타 항목', amount: toWonNumber(item.amount) })),
-  ]
+  const utilityLines: OperatingLine[] = customItems.map((item) => ({
+    label: item.name || '기타 항목',
+    amount: sumProductFees(item.productFees),
+  }))
   const utilityTotal = utilityLines.reduce((total, line) => total + line.amount, 0)
   const operatingCost = laborTotal + utilityTotal
 

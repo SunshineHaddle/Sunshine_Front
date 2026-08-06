@@ -12,9 +12,10 @@ type DashboardPageProps = {
   onAction: (message: string) => void
   recipeProducts: RecipeProduct[]
   onSelectRecipe: (productId: string) => void
+  onRenameProduct: (productId: string, name: string) => void
 }
 
-export function DashboardPage({ isWorker = false, onNavigate, recipeProducts, onSelectRecipe }: DashboardPageProps) {
+export function DashboardPage({ isWorker = false, onNavigate, recipeProducts, onSelectRecipe, onRenameProduct }: DashboardPageProps) {
   return (
     <div className={`dashboard-app${isWorker ? ' dashboard-app--worker' : ''}`}>
       <Sidebar activeRoute="dashboard" hidden={isWorker} onNavigate={onNavigate} />
@@ -24,7 +25,7 @@ export function DashboardPage({ isWorker = false, onNavigate, recipeProducts, on
           <DashboardHeader />
 
           <div className="summary-grid">
-            <ProductCostTrendCarousel products={recipeProducts} onOpen={onSelectRecipe} />
+            <ProductCostTrendCarousel products={recipeProducts} onOpen={onSelectRecipe} onRename={onRenameProduct} />
           </div>
 
           <ProductProfitabilityTable items={products} />
