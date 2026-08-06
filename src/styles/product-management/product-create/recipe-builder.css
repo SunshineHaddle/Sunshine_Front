@@ -1,6 +1,6 @@
 .recipe-builder {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
   margin-top: 32px;
   gap: 24px;
@@ -11,10 +11,36 @@
   gap: 20px;
 }
 
-.recipe-builder-section,
-.cost-preview {
+.recipe-builder-section {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
+}
+
+.recipe-builder__submit {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.recipe-builder__submit button {
+  min-width: 200px;
+  padding: 14px 28px;
+  color: #fff;
+  background: var(--color-brand);
+  border: 0;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 160ms ease, opacity 160ms ease;
+}
+
+.recipe-builder__submit button:hover:not(:disabled) {
+  background: var(--color-brand-strong, #a5183a);
+}
+
+.recipe-builder__submit button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

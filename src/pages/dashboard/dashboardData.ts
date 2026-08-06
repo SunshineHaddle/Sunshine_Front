@@ -243,20 +243,6 @@ export const dashboardInsights: DashboardInsight[] = [
     chartLabel: '최근 7개월 제조 원가 추이',
     chartPoints: [18, 23, 20, 28, 26, 33, 29],
   },
-  {
-    id: 'defect-status',
-    title: '불량품 현황',
-    description: '전체 생산량 기준 불량률',
-    value: '1.8',
-    unit: '%',
-    change: '-0.4%p',
-    changeLabel: '전월 대비',
-    icon: 'factory',
-    tone: 'amber',
-    route: 'defect-status-detail',
-    chartLabel: '최근 7개월 불량률 추이',
-    chartPoints: [15, 18, 16, 24, 21, 28, 25],
-  },
 ]
 
 export const dashboardInsightByRoute = Object.fromEntries(

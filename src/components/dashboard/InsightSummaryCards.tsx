@@ -4,13 +4,8 @@ import {
   dashboardInsights,
   type DashboardInsight,
 } from '../../pages/dashboard/dashboardData'
-import type { RecipeProduct } from '../../pages/product-management/productManagementData'
-import { ProductCostTrendCarousel } from './DashboardSummaryCharts'
-
 type InsightSummaryCardsProps = {
   onNavigate: (route: AppRoute) => void
-  products: RecipeProduct[]
-  onSelectProduct: (productId: string) => void
 }
 
 function Sparkline({ insight }: { insight: DashboardInsight }) {
@@ -73,22 +68,20 @@ function InsightCard({ insight, onNavigate }: { insight: DashboardInsight, onNav
   )
 }
 
-export function InsightSummaryCards({ onNavigate, products, onSelectProduct }: InsightSummaryCardsProps) {
-  const [exchangeRate, , defectStatus] = dashboardInsights
+export function InsightSummaryCards({ onNavigate }: InsightSummaryCardsProps) {
+  const [exchangeRate] = dashboardInsights
 
   return (
     <section className="insight-section" aria-labelledby="insight-section-title">
       <div className="insight-section__heading">
         <div>
           <h2 id="insight-section-title">핵심 지표</h2>
-          <p>환율, 제조 원가, 품질 변화를 빠르게 확인하세요.</p>
+          <p>환율, 제조 원가 변화를 빠르게 확인하세요.</p>
         </div>
       </div>
 
       <div className="insight-grid">
         <InsightCard insight={exchangeRate} onNavigate={onNavigate} />
-        <ProductCostTrendCarousel compact products={products} onOpen={onSelectProduct} />
-        <InsightCard insight={defectStatus} onNavigate={onNavigate} />
       </div>
     </section>
   )

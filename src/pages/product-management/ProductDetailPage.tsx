@@ -3,6 +3,8 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from './productManagementData'
 import { ProductCostAnalysis } from '../../components/product-management/ProductCostAnalysis'
+import { ProductCostSummary } from '../../components/product-management/ProductCostSummary'
+import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
 
 type ProductDetailPageProps = {
   product: RecipeProduct
@@ -17,6 +19,8 @@ const currencyFormatter = new Intl.NumberFormat('ko-KR', {
 })
 
 export function ProductDetailPage({ product, onNavigate, onAction }: ProductDetailPageProps) {
+  const analysisState = useProductCostAnalysis(product)
+
   const indirectCost = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
   const totalCost = product.materialCost + product.laborCost + indirectCost
 
@@ -37,11 +41,7 @@ export function ProductDetailPage({ product, onNavigate, onAction }: ProductDeta
           <div><span>제품 1개 예상 총원가</span><strong>{currencyFormatter.format(totalCost)}</strong></div>
         </header>
 
-        <div className="product-cost-overview">
-          <section><span>원재료비</span><strong>{currencyFormatter.format(product.materialCost)}</strong><small>{product.ingredients.length}개 재료</small></section>
-          <section><span>인건비</span><strong>{currencyFormatter.format(product.laborCost)}</strong><small>직접 작업 인건비</small></section>
-          <section><span>기타 간접비</span><strong>{currencyFormatter.format(indirectCost)}</strong><small>전기세·식대·이자 비용</small></section>
-        </div>
+        <ProductCostSummary product={product} state={analysisState} onAction={onAction} />
 
         <div className="product-detail-grid">
           <section className="product-cost-panel" aria-labelledby="material-cost-title">
@@ -64,7 +64,7 @@ export function ProductDetailPage({ product, onNavigate, onAction }: ProductDeta
           </aside>
         </div>
 
-        <ProductCostAnalysis key={product.id} product={product} onAction={onAction} />
+        <ProductCostAnalysis key={product.id} product={product} state={analysisState} onAction={onAction} />
       </main>
     </div>
   )

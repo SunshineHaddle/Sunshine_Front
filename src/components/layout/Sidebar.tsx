@@ -29,7 +29,6 @@ export function Sidebar({ activeRoute, hidden = false, onNavigate }: SidebarProp
               : item.route === 'dashboard'
                 ? activeRoute === 'dashboard' || [
                     'cost-trend-detail',
-                    'defect-status-detail',
                   ].includes(activeRoute)
               : item.route === activeRoute
 

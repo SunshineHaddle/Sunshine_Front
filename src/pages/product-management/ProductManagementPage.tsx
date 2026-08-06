@@ -58,11 +58,15 @@ export function ProductManagementPage({
             {filteredProducts.map((product) => (
               <article className="recipe-card" key={product.id}>
                 <div className="recipe-card__topline">
+                  <span className="recipe-card__thumb" aria-hidden="true">
+                    {product.imageUrl
+                      ? <img src={product.imageUrl} alt="" />
+                      : <span className="recipe-card__thumb-fallback">{product.name.slice(0, 1)}</span>}
+                  </span>
                   <h3>{product.name}</h3>
                 </div>
                 <p>({product.ingredients.map((ingredient) => ingredient.name).join(', ')})</p>
                 <footer>
-                  <span>수율: {product.yieldRate.toFixed(1)}%</span>
                   <button type="button" aria-label={`${product.name} 원가 상세 보기`} onClick={() => onSelectProduct(product.id)}>
                     <Icon name="chevron-right" size={18} />
                   </button>

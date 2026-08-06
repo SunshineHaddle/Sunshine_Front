@@ -11,7 +11,6 @@ import {
 import { OperatingCostEntryPage } from '../pages/operating-cost-entry/OperatingCostEntryPage'
 import { ProductionResultPage } from '../pages/production-result/ProductionResultPage'
 import { RawMaterialEntryPage } from '../pages/raw-material-entry/RawMaterialEntryPage'
-import { InsightDetailPage } from '../pages/dashboard/InsightDetailPage'
 import { ProductManagementPage } from '../pages/product-management/ProductManagementPage'
 import { ProductCreatePage } from '../pages/product-management/ProductCreatePage'
 import {
@@ -91,8 +90,10 @@ function App() {
     messageTimer.current = window.setTimeout(() => setMessage(''), 2600)
   }
 
+  const workerAllowedRoutes: AppRoute[] = ['data-entry-1', 'data-entry-2']
+
   const navigate = (nextRoute: AppRoute) => {
-    if (loginRole === 'worker' && nextRoute !== 'dashboard') return
+    if (loginRole === 'worker' && !workerAllowedRoutes.includes(nextRoute)) return
     setRoute(nextRoute)
     const nextHash = hashForRoute(nextRoute)
     if (window.location.hash !== nextHash) window.location.hash = nextHash
@@ -104,7 +105,7 @@ function App() {
       <LoginPage
         onLogin={(role) => {
           setLoginRole(role)
-          if (role === 'worker') navigate('dashboard')
+          if (role === 'worker') navigate('data-entry-1')
         }}
       />
     )
@@ -113,15 +114,12 @@ function App() {
   let page: ReactNode
 
   if (loginRole === 'worker') {
-    page = (
-      <DashboardPage
-        isWorker
-        recipeProducts={recipeProducts}
-        onNavigate={navigate}
-        onAction={announce}
-        onSelectRecipe={() => {}}
-      />
-    )
+    page =
+      route === 'data-entry-2' ? (
+        <OperatingCostEntryPage hideSidebar onNavigate={navigate} onAction={announce} />
+      ) : (
+        <RawMaterialEntryPage hideSidebar onNavigate={navigate} onAction={announce} />
+      )
   } else if (route === 'data-entry-1') {
     page = <RawMaterialEntryPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'data-entry-2') {
@@ -157,6 +155,7 @@ function App() {
       ?? recipeProducts[0]
     page = (
       <ProductDetailPage
+        key={selectedProduct.id}
         product={selectedProduct}
         onNavigate={navigate}
         onAction={announce}
@@ -166,8 +165,6 @@ function App() {
     page = <ExchangeRateCalculatorPage onNavigate={navigate} onAction={announce} />
   } else if (route === 'user-management') {
     page = <UserManagementPage onNavigate={navigate} onAction={announce} />
-  } else if (route === 'defect-status-detail') {
-    page = <InsightDetailPage route={route} onNavigate={navigate} />
   } else {
     page = (
       <DashboardPage

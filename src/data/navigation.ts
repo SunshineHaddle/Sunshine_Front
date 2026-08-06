@@ -33,7 +33,7 @@ export const navigationItems: NavigationDefinition[] = [
 ]
 
 export const dataEntrySteps: DataEntryStep[] = [
-  { label: '1단계: 원재료', route: 'data-entry-1' },
+  { label: '1단계: 재료비', route: 'data-entry-1' },
   { label: '2단계: 운영비', route: 'data-entry-2' },
   { label: '3단계: 결과 확인', route: 'data-entry-3' },
 ]

@@ -27,10 +27,10 @@ export function ProductCreatePage({
   const {
     productName, setProductName, description, setDescription,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    hourlyWage, setHourlyWage, laborHours, setLaborHours, indirectCosts, hasDefaultRecipe,
-    totalMaterialCost, laborCost, totalIndirectCost, totalCost,
-    addIngredient, updateUsage, updateUnitPrice, removeIngredient, updateIndirectCost,
-    saveDefaultRecipe, loadDefaultRecipe, saveRecipe,
+    newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
+    newIngredientUnit, setNewIngredientUnit,
+    addIngredient, addNewIngredient, updateUsage, updateUnitPrice, removeIngredient,
+    saveRecipe,
   } = recipe
 
   return (
@@ -63,15 +63,7 @@ export function ProductCreatePage({
             <section className="recipe-builder-section" aria-labelledby="ingredient-search-title">
               <div className="recipe-builder-section__heading">
                 <span>02</span>
-                <div><h2 id="ingredient-search-title">재료 추가</h2><p>재료를 검색하고 + 버튼으로 담으세요.</p></div>
-                <button
-                  className="recipe-default-load"
-                  type="button"
-                  disabled={!hasDefaultRecipe}
-                  onClick={() => onAction(loadDefaultRecipe() ? '기본 레시피를 불러왔습니다.' : '저장된 기본 레시피가 없습니다.')}
-                >
-                  불러오기
-                </button>
+                <div><h2 id="ingredient-search-title">재료 추가</h2><p>기존 재료를 검색하거나 새 재료를 직접 만드세요.</p></div>
               </div>
               <label className="ingredient-search-field">
                 <Icon name="search" size={17} />
@@ -87,14 +79,44 @@ export function ProductCreatePage({
                 ))}
                 {availableIngredients.length === 0 && <p>추가할 수 있는 재료가 없습니다.</p>}
               </div>
-              <div className="recipe-default-actions">
-                <button
-                  type="button"
-                  disabled={selectedIngredients.length === 0}
-                  onClick={() => onAction(saveDefaultRecipe() ? '기본 레시피를 저장했습니다.' : '기본 레시피를 저장하지 못했습니다.')}
-                >
-                  기본 레시피로 저장
-                </button>
+
+              <div className="new-ingredient">
+                <h3>새 재료 만들기</h3>
+                <div className="new-ingredient__fields">
+                  <label>
+                    <span>재료명</span>
+                    <input
+                      value={newIngredientName}
+                      placeholder="예: 양파"
+                      onChange={(event) => setNewIngredientName(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>단가(원)</span>
+                    <input
+                      min="0"
+                      step="any"
+                      type="number"
+                      value={newIngredientPrice}
+                      placeholder="0"
+                      onChange={(event) => setNewIngredientPrice(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>단위</span>
+                    <select value={newIngredientUnit} onChange={(event) => setNewIngredientUnit(event.target.value as 'kg' | 'g')}>
+                      <option value="kg">kg</option>
+                      <option value="g">g</option>
+                    </select>
+                  </label>
+                  <button
+                    className="new-ingredient__add"
+                    type="button"
+                    onClick={() => onAction(addNewIngredient() ? '새 재료를 추가했습니다.' : '재료명과 단가를 확인해 주세요.')}
+                  >
+                    <Icon name="add" size={16} /> 추가
+                  </button>
+                </div>
               </div>
             </section>
 
@@ -127,35 +149,13 @@ export function ProductCreatePage({
               )}
             </section>
 
-            <section className="recipe-builder-section recipe-extra-costs" aria-labelledby="extra-cost-title">
-              <div className="recipe-builder-section__heading">
-                <span>04</span>
-                <div><h2 id="extra-cost-title">인건비 및 기타 간접비</h2><p>제품 1개 생산에 배분되는 비용을 입력합니다.</p></div>
-              </div>
-              <div className="extra-cost-fields">
-                <label>시간당 인건비<input min="0" type="number" value={hourlyWage} onChange={(event) => setHourlyWage(Math.max(0, Number(event.target.value)))} /><span>원</span></label>
-                <label>작업 시간<input min="0" step="0.1" type="number" value={laborHours} onChange={(event) => setLaborHours(Math.max(0, Number(event.target.value)))} /><span>시간</span></label>
-                <label>전기세<input min="0" type="number" value={indirectCosts.electricity} onChange={(event) => updateIndirectCost('electricity', Number(event.target.value))} /><span>원</span></label>
-                <label>식대<input min="0" type="number" value={indirectCosts.meal} onChange={(event) => updateIndirectCost('meal', Number(event.target.value))} /><span>원</span></label>
-                <label>이자 비용<input min="0" type="number" value={indirectCosts.interest} onChange={(event) => updateIndirectCost('interest', Number(event.target.value))} /><span>원</span></label>
-              </div>
-            </section>
           </div>
 
-          <aside className="cost-preview" aria-labelledby="cost-preview-title">
-            <span className="cost-preview__label">원가 미리보기</span>
-            <h2 id="cost-preview-title">{productName || '새 제품'}</h2>
-            <p>입력한 사용량을 기준으로 자동 계산됩니다.</p>
-            <dl>
-              <div><dt>재료 수</dt><dd>{selectedIngredients.length}개</dd></div>
-              <div><dt>원재료비</dt><dd>{currencyFormatter.format(totalMaterialCost)}</dd></div>
-              <div><dt>인건비</dt><dd>{currencyFormatter.format(laborCost)}</dd></div>
-              <div><dt>기타 간접비</dt><dd>{currencyFormatter.format(totalIndirectCost)}</dd></div>
-              <div className="cost-preview__total"><dt>예상 총원가</dt><dd>{currencyFormatter.format(totalCost)}</dd></div>
-            </dl>
-            <button type="submit" disabled={!productName.trim() || selectedIngredients.length === 0}>레시피 저장</button>
-            <small>운영비와 포장비는 이후 단계에서 반영할 수 있습니다.</small>
-          </aside>
+          <div className="recipe-builder__submit">
+            <button type="submit" disabled={!productName.trim() || selectedIngredients.length === 0}>
+              레시피 저장
+            </button>
+          </div>
         </form>
       </main>
     </div>

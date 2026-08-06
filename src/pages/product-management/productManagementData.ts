@@ -1,9 +1,11 @@
 export type RecipeProductStatus = 'active' | 'review'
 
+export type IngredientUnit = 'kg' | 'g'
+
 export type RecipeIngredientCost = {
   name: string
   usage: number
-  unit: 'kg'
+  unit: IngredientUnit
   cost: number
 }
 
@@ -16,6 +18,7 @@ export type RecipeProduct = {
   id: string
   name: string
   description: string
+  imageUrl?: string
   yieldRate: number
   materialCost: number
   ingredientCount: number
@@ -28,7 +31,7 @@ export type RecipeProduct = {
 export type IngredientCatalogItem = {
   id: string
   name: string
-  unit: 'kg'
+  unit: IngredientUnit
   unitPrice: number
 }
 
@@ -52,12 +55,12 @@ const recipeCosts = (primaryIngredient: string, materialCost: number) => {
 }
 
 export const initialRecipeProducts: RecipeProduct[] = [
-  { id: 'SKU-2024-001', name: '포기김치', description: '중간 발효 프로파일의 전통 포기김치.', yieldRate: 94.2, materialCost: 18_200, ingredientCount: 8, status: 'active', ...recipeCosts('배추', 18_200) },
-  { id: 'SKU-2024-002', name: '맛김치', description: '소매 포장용 빠른 발효 한입 크기 조각.', yieldRate: 91.8, materialCost: 4_500, ingredientCount: 7, status: 'review', ...recipeCosts('배추', 4_500) },
-  { id: 'SKU-2024-003', name: '총각무김치', description: '아삭한 식감을 살린 총각무 기본 레시피.', yieldRate: 93.5, materialCost: 7_800, ingredientCount: 7, status: 'active', ...recipeCosts('총각무', 7_800) },
-  { id: 'SKU-2024-004', name: '백김치', description: '고춧가루 없이 담백하게 숙성한 배추김치.', yieldRate: 95.1, materialCost: 13_600, ingredientCount: 9, status: 'active', ...recipeCosts('배추', 13_600) },
-  { id: 'SKU-2024-005', name: '깍두기', description: '급식 및 외식 채널용 대용량 무김치.', yieldRate: 92.6, materialCost: 11_400, ingredientCount: 6, status: 'review', ...recipeCosts('무', 11_400) },
-  { id: 'SKU-2024-006', name: '열무김치', description: '여름철 생산용 가벼운 발효 레시피.', yieldRate: 90.9, materialCost: 7_200, ingredientCount: 8, status: 'active', ...recipeCosts('열무', 7_200) },
+  { id: 'SKU-2024-001', name: '포기김치', description: '중간 발효 프로파일의 전통 포기김치.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/Gimchi.jpg', yieldRate: 94.2, materialCost: 18_200, ingredientCount: 8, status: 'active', ...recipeCosts('배추', 18_200) },
+  { id: 'SKU-2024-002', name: '맛김치', description: '소매 포장용 빠른 발효 한입 크기 조각.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/9d/Korean_cuisine-Kimchi-08.jpg', yieldRate: 91.8, materialCost: 4_500, ingredientCount: 7, status: 'review', ...recipeCosts('배추', 4_500) },
+  { id: 'SKU-2024-003', name: '총각무김치', description: '아삭한 식감을 살린 총각무 기본 레시피.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/87/Korean_cuisine-Chonggak_kimchi-01.jpg', yieldRate: 93.5, materialCost: 7_800, ingredientCount: 7, status: 'active', ...recipeCosts('총각무', 7_800) },
+  { id: 'SKU-2024-004', name: '백김치', description: '고춧가루 없이 담백하게 숙성한 배추김치.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e4/Korean.cuisine-Baek.kimchi-02.jpg', yieldRate: 95.1, materialCost: 13_600, ingredientCount: 9, status: 'active', ...recipeCosts('배추', 13_600) },
+  { id: 'SKU-2024-005', name: '깍두기', description: '급식 및 외식 채널용 대용량 무김치.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/01/Kkakdugi%2C_radish_kimchi%2C_by_comicpie_in_Toronto.jpg', yieldRate: 92.6, materialCost: 11_400, ingredientCount: 6, status: 'review', ...recipeCosts('무', 11_400) },
+  { id: 'SKU-2024-006', name: '열무김치', description: '여름철 생산용 가벼운 발효 레시피.', imageUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d8/Yeolmu-kimchi.jpg', yieldRate: 90.9, materialCost: 7_200, ingredientCount: 8, status: 'active', ...recipeCosts('열무', 7_200) },
 ]
 
 export const RECIPE_PRODUCTS_STORAGE_KEY = 'sunshine.recipe-products.v1'

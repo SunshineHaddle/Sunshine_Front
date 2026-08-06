@@ -49,12 +49,34 @@
   letter-spacing: -0.7px;
 }
 
+.product-cost-summary {
+  margin-top: 34px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+  overflow: hidden;
+}
+
 .product-cost-overview {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin-top: 34px;
+  margin-top: 16px;
   background: #fff;
   border: 1px solid #e7e7e7;
+}
+
+.product-cost-overview--embedded {
+  margin-top: 0;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.product-cost-overview__total {
+  background: #faf5f4;
+}
+
+.product-cost-overview__total strong {
+  color: var(--color-brand);
 }
 
 .product-cost-overview section {
