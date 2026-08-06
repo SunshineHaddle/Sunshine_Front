@@ -305,44 +305,108 @@
   font-size: 10px;
 }
 
-.product-cost-slide__name-input {
+.product-cost-slide__selector {
+  position: relative;
+  min-width: 0;
+}
+
+.product-cost-slide__selector-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   width: 100%;
   min-width: 0;
   margin: 0;
-  padding: 2px 6px;
+  padding: 4px 8px;
   color: var(--color-text);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   font-family: inherit;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 6px;
   outline: none;
-  cursor: text;
+  cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
 
-.product-cost-slide__name-input:hover {
+.product-cost-slide__selector-trigger > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-cost-slide__selector-trigger:hover {
   background: rgba(186, 0, 54, 0.05);
   border-color: rgba(186, 0, 54, 0.18);
 }
 
-.product-cost-slide__name-input:focus {
+.product-cost-slide__selector-trigger[aria-expanded='true'] {
   background: #fff;
   border-color: rgba(186, 0, 54, 0.42);
 }
 
-.product-cost-slide__product button {
+.product-cost-slide__selector-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 20;
+  min-width: 100%;
+  max-height: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+.product-cost-slide__selector-menu > li {
+  margin: 0;
+}
+
+.product-cost-slide__selector-menu button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  color: var(--color-text);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: background 120ms ease;
+}
+
+.product-cost-slide__selector-menu button:hover {
+  background: rgba(186, 0, 54, 0.06);
+}
+
+.product-cost-slide__selector-menu button.is-active {
+  color: var(--color-brand);
+  background: rgba(186, 0, 54, 0.1);
+}
+
+.product-cost-slide__product > button {
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  padding: 4px 0;
-  gap: 2px;
+  padding: 6px 4px;
+  gap: 4px;
   color: var(--color-brand);
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }
