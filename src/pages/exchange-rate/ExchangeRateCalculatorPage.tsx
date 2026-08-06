@@ -66,6 +66,11 @@ const loadProductRows = (products: RecipeProduct[]): ExchangeMaterialRow[] => {
 
 const formatKrw = (value: number) => Math.round(value).toLocaleString('ko-KR')
 
+const formatRateTime = (date: Date) => date.toLocaleTimeString('ko-KR', {
+  hour: 'numeric',
+  minute: '2-digit',
+})
+
 const calculateCost = (row: ExchangeMaterialRow) => row.cost
 const calculateSalePrice = (row: ExchangeMaterialRow) => calculateCost(row) * (1 + row.marginRate / 100)
 const calculateLocalPrice = (row: ExchangeMaterialRow, currency: CurrencyCode) => (
@@ -86,6 +91,12 @@ export function ExchangeRateCalculatorPage({
 }: ExchangeRateCalculatorPageProps) {
   const [rows, setRows] = useState<ExchangeMaterialRow[]>(() => loadProductRows(products))
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
+  const [rateUpdatedAt, setRateUpdatedAt] = useState<string>(() => formatRateTime(new Date()))
+
+  const changeCurrency = (code: CurrencyCode) => {
+    setSelectedCurrency(code)
+    setRateUpdatedAt(formatRateTime(new Date()))
+  }
 
   const totalSalePrice = useMemo(
     () => rows.reduce((total, row) => total + calculateSalePrice(row), 0),
@@ -132,19 +143,22 @@ export function ExchangeRateCalculatorPage({
             <h1>제품별 환율 산출</h1>
             <p>등록된 제품의 원가를 기준으로 마진과 고정 환율을 적용해 현지 판매가를 계산합니다.</p>
           </div>
-          <label className="exchange-currency-picker">
-            <span>대상 통화</span>
-            <select
-              value={selectedCurrency}
-              onChange={(event) => setSelectedCurrency(event.target.value as CurrencyCode)}
-            >
-              {(Object.keys(currencySettings) as CurrencyCode[]).map((code) => (
-                <option key={code} value={code}>
-                  {currencySettings[code].flag} {code} · {currencySettings[code].label}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="exchange-currency-picker">
+            <label>
+              <span>대상 통화</span>
+              <select
+                value={selectedCurrency}
+                onChange={(event) => changeCurrency(event.target.value as CurrencyCode)}
+              >
+                {(Object.keys(currencySettings) as CurrencyCode[]).map((code) => (
+                  <option key={code} value={code}>
+                    {currencySettings[code].flag} {code} · {currencySettings[code].label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <small className="exchange-currency-picker__time">{rateUpdatedAt} 기준 환율</small>
+          </div>
         </header>
 
         <section className="exchange-table-card" aria-labelledby="exchange-table-title">

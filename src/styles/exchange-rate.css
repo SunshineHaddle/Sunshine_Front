@@ -131,11 +131,18 @@
   display: inline-flex;
   flex: 0 0 auto;
   flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.exchange-currency-picker label {
+  display: inline-flex;
+  flex-direction: column;
   gap: 8px;
   align-items: flex-end;
 }
 
-.exchange-currency-picker > span {
+.exchange-currency-picker label span {
   color: #8a8386;
   font-size: 11px;
   font-weight: 600;
@@ -156,6 +163,12 @@
 .exchange-currency-picker select:focus {
   outline: none;
   border-color: rgba(186, 0, 54, 0.4);
+}
+
+.exchange-currency-picker__time {
+  color: #a49ea1;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 .exchange-table td:last-child {
