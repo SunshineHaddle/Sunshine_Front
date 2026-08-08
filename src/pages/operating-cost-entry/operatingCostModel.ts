@@ -4,14 +4,9 @@ export type CustomCostItem = {
   id: string
   name: string
   total: string
-  /** 저장 시 생산량 비율로 계산된 제품별 배분액 (제품 id → 원) */
   allocation?: Record<string, number>
 }
 
-/**
- * 항목 총액을 제품별 생산량 비율로 배분합니다.
- * 생산량 정보가 없으면 제품 수로 균등(1/n) 배분합니다.
- */
 export function distributeByProduction(
   total: number,
   productions: Array<{ id: string; production: number }>,
