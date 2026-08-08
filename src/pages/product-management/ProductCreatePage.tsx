@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
@@ -25,13 +26,34 @@ export function ProductCreatePage({
 }: ProductCreatePageProps) {
   const recipe = useProductRecipeForm({ nextProductNumber, onCreate })
   const {
-    productName, setProductName, description, setDescription,
+    productName, setProductName,
+    imageUrl, setImageUrl,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
     newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
     newIngredientUnit, setNewIngredientUnit,
     addIngredient, addNewIngredient, updateUsage, updateUnitPrice, removeIngredient,
     saveRecipe,
   } = recipe
+
+  const imageInputRef = useRef<HTMLInputElement>(null)
+
+  const handleImageSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      onAction('이미지 파일만 업로드할 수 있습니다.')
+      return
+    }
+    if (file.size > 3 * 1024 * 1024) {
+      onAction('이미지 용량은 3MB 이하만 가능합니다.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => setImageUrl(String(reader.result))
+    reader.onerror = () => onAction('사진을 읽는 중 문제가 발생했습니다.')
+    reader.readAsDataURL(file)
+  }
 
   return (
     <div className="dashboard-app product-management-layout">
@@ -54,9 +76,43 @@ export function ProductCreatePage({
                 <span>01</span>
                 <div><h2 id="product-info-title">제품 정보</h2><p>생성할 제품의 기본 정보를 입력합니다.</p></div>
               </div>
-              <div className="product-info-fields">
-                <label>제품명<input required value={productName} placeholder="예: 포기김치 5kg" onChange={(event) => setProductName(event.target.value)} /></label>
-                <label>설명<input value={description} placeholder="레시피를 구분할 간단한 설명" onChange={(event) => setDescription(event.target.value)} /></label>
+              <div className="product-info-body">
+                <div className="product-info-fields">
+                  <label>제품명<input required value={productName} placeholder="예: 포기김치 5kg" onChange={(event) => setProductName(event.target.value)} /></label>
+                </div>
+                <div className="product-info-photo">
+                  <button
+                    type="button"
+                    className="product-info-photo__thumb"
+                    onClick={() => imageInputRef.current?.click()}
+                    aria-label="제품 사진 추가"
+                  >
+                    {imageUrl ? (
+                      <img src={imageUrl} alt="제품 사진 미리보기" />
+                    ) : (
+                      <span className="product-info-photo__placeholder">
+                        <Icon name="upload" size={18} />
+                        <small>사진 추가</small>
+                      </span>
+                    )}
+                  </button>
+                  {imageUrl && (
+                    <button
+                      type="button"
+                      className="product-info-photo__remove"
+                      onClick={() => setImageUrl('')}
+                    >
+                      <Icon name="trash" size={13} /> 사진 제거
+                    </button>
+                  )}
+                  <input
+                    ref={imageInputRef}
+                    className="visually-hidden"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelected}
+                  />
+                </div>
               </div>
             </section>
 

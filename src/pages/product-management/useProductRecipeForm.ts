@@ -16,6 +16,7 @@ type UseProductRecipeFormOptions = {
 export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProductRecipeFormOptions) {
   const [productName, setProductName] = useState('')
   const [description, setDescription] = useState('')
+  const [imageUrl, setImageUrl] = useState('')
   const [ingredientQuery, setIngredientQuery] = useState('')
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
 
@@ -84,6 +85,7 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
       id: `SKU-${new Date().getFullYear()}-${String(nextProductNumber).padStart(3, '0')}`,
       name: productName.trim(),
       description: description.trim() || `${selectedIngredients.length}개 재료로 구성된 신규 레시피.`,
+      imageUrl: imageUrl || undefined,
       yieldRate: 100,
       materialCost: totalMaterialCost,
       ingredientCount: selectedIngredients.length,
@@ -101,6 +103,7 @@ export function useProductRecipeForm({ nextProductNumber, onCreate }: UseProduct
 
   return {
     productName, setProductName, description, setDescription,
+    imageUrl, setImageUrl,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
     newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
     newIngredientUnit, setNewIngredientUnit,

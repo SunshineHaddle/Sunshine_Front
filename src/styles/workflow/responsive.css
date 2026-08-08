@@ -87,7 +87,14 @@
     gap: 16px;
   }
 
-  .production-upload__button {
+  .production-upload__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .production-upload__button,
+  .production-upload__template {
     width: 100%;
   }
 

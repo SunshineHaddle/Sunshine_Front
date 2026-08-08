@@ -60,8 +60,25 @@ export function ProductManagementPage({
                 <div className="recipe-card__topline">
                   <span className="recipe-card__thumb" aria-hidden="true">
                     {product.imageUrl
-                      ? <img src={product.imageUrl} alt="" />
-                      : <span className="recipe-card__thumb-fallback">{product.name.slice(0, 1)}</span>}
+                      ? (
+                        <img
+                          src={product.imageUrl}
+                          alt=""
+                          onError={(event) => {
+                            const img = event.currentTarget
+                            img.style.display = 'none'
+                            const fallback = img.nextElementSibling as HTMLElement | null
+                            if (fallback) fallback.style.display = ''
+                          }}
+                        />
+                      )
+                      : null}
+                    <span
+                      className="recipe-card__thumb-fallback"
+                      style={product.imageUrl ? { display: 'none' } : undefined}
+                    >
+                      {product.name.slice(0, 1)}
+                    </span>
                   </span>
                   <h3>{product.name}</h3>
                 </div>

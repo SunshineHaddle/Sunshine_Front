@@ -7,11 +7,17 @@ import { OperatingCostForm } from './OperatingCostForm'
 import { recordDataEntryCompletion } from '../../utils/dataEntryLog'
 import {
   calculateOperatingCosts,
+  distributeByProduction,
   getCurrentMonth,
   initialOperatingCosts,
   sumProductFees,
+  toWonNumber,
   type CostField,
 } from './operatingCostModel'
+import {
+  PRODUCTION_ENTRY_STORAGE_KEY,
+  parseStoredProductionRows,
+} from '../raw-material-entry/productionEntryData'
 
 type OperatingCostEntryPageProps = {
   products?: RecipeProduct[]
@@ -41,11 +47,24 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
     ...initialOperatingCosts,
     ...storedEntry?.costs,
     productFees: storedEntry?.costs?.productFees ?? {},
-    customItems: storedEntry?.costs?.customItems ?? [],
+    customItems: (storedEntry?.costs?.customItems ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      total: item.total ?? '0',
+    })),
   }))
+  const [productionById] = useState(() => {
+    const rows = parseStoredProductionRows(window.localStorage.getItem(PRODUCTION_ENTRY_STORAGE_KEY)) ?? []
+    return new Map(rows.map((row) => [row.id, toWonNumber(row.production)]))
+  })
   const totals = calculateOperatingCosts(costs)
   const laborShareTotal = sumProductFees(costs.productFees)
   const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
+
+  const productions = products.map((product) => ({
+    id: product.id,
+    production: productionById.get(product.id) ?? 0,
+  }))
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -77,7 +96,7 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
     const id = `custom-${Date.now()}`
     setCosts((current) => ({
       ...current,
-      customItems: [...current.customItems, { id, name: '', productFees: {} }],
+      customItems: [...current.customItems, { id, name: '', total: '0' }],
     }))
   }
 
@@ -88,13 +107,11 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
     }))
   }
 
-  const updateCustomItemFee = (id: string, productId: string, value: string) => {
+  const updateCustomItemTotal = (id: string, value: string) => {
     setCosts((current) => ({
       ...current,
       customItems: current.customItems.map((item) => (
-        item.id === id
-          ? { ...item, productFees: { ...item.productFees, [productId]: value } }
-          : item
+        item.id === id ? { ...item, total: value } : item
       )),
     }))
   }
@@ -111,9 +128,17 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
       onAction(`제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`)
       return
     }
+    const customItemsWithAllocation = costs.customItems.map((item) => ({
+      ...item,
+      allocation: distributeByProduction(toWonNumber(item.total), productions),
+    }))
     window.localStorage.setItem(
       'cost-analysis-operating-costs',
-      JSON.stringify({ month, costs, totalCost: totals.totalCost }),
+      JSON.stringify({
+        month,
+        costs: { ...costs, customItems: customItemsWithAllocation },
+        totalCost: totals.totalCost,
+      }),
     )
     if (hideSidebar) {
       recordDataEntryCompletion('worker1234')
@@ -144,12 +169,13 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
         <OperatingCostForm
           products={products}
           costs={costs}
+          productions={productions}
           onCostChange={updateCost}
           onProductFeeChange={updateProductFee}
           onEqualizeProductFees={equalizeProductFees}
           onAddCustomItem={addCustomItem}
           onUpdateCustomItemName={updateCustomItemName}
-          onUpdateCustomItemFee={updateCustomItemFee}
+          onUpdateCustomItemTotal={updateCustomItemTotal}
           onRemoveCustomItem={removeCustomItem}
         />
 

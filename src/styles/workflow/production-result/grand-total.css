@@ -14,8 +14,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 88px;
-  padding: 18px 22px;
+  margin-top: 32px;
+  min-height: 104px;
+  padding: 26px 22px;
   gap: 24px;
   background: #f6f4f5;
 }

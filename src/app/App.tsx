@@ -40,8 +40,12 @@ function loadRecipeProducts() {
       storedProducts.length > 0 &&
       storedProducts.every((product) => Array.isArray(product.ingredients))
     ) {
+      const defaultImageById = new Map(
+        initialRecipeProducts.map((product) => [product.id, product.imageUrl]),
+      )
       return storedProducts.map((product) => ({
         ...product,
+        imageUrl: product.imageUrl ?? defaultImageById.get(product.id),
         ingredients: product.ingredients.map((ingredient) => ({ ...ingredient, unit: 'kg' as const })),
       }))
     }
