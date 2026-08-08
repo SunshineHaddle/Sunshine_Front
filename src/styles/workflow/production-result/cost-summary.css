@@ -153,17 +153,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.production-operating-summary {
+  margin-top: 40px;
+}
+
 .production-operating-summary dl div {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 42px;
+  min-height: 56px;
   gap: 18px;
   border-bottom: 1px solid #f0edef;
 }
 
 .production-operating-summary dl {
-  margin: 17px 0 0;
+  margin: 28px 0 0;
 }
 
 .production-operating-summary dt,
@@ -286,8 +290,8 @@
 }
 
 .production-operating-summary dl .production-operating-summary__total {
-  margin-top: 4px;
-  padding-top: 12px;
+  margin-top: 16px;
+  padding-top: 20px;
   border-top: 1px solid #e7e7e7;
 }
 

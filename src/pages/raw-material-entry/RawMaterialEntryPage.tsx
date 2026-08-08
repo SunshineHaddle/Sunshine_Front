@@ -5,6 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import {
   PRODUCTION_ENTRY_STORAGE_KEY,
   buildSampleProductionRows,
+  downloadProductionTemplate,
   parseStoredProductionRows,
   type ProductionEntryRow,
 } from './productionEntryData'
@@ -81,13 +82,22 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
                 )}
               </div>
             </div>
-            <button
-              className="production-upload__button"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon name="upload" size={16} /> {fileName ? '다시 업로드' : '엑셀 업로드'}
-            </button>
+            <div className="production-upload__actions">
+              <button
+                className="production-upload__template"
+                type="button"
+                onClick={downloadProductionTemplate}
+              >
+                <Icon name="download" size={16} /> 엑셀 양식 다운로드
+              </button>
+              <button
+                className="production-upload__button"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icon name="upload" size={16} /> {fileName ? '다시 업로드' : '엑셀 업로드'}
+              </button>
+            </div>
             <input
               ref={fileInputRef}
               className="production-upload__input"
@@ -121,12 +131,11 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
               </div>
 
               <div className="production-list__rows">
-                {rows.map((row, index) => {
+                {rows.map((row) => {
                   const isFilled = row.production.trim() !== ''
                   return (
                     <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
                       <div className="production-item__name">
-                        <span className="production-item__index">{index + 1}</span>
                         <span className="production-item__name-text">
                           <strong>{row.name}</strong>
                           <em>제품 · 생산량 입력 대상</em>
