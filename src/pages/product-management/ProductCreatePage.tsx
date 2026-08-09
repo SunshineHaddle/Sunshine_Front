@@ -1,7 +1,9 @@
 import { useRef } from 'react'
 import { Icon } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
+import { parseNumber } from '../../utils/number'
 import type { RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
 
@@ -149,13 +151,11 @@ export function ProductCreatePage({
                   </label>
                   <label>
                     <span>단가(원)</span>
-                    <input
+                    <NumberInput
                       min="0"
-                      step="any"
-                      type="number"
                       value={newIngredientPrice}
                       placeholder="0"
-                      onChange={(event) => setNewIngredientPrice(event.target.value)}
+                      onValueChange={(raw) => setNewIngredientPrice(raw)}
                     />
                   </label>
                   <label>
@@ -195,8 +195,8 @@ export function ProductCreatePage({
                   {selectedIngredients.map((ingredient) => (
                     <div className="recipe-cart-item" key={ingredient.id}>
                       <div><strong>{ingredient.name}</strong></div>
-                      <label><span>수량(kg)</span><input aria-label={`${ingredient.name} 수량(kg)`} min="0" step="any" type="number" value={ingredient.usage} onChange={(event) => updateUsage(ingredient.id, Number(event.target.value))} /><em>kg</em></label>
-                      <label><span>단가(원)</span><input aria-label={`${ingredient.name} 단가(원)`} min="0" step="any" type="number" value={ingredient.unitPrice} onChange={(event) => updateUnitPrice(ingredient.id, Number(event.target.value))} /><em>원</em></label>
+                      <label><span>수량(kg)</span><NumberInput aria-label={`${ingredient.name} 수량(kg)`} min="0" value={ingredient.usage} onValueChange={(raw) => updateUsage(ingredient.id, parseNumber(raw))} /><em>kg</em></label>
+                      <label><span>단가(원)</span><NumberInput aria-label={`${ingredient.name} 단가(원)`} min="0" value={ingredient.unitPrice} onValueChange={(raw) => updateUnitPrice(ingredient.id, parseNumber(raw))} /><em>원</em></label>
                       <b>{currencyFormatter.format(ingredient.unitPrice * ingredient.usage)}</b>
                       <button type="button" aria-label={`${ingredient.name} 삭제`} onClick={() => removeIngredient(ingredient.id)}><Icon name="trash" size={16} /></button>
                     </div>

@@ -16,10 +16,6 @@ export function buildSampleProductionRows(): ProductionEntryRow[] {
   }))
 }
 
-/**
- * 업로드용 엑셀 양식(CSV)을 생성해 다운로드합니다.
- * 엑셀에서 바로 열리도록 UTF-8 BOM을 붙여 한글 깨짐을 방지합니다.
- */
 export function downloadProductionTemplate() {
   const header = ['품명', '수량', '단가', '금액']
 
