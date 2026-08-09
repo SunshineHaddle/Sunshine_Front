@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import type { AppRoute } from '../../data/navigation'
 import { Icon } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import {
   PRODUCTION_ENTRY_STORAGE_KEY,
@@ -69,7 +70,20 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
           <section className="production-upload" aria-labelledby="production-upload-title">
             <div className="production-upload__info">
               <span className="production-upload__badge">
-                <Icon name="excel" size={24} />
+                <img
+                  className="production-upload__badge-img"
+                  src="/excel-logo.png"
+                  alt="엑셀"
+                  onError={(event) => {
+                    const img = event.currentTarget
+                    img.style.display = 'none'
+                    const fallback = img.nextElementSibling as HTMLElement | null
+                    if (fallback) fallback.style.display = ''
+                  }}
+                />
+                <span className="production-upload__badge-fallback" style={{ display: 'none' }}>
+                  <Icon name="excel" size={24} />
+                </span>
               </span>
               <div className="production-upload__text">
                 <h2 id="production-upload-title">엑셀 파일 업로드</h2>
@@ -111,9 +125,6 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
             <section className="production-list" aria-labelledby="production-list-title">
               <header className="production-list__heading">
                 <div className="production-list__title">
-                  <span className="production-list__title-icon">
-                    <Icon name="box" size={16} />
-                  </span>
                   <h2 id="production-list-title">엑셀 제품 목록</h2>
                   <span className="production-list__count">{rows.length}개 제품</span>
                 </div>
@@ -149,14 +160,12 @@ export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false
                       <label className="production-item__field">
                         <span className="production-item__field-label">생산량(kg)</span>
                         <div className="production-item__input">
-                          <input
+                          <NumberInput
                             aria-label={`${row.name} 생산량(kg)`}
                             min="0"
-                            step="any"
-                            type="number"
                             placeholder="생산량 입력"
                             value={row.production}
-                            onChange={(event) => updateProduction(row.id, event.target.value)}
+                            onValueChange={(raw) => updateProduction(row.id, raw)}
                           />
                           <em>kg</em>
                         </div>

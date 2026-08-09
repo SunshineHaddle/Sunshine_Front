@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
 
-type CurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY'
+type CurrencyCode = string
+
+type CurrencySetting = {
+  flag: string
+  label: string
+  rate: number
+  symbol: string
+  fractionDigits: number
+}
 
 type ExchangeMaterialRow = {
   id: string
@@ -20,18 +29,37 @@ type ExchangeRateCalculatorPageProps = {
 }
 
 const SETTINGS_STORAGE_KEY = 'sunshine.exchange-calculator-settings.v1'
+const CURRENCY_STORAGE_KEY = 'sunshine.exchange-calculator-currencies.v1'
 
-const currencySettings: Record<CurrencyCode, {
-  flag: string
-  label: string
-  rate: number
-  symbol: string
-  fractionDigits: number
-}> = {
+const defaultCurrencies: Record<CurrencyCode, CurrencySetting> = {
   USD: { flag: '🇺🇸', label: '미국 달러', rate: 1_342.5, symbol: '$', fractionDigits: 2 },
   JPY: { flag: '🇯🇵', label: '일본 엔', rate: 9.048, symbol: '¥', fractionDigits: 0 },
   EUR: { flag: '🇪🇺', label: '유로', rate: 1_455, symbol: '€', fractionDigits: 2 },
   CNY: { flag: '🇨🇳', label: '중국 위안', rate: 185.4, symbol: '¥', fractionDigits: 2 },
+  SAR: { flag: '🇸🇦', label: '사우디 리얄', rate: 357.8, symbol: 'SAR', fractionDigits: 2 },
+  AED: { flag: '🇦🇪', label: 'UAE 디르함', rate: 365.4, symbol: 'AED', fractionDigits: 2 },
+}
+
+const loadCurrencies = (): Record<CurrencyCode, CurrencySetting> => {
+  let saved: Record<string, Partial<CurrencySetting>> = {}
+  try {
+    saved = JSON.parse(window.localStorage.getItem(CURRENCY_STORAGE_KEY) ?? '{}') as typeof saved
+  } catch {
+    saved = {}
+  }
+
+  const merged: Record<CurrencyCode, CurrencySetting> = { ...defaultCurrencies }
+  Object.entries(saved).forEach(([code, value]) => {
+    const base = merged[code]
+    merged[code] = {
+      flag: value.flag ?? base?.flag ?? '🏳️',
+      label: value.label ?? base?.label ?? code,
+      rate: value.rate ?? base?.rate ?? 0,
+      symbol: value.symbol ?? base?.symbol ?? code,
+      fractionDigits: value.fractionDigits ?? base?.fractionDigits ?? 2,
+    }
+  })
+  return merged
 }
 
 const defaultMargins = [20, 15, 25]
@@ -85,25 +113,31 @@ const formatRateTime = (date: Date) => date.toLocaleTimeString('ko-KR', {
 
 const calculateCost = (row: ExchangeMaterialRow) => row.cost
 const calculateSalePrice = (row: ExchangeMaterialRow) => calculateCost(row) * (1 + row.marginRate / 100)
-const calculateLocalPrice = (row: ExchangeMaterialRow, currency: CurrencyCode) => (
-  calculateSalePrice(row) / currencySettings[currency].rate
+const calculateLocalPrice = (row: ExchangeMaterialRow, setting: CurrencySetting) => (
+  setting.rate > 0 ? calculateSalePrice(row) / setting.rate : 0
 )
 
-const formatLocalPrice = (row: ExchangeMaterialRow, currency: CurrencyCode) => {
-  const setting = currencySettings[currency]
-  return `${setting.symbol} ${calculateLocalPrice(row, currency).toLocaleString('en-US', {
+const formatLocalPrice = (row: ExchangeMaterialRow, setting: CurrencySetting) => (
+  `${setting.symbol} ${calculateLocalPrice(row, setting).toLocaleString('en-US', {
     minimumFractionDigits: setting.fractionDigits,
     maximumFractionDigits: setting.fractionDigits,
   })}`
-}
+)
 
 export function ExchangeRateCalculatorPage({
   products = [],
   onNavigate,
+  onAction,
 }: ExchangeRateCalculatorPageProps) {
   const [rows, setRows] = useState<ExchangeMaterialRow[]>(() => loadProductRows(products))
+  const [currencies, setCurrencies] = useState<Record<CurrencyCode, CurrencySetting>>(() => loadCurrencies())
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
   const [rateUpdatedAt, setRateUpdatedAt] = useState<string>(() => formatRateTime(new Date()))
+  const [isAddingCurrency, setIsAddingCurrency] = useState(false)
+  const [newCurrency, setNewCurrency] = useState({ code: '', label: '', rate: '' })
+
+  const currencyCodes = Object.keys(currencies)
+  const selectedSetting = currencies[selectedCurrency] ?? currencies[currencyCodes[0]]
 
   const changeCurrency = (code: CurrencyCode) => {
     setSelectedCurrency(code)
@@ -116,6 +150,34 @@ export function ExchangeRateCalculatorPage({
     )
     window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
   }, [rows])
+
+  useEffect(() => {
+    window.localStorage.setItem(CURRENCY_STORAGE_KEY, JSON.stringify(currencies))
+  }, [currencies])
+
+  const addCurrency = () => {
+    const code = newCurrency.code.trim().toUpperCase()
+    const label = newCurrency.label.trim()
+    const rate = parseNumber(newCurrency.rate)
+
+    if (!code || !label || rate <= 0) {
+      onAction('통화 코드, 이름, 환율(0보다 큰 값)을 모두 입력해 주세요.')
+      return
+    }
+    if (currencies[code]) {
+      onAction(`이미 등록된 통화 코드입니다: ${code}`)
+      return
+    }
+
+    setCurrencies((current) => ({
+      ...current,
+      [code]: { flag: '🏳️', label, rate, symbol: code, fractionDigits: 2 },
+    }))
+    setNewCurrency({ code: '', label: '', rate: '' })
+    setIsAddingCurrency(false)
+    changeCurrency(code)
+    onAction(`${code} · ${label} 통화를 추가했습니다.`)
+  }
 
   const updateRow = (id: string, values: Partial<ExchangeMaterialRow>) => {
     setRows((current) => current.map((row) => (
@@ -148,20 +210,74 @@ export function ExchangeRateCalculatorPage({
           <div className="exchange-currency-picker">
             <label>
               <span>대상 통화</span>
-              <select
-                value={selectedCurrency}
-                onChange={(event) => changeCurrency(event.target.value as CurrencyCode)}
-              >
-                {(Object.keys(currencySettings) as CurrencyCode[]).map((code) => (
-                  <option key={code} value={code}>
-                    {currencySettings[code].flag} {code} · {currencySettings[code].label}
-                  </option>
-                ))}
-              </select>
+              <div className="exchange-currency-picker__control">
+                <select
+                  value={selectedCurrency}
+                  onChange={(event) => changeCurrency(event.target.value)}
+                >
+                  {currencyCodes.map((code) => (
+                    <option key={code} value={code}>
+                      {currencies[code].flag} {code} · {currencies[code].label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  className="exchange-currency-picker__add"
+                  aria-label="통화 추가"
+                  aria-expanded={isAddingCurrency}
+                  onClick={() => setIsAddingCurrency((open) => !open)}
+                >
+                  <Icon name="add" size={16} />
+                </button>
+              </div>
             </label>
             <small className="exchange-currency-picker__time">{rateUpdatedAt} 기준 환율</small>
           </div>
         </header>
+
+        {isAddingCurrency && (
+          <section className="exchange-currency-form" aria-label="새 통화 추가">
+            <div className="exchange-currency-form__fields">
+              <label>
+                <span>통화 코드</span>
+                <input
+                  type="text"
+                  value={newCurrency.code}
+                  placeholder="예: THB"
+                  maxLength={5}
+                  onChange={(event) => setNewCurrency((prev) => ({ ...prev, code: event.target.value }))}
+                />
+              </label>
+              <label>
+                <span>통화 이름</span>
+                <input
+                  type="text"
+                  value={newCurrency.label}
+                  placeholder="예: 태국 바트"
+                  onChange={(event) => setNewCurrency((prev) => ({ ...prev, label: event.target.value }))}
+                />
+              </label>
+              <label>
+                <span>환율 (1단위 = ? 원)</span>
+                <NumberInput
+                  min="0"
+                  value={newCurrency.rate}
+                  placeholder="예: 40.5"
+                  onValueChange={(raw) => setNewCurrency((prev) => ({ ...prev, rate: raw }))}
+                />
+              </label>
+            </div>
+            <div className="exchange-currency-form__actions">
+              <button type="button" className="exchange-currency-form__cancel" onClick={() => setIsAddingCurrency(false)}>
+                취소
+              </button>
+              <button type="button" className="exchange-currency-form__submit" onClick={addCurrency}>
+                <Icon name="add" size={16} /> 추가
+              </button>
+            </div>
+          </section>
+        )}
 
         <section className="exchange-table-card" aria-labelledby="exchange-table-title">
           <h2 className="visually-hidden" id="exchange-table-title">제품별 환율 산출표</h2>
@@ -193,12 +309,10 @@ export function ExchangeRateCalculatorPage({
                     <td data-label="계산 원가">
                       <label className="exchange-cost-field">
                         <span className="visually-hidden">{row.name} 계산 원가</span>
-                        <input
+                        <NumberInput
                           min="0"
-                          step="any"
-                          type="number"
                           value={row.cost}
-                          onChange={(event) => updateRow(row.id, { cost: Math.max(0, parseNumber(event.target.value)) })}
+                          onValueChange={(raw) => updateRow(row.id, { cost: Math.max(0, parseNumber(raw)) })}
                         />
                       </label>
                     </td>
@@ -222,7 +336,7 @@ export function ExchangeRateCalculatorPage({
                       <strong className="exchange-sale-price">{formatKrw(calculateSalePrice(row))}</strong>
                     </td>
                     <td data-label="현지 판매가">
-                      <strong className="exchange-local-price">{formatLocalPrice(row, selectedCurrency)}</strong>
+                      <strong className="exchange-local-price">{formatLocalPrice(row, selectedSetting)}</strong>
                     </td>
                   </tr>
                 ))}

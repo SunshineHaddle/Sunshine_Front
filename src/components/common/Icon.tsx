@@ -117,8 +117,9 @@ const paths: Record<IconName, ReactNode> = {
   ),
   excel: (
     <>
-      <path d="M4 4h10v16H4zM14 7h6v13h-6M14 11h6M14 15h6M17 7v13" />
-      <path d="m7 9 4 6M11 9l-4 6" />
+      <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+      <path d="M14 3v6h6" />
+      <path d="m9 13 4 5M13 13l-4 5" />
     </>
   ),
   filter: (

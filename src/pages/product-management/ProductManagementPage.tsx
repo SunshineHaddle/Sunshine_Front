@@ -57,7 +57,11 @@ export function ProductManagementPage({
           <div className="recipe-card-grid">
             {filteredProducts.map((product) => (
               <article className="recipe-card" key={product.id}>
-                <div className="recipe-card__topline">
+                <div className="recipe-card__body">
+                  <div className="recipe-card__info">
+                    <h3>{product.name}</h3>
+                    <p>({product.ingredients.map((ingredient) => ingredient.name).join(', ')})</p>
+                  </div>
                   <span className="recipe-card__thumb" aria-hidden="true">
                     {product.imageUrl
                       ? (
@@ -80,9 +84,7 @@ export function ProductManagementPage({
                       {product.name.slice(0, 1)}
                     </span>
                   </span>
-                  <h3>{product.name}</h3>
                 </div>
-                <p>({product.ingredients.map((ingredient) => ingredient.name).join(', ')})</p>
                 <footer>
                   <button type="button" aria-label={`${product.name} 원가 상세 보기`} onClick={() => onSelectProduct(product.id)}>
                     <Icon name="chevron-right" size={18} />

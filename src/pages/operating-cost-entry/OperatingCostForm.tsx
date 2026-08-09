@@ -1,4 +1,5 @@
 import { Icon, type IconName } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import {
   distributeByProduction,
@@ -39,7 +40,7 @@ function CostInput({ field, label, value, icon, suffix, onChange }: CostInputPro
       <span>{label}</span>
       <span className="operating-cost-input">
         {icon && <Icon name={icon} size={16} />}
-        <input min="0" type="number" value={value} onChange={(event) => onChange(field, event.target.value)} />
+        <NumberInput value={value} onValueChange={(raw) => onChange(field, raw)} />
         {suffix && <small>{suffix}</small>}
       </span>
     </label>
@@ -186,11 +187,9 @@ export function OperatingCostForm({
                 <label className="operating-cost-field">
                   <span>항목 비용</span>
                   <span className="operating-cost-input">
-                    <input
-                      min="0"
-                      type="number"
+                    <NumberInput
                       value={item.total}
-                      onChange={(event) => onUpdateCustomItemTotal(item.id, event.target.value)}
+                      onValueChange={(raw) => onUpdateCustomItemTotal(item.id, raw)}
                     />
                     <small>원</small>
                   </span>

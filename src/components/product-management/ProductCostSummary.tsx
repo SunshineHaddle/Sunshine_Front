@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Icon } from '../common/Icon'
+import { NumberInput } from '../common/NumberInput'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductCostAnalysisState } from './useProductCostAnalysis'
 import { MonthlyUnitPriceTrend } from './MonthlyUnitPriceTrend'
@@ -152,15 +153,12 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
           {isEditingYield ? (
             <div className="product-cost-overview__yield-editor" onClick={(event) => event.stopPropagation()}>
               <div className="product-cost-overview__yield-field">
-                <input
-                  type="number"
+                <NumberInput
                   min="0"
-                  step="any"
-                  inputMode="decimal"
                   autoFocus
                   value={yieldInput}
                   placeholder="생산량"
-                  onChange={(event) => setYieldInput(event.target.value)}
+                  onValueChange={(raw) => setYieldInput(raw)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') applyYield()
                     if (event.key === 'Escape') setIsEditingYield(false)
