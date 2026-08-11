@@ -136,9 +136,13 @@ export async function fetchUnitCostTrend(
 }
 
 // ── §9-3. 제품별 표준 재료비 집계 ───────────────────────────
-export async function fetchRecipeCostSummary(): Promise<
-  { productId: string; materialCost: number; ingredientCount: number }[]
-> {
+export type RecipeCostSummary = {
+  productId: string
+  materialCost: number
+  ingredientCount: number
+}
+
+export async function fetchRecipeCostSummary(): Promise<RecipeCostSummary[]> {
   const rows = unwrap(
     await supabase
       .from('v_product_recipe_cost')

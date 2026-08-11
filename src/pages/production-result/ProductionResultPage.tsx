@@ -38,7 +38,7 @@ export function ProductionResultPage({
     }
   }, [periodId, onAction])
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => { void (async () => { await load() })() }, [load])
 
   const runConfirm = async () => {
     if (!periodId) return

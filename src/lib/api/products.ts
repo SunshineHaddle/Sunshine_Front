@@ -187,7 +187,7 @@ export async function updateProduct(
 
 // ── §3-5. 제품 이미지 업로드 ────────────────────────────────
 export async function uploadProductImage(productId: string, file: File): Promise<string> {
-  const safeName = file.name.replace(/[^\w.\-]/g, '_')
+  const safeName = file.name.replace(/[^\w.-]/g, '_')
   const path = `${productId}/${Date.now()}-${safeName}`
 
   const { error } = await supabase.storage

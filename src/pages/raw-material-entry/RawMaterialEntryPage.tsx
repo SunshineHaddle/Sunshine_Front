@@ -71,19 +71,26 @@ export function RawMaterialEntryPage({
   const hasRows = rows.length > 0
   const filledCount = rows.filter((row) => row.production.trim() !== '').length
 
+  // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
+  // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
   const reloadUsages = useCallback(async () => {
-    if (!periodId) { setUsages([]); return }
-    try { setUsages(await fetchMaterialUsages(periodId)) } catch { setUsages([]) }
+    const rows = await (periodId
+      ? fetchMaterialUsages(periodId).catch((): UsageLine[] => [])
+      : Promise.resolve<UsageLine[]>([]))
+    setUsages(rows)
   }, [periodId])
 
   const reloadHistory = useCallback(async () => {
-    if (!periodId) { setHistory([]); return }
     // 버킷·테이블이 없어도 입력 작업은 막지 않는다
-    try { setHistory(await fetchFileHistory({ periodId, limit: 10 })) } catch { setHistory([]) }
+    const rows = await (periodId
+      ? fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => [])
+      : Promise.resolve<FileHistoryItem[]>([]))
+    setHistory(rows)
   }, [periodId])
 
-  useEffect(() => { void reloadUsages() }, [reloadUsages])
-  useEffect(() => { void reloadHistory() }, [reloadHistory])
+  // 린터가 함수 경계를 넘어 비동기성을 추적하지 못하므로 async IIFE 로 감싼다
+  useEffect(() => { void (async () => { await reloadUsages() })() }, [reloadUsages])
+  useEffect(() => { void (async () => { await reloadHistory() })() }, [reloadHistory])
 
   // §5-1 저장된 생산량을 제품 목록에 좌측 조인한다 (F-11).
   // 조인하지 않으면 아직 입력하지 않은 제품이 화면에서 사라진다.
@@ -159,7 +166,7 @@ export function RawMaterialEntryPage({
     if (!preview || !periodId) return
 
     setBusy('투입내역을 저장하는 중…')
-    let saved = 0
+    let saved: number
     try {
       saved = await commitSubul(periodId, preview)
       await reloadUsages()

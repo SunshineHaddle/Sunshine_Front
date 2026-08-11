@@ -11,7 +11,7 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 
 /** Storage 경로에는 한글이 들어가면 안 된다. 원본명은 DB 에 보존한다. */
 export const toStoragePath = (periodId: string, fileName: string) =>
-  `${periodId}/${Date.now()}-${fileName.replace(/[^\w.\-]/g, '_')}`
+  `${periodId}/${Date.now()}-${fileName.replace(/[^\w.-]/g, '_')}`
 
 // ── §10-1 + §10-2. 원본 업로드 + 이력 기록 ──────────────────
 export async function uploadExcel(input: {

@@ -25,7 +25,7 @@ import {
   updateProduct,
 } from '../lib/api/products'
 import { ensurePeriod } from '../lib/api/periods'
-import { fetchRecipeCostSummary } from '../lib/api/results'
+import { fetchRecipeCostSummary, type RecipeCostSummary } from '../lib/api/results'
 import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
@@ -70,10 +70,11 @@ function App() {
     try {
       const [products, recipeCosts] = await Promise.all([
         fetchProducts(),
-        // §9-3 : 재료비는 DB 집계값을 신뢰한다. 클라이언트 합산과 어긋나면 이쪽이 맞다
-        fetchRecipeCostSummary().catch(() => []),
+        // §9-3 : 재료비는 DB 집계값을 신뢰한다. 클라이언트 합산과 어긋나면 이쪽이 맞다.
+        // 실패해도 제품 목록은 살려야 하므로 빈 배열로 흘린다 (타입은 명시해야 유니온이 안 생긴다)
+        fetchRecipeCostSummary().catch((): RecipeCostSummary[] => []),
       ])
-      const costById = new Map(recipeCosts.map((row) => [row.productId, row]))
+      const costById = new Map(recipeCosts.map((row) => [row.productId, row] as const))
       setRecipeProducts(
         products.map((product) => {
           const agg = costById.get(product.id)
@@ -88,11 +89,12 @@ function App() {
     }
   }, [])
 
-  /** §4-1 해당 월 회차를 확보한다. */
+  /** §4-1 해당 월 회차를 확보한다. 마감·마감취소 후에도 호출한다. */
   const refreshPeriod = useCallback(async () => {
     if (!isSupabaseConfigured) return
     try {
-      setPeriod(await ensurePeriod(month))
+      const next = await ensurePeriod(month)
+      setPeriod(next)
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error))
     }
@@ -108,25 +110,51 @@ function App() {
     }
   }, [])
 
-  // §3-1 제품 · §2-1 원재료를 Supabase 에서 불러온다
+  // §3-1 제품 · §2-1 원재료를 Supabase 에서 불러온다.
+  // setState 는 전부 await 뒤에서만 호출한다 (이펙트 본문의 동기 setState 금지)
   useEffect(() => {
-    if (!isSupabaseConfigured) {
-      setLoadError('.env 의 VITE_SUPABASE_ANON_KEY 를 채워주세요.')
-      return
-    }
-    void reloadProducts()
-    fetchMaterials()
-      .then(setMaterials)
-      .catch((error: unknown) =>
-        setLoadError(error instanceof Error ? error.message : String(error)),
-      )
+    if (!isSupabaseConfigured) return
+    let cancelled = false
+
+    void (async () => {
+      await reloadProducts()
+      if (cancelled) return
+      try {
+        const items = await fetchMaterials()
+        if (!cancelled) setMaterials(items)
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : String(error))
+      }
+    })()
+
+    return () => { cancelled = true }
   }, [reloadProducts])
 
-  useEffect(() => { void refreshPeriod() }, [refreshPeriod])
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    let cancelled = false
+
+    void (async () => {
+      try {
+        const next = await ensurePeriod(month)
+        if (!cancelled) setPeriod(next)
+      } catch (error) {
+        if (!cancelled) setLoadError(error instanceof Error ? error.message : String(error))
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [month])
 
   useEffect(() => {
     window.localStorage.setItem(SELECTED_PRODUCT_STORAGE_KEY, selectedProductId)
   }, [selectedProductId])
+
+  // .env 누락은 렌더마다 같은 결과라 state 로 둘 이유가 없다.
+  // 이펙트에서 setState 하면 재렌더가 한 번 더 생긴다.
+  const displayError = isSupabaseConfigured
+    ? loadError
+    : '.env 의 VITE_SUPABASE_ANON_KEY 를 채워주세요.'
 
   const announce = (nextMessage: string) => {
     window.clearTimeout(messageTimer.current)
@@ -268,7 +296,7 @@ function App() {
         }}
       />
     ) : (
-      <EmptyState message={loadError || '등록된 제품이 없습니다.'} />
+      <EmptyState message={displayError || '등록된 제품이 없습니다.'} />
     )
   } else if (route === 'exchange-rate-detail') {
     page = <ExchangeRateCalculatorPage products={recipeProducts} onNavigate={navigate} onAction={announce} />
@@ -290,8 +318,8 @@ function App() {
 
   return (
     <>
-      {loadError && (
-        <div className="app-load-error" role="alert">Supabase 연결 오류: {loadError}</div>
+      {displayError && (
+        <div className="app-load-error" role="alert">Supabase 연결 오류: {displayError}</div>
       )}
       {page}
       <div
