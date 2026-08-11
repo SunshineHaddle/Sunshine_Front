@@ -10,12 +10,15 @@ import {
   distributeByProduction,
   getCurrentMonth,
   initialOperatingCosts,
+  laborByProduct,
   sumProductFees,
   toWonNumber,
   type CostField,
 } from './operatingCostModel'
 import {
+  PARSED_MATERIALS_STORAGE_KEY,
   PRODUCTION_ENTRY_STORAGE_KEY,
+  parseStoredMaterials,
   parseStoredProductionRows,
 } from '../raw-material-entry/productionEntryData'
 
@@ -57,11 +60,18 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
     const rows = parseStoredProductionRows(window.localStorage.getItem(PRODUCTION_ENTRY_STORAGE_KEY)) ?? []
     return new Map(rows.map((row) => [row.id, toWonNumber(row.production)]))
   })
+  const [productList] = useState(() => {
+    const parsed = parseStoredMaterials(window.localStorage.getItem(PARSED_MATERIALS_STORAGE_KEY))
+    if (parsed) {
+      return parsed.map((p) => ({ id: p.productName, name: p.productName }))
+    }
+    return products.map((p) => ({ id: p.id, name: p.name }))
+  })
   const totals = calculateOperatingCosts(costs)
   const laborShareTotal = sumProductFees(costs.productFees)
   const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
 
-  const productions = products.map((product) => ({
+  const productions = productList.map((product) => ({
     id: product.id,
     production: productionById.get(product.id) ?? 0,
   }))
@@ -78,12 +88,12 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
   }
 
   const equalizeProductFees = () => {
-    if (products.length === 0) return
-    const even = Math.floor((100 / products.length) * 10) / 10
+    if (productList.length === 0) return
+    const even = Math.floor((100 / productList.length) * 10) / 10
     const shares: Record<string, string> = {}
     let remaining = 100
-    products.forEach((product, index) => {
-      const share = index === products.length - 1
+    productList.forEach((product, index) => {
+      const share = index === productList.length - 1
         ? Math.round(remaining * 10) / 10
         : even
       remaining -= share
@@ -137,6 +147,7 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
       JSON.stringify({
         month,
         costs: { ...costs, customItems: customItemsWithAllocation },
+        laborByProduct: laborByProduct(costs.laborTotal, costs.productFees),
         totalCost: totals.totalCost,
       }),
     )
@@ -167,7 +178,7 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
         </header>
 
         <OperatingCostForm
-          products={products}
+          products={productList}
           costs={costs}
           productions={productions}
           onCostChange={updateCost}

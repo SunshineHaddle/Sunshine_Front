@@ -20,7 +20,7 @@ const server = await createServer({
     },
   },
   optimizeDeps: {
-    include: ['react', 'react-dom/client', 'react/jsx-dev-runtime'],
+    include: ['react', 'react-dom/client', 'react/jsx-dev-runtime', 'xlsx'],
     noDiscovery: true,
   },
 })

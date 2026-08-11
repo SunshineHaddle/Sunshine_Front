@@ -4,10 +4,10 @@ import { Icon } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import {
+  PARSED_MATERIALS_STORAGE_KEY,
   PRODUCTION_ENTRY_STORAGE_KEY,
-  buildSampleProductionRows,
   downloadProductionTemplate,
-  parseStoredProductionRows,
+  parseSubulWorkbook,
   type ProductionEntryRow,
 } from './productionEntryData'
 
@@ -17,27 +17,33 @@ type RawMaterialEntryPageProps = {
   hideSidebar?: boolean
 }
 
-function loadStoredRows(): ProductionEntryRow[] {
-  return parseStoredProductionRows(window.localStorage.getItem(PRODUCTION_ENTRY_STORAGE_KEY)) ?? []
-}
-
 export function RawMaterialEntryPage({ onNavigate, onAction, hideSidebar = false }: RawMaterialEntryPageProps) {
-  const [rows, setRows] = useState<ProductionEntryRow[]>(loadStoredRows)
+  const [rows, setRows] = useState<ProductionEntryRow[]>([])
   const [fileName, setFileName] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const hasRows = rows.length > 0
   const filledCount = rows.filter((row) => row.production.trim() !== '').length
 
-  const handleFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
-
-    setFileName(file.name)
-    setRows(buildSampleProductionRows())
-    onAction(`${file.name}에서 제품을 불러왔습니다. 제품별 생산량을 입력하세요.`)
-
     event.target.value = ''
+
+    try {
+      const { products, warnings } = parseSubulWorkbook(await file.arrayBuffer())
+      if (products.length === 0) {
+        onAction(warnings[0] ?? '엑셀에서 제품을 찾지 못했습니다. 양식을 확인해 주세요.')
+        return
+      }
+      setFileName(file.name)
+      setRows(products.map((p) => ({ id: p.productName, name: p.productName, production: '' })))
+      window.localStorage.setItem(PARSED_MATERIALS_STORAGE_KEY, JSON.stringify(products))
+      const warn = warnings.length ? ` (경고 ${warnings.length}건)` : ''
+      onAction(`${products.length}개 제품을 불러왔습니다. 제품별 생산량을 입력하세요.${warn}`)
+    } catch {
+      onAction('엑셀 파일을 읽지 못했습니다. .xlsx 형식인지 확인해 주세요.')
+    }
   }
 
   const updateProduction = (id: string, value: string) => {

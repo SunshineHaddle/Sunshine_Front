@@ -163,7 +163,6 @@
   justify-content: space-between;
   min-height: 56px;
   gap: 18px;
-  border-bottom: 1px solid #f0edef;
 }
 
 .production-operating-summary dl {
@@ -245,6 +244,13 @@
 }
 
 .result-product__figures strong {
+  color: #6f696d;
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+.result-product__figures .result-product__unit-cost {
   color: #242023;
   font-size: 15px;
   font-weight: 700;
@@ -292,7 +298,6 @@
 .production-operating-summary dl .production-operating-summary__total {
   margin-top: 16px;
   padding-top: 20px;
-  border-top: 1px solid #e7e7e7;
 }
 
 .production-operating-summary__total dd {

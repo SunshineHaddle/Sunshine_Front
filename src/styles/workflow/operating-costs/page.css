@@ -11,6 +11,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 28px;
+  margin-bottom: 28px;
 }
 
 .operating-heading h1,

@@ -48,6 +48,9 @@ export function ProductionCostSummary({ summary, onEditMaterials, onEditOperatin
                   <div className="result-product__figures">
                     <span>가공비 {formatProductionWon(product.processingFee)}</span>
                     <strong>{formatProductionWon(product.materialCost)}</strong>
+                    {product.unitCostPerKg != null && (
+                      <span className="result-product__unit-cost">kg당 {formatProductionWon(product.unitCostPerKg)}</span>
+                    )}
                   </div>
                 </div>
                 <table className="result-product__table">

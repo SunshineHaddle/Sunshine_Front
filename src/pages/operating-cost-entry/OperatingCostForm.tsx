@@ -1,6 +1,5 @@
 import { Icon, type IconName } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
-import type { RecipeProduct } from '../product-management/productManagementData'
 import {
   distributeByProduction,
   formatWon,
@@ -11,9 +10,10 @@ import {
 } from './operatingCostModel'
 
 type ProductionShare = { id: string; production: number }
+type ProductOption = { id: string; name: string }
 
 type OperatingCostFormProps = {
-  products: RecipeProduct[]
+  products: ProductOption[]
   costs: OperatingCosts
   productions: ProductionShare[]
   onCostChange: (field: CostField, value: string) => void

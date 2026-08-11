@@ -60,6 +60,15 @@ export function sumProductFees(productFees: Record<string, string>) {
   return Object.values(productFees ?? {}).reduce((sum, value) => sum + toWonNumber(value), 0)
 }
 
+export function laborByProduct(laborTotal: string, productFees: Record<string, string>) {
+  const total = toWonNumber(laborTotal)
+  const result: Record<string, number> = {}
+  for (const [id, share] of Object.entries(productFees ?? {})) {
+    result[id] = Math.round(total * (toWonNumber(share) / 100))
+  }
+  return result
+}
+
 export function calculateOperatingCosts(costs: OperatingCosts) {
   const laborCost = toWonNumber(costs.laborTotal)
   const customTotal = (costs.customItems ?? []).reduce(
