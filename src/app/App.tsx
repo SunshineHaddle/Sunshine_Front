@@ -39,37 +39,8 @@ import '../styles/data-entry.css'
 
 const SELECTED_PRODUCT_STORAGE_KEY = 'sunshine.selected-recipe-product'
 
-<<<<<<< HEAD
 function EmptyState({ message }: { message: string }) {
   return <div className="app-empty-state" role="status"><p>{message}</p></div>
-=======
-function loadRecipeProducts() {
-  if (typeof window === 'undefined') return initialRecipeProducts
-
-  try {
-    const storedProducts = JSON.parse(
-      window.localStorage.getItem(RECIPE_PRODUCTS_STORAGE_KEY) ?? 'null',
-    ) as RecipeProduct[] | null
-    if (
-      Array.isArray(storedProducts) &&
-      storedProducts.length > 0 &&
-      storedProducts.every((product) => Array.isArray(product.ingredients))
-    ) {
-      const defaultImageById = new Map(
-        initialRecipeProducts.map((product) => [product.id, product.imageUrl]),
-      )
-      return storedProducts.map((product) => ({
-        ...product,
-        imageUrl: product.imageUrl ?? defaultImageById.get(product.id),
-        ingredients: product.ingredients.map((ingredient) => ({ ...ingredient, unit: 'kg' as const })),
-      }))
-    }
-  } catch {
-    return initialRecipeProducts
-  }
-
-  return initialRecipeProducts
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
 }
 
 function App() {
@@ -313,18 +284,6 @@ function App() {
           setSelectedProductId(productId)
           navigate('product-detail')
         }}
-<<<<<<< HEAD
-        onRenameProduct={(productId, name) => {
-          setRecipeProducts((current) =>
-            current.map((item) => (item.id === productId ? { ...item, name } : item)),
-          )
-          // §3-4 : 낙관적 갱신 후 DB 반영
-          void updateProduct(productId, { name }).catch((error: unknown) =>
-            announce(`이름 저장 실패: ${error instanceof Error ? error.message : String(error)}`),
-          )
-        }}
-=======
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
       />
     )
   }

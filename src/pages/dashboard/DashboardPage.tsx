@@ -24,7 +24,6 @@ type DashboardPageProps = {
   onSelectRecipe: (productId: string) => void
 }
 
-<<<<<<< HEAD
 /**
  * 확정 스냅샷 → 표 항목.
  * unit_cost 는 포장 1개당 총원가다. 제조원가도 같은 단위로 맞춰야
@@ -56,7 +55,6 @@ export function DashboardPage({
   onNavigate,
   recipeProducts,
   onSelectRecipe,
-  onRenameProduct,
 }: DashboardPageProps) {
   const [items, setItems] = useState<ProductProfitabilityItem[]>([])
   const [periodLabel, setPeriodLabel] = useState('')
@@ -96,9 +94,6 @@ export function DashboardPage({
     return () => { cancelled = true }
   }, [])
 
-=======
-export function DashboardPage({ isWorker = false, onNavigate, recipeProducts, onSelectRecipe }: DashboardPageProps) {
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
   return (
     <div className={`dashboard-app${isWorker ? ' dashboard-app--worker' : ''}`}>
       <Sidebar activeRoute="dashboard" hidden={isWorker} onNavigate={onNavigate} />
@@ -108,15 +103,7 @@ export function DashboardPage({ isWorker = false, onNavigate, recipeProducts, on
           <DashboardHeader />
 
           <div className="summary-grid">
-<<<<<<< HEAD
-            <ProductCostTrendCarousel
-              products={recipeProducts}
-              onOpen={onSelectRecipe}
-              onRename={onRenameProduct}
-            />
-=======
             <ProductCostTrendCarousel products={recipeProducts} onOpen={onSelectRecipe} />
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
           </div>
 
           <CostTrendChart points={trend} />

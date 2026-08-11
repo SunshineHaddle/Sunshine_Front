@@ -4,15 +4,14 @@ import { Icon } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { RecipeProduct } from '../product-management/productManagementData'
+import { downloadProductionTemplate } from './productionEntryData'
 import {
-<<<<<<< HEAD
   commitSubul,
   createMissingMaterials,
   previewSubul,
   type SubulPreview,
 } from '../../lib/api/importSubul'
 import {
-  calcYieldRate,
   deleteMaterialUsages,
   fetchMaterialUsages,
   fetchProduction,
@@ -26,14 +25,6 @@ import {
   uploadExcel,
   type FileHistoryItem,
 } from '../../lib/api/files'
-=======
-  PRODUCTION_ENTRY_STORAGE_KEY,
-  buildSampleProductionRows,
-  downloadProductionTemplate,
-  parseStoredProductionRows,
-  type ProductionEntryRow,
-} from './productionEntryData'
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
 
 type RawMaterialEntryPageProps = {
   products: RecipeProduct[]
@@ -46,15 +37,11 @@ type RawMaterialEntryPageProps = {
   hideSidebar?: boolean
 }
 
-/** 화면 입력은 전부 문자열로 들고 있다가 저장 시 숫자로 바꾼다 */
+/** 화면 입력은 문자열로 들고 있다가 저장 시 숫자로 바꾼다 */
 type Row = {
-  productId: string
+  id: string
   name: string
-  sku: string
   production: string
-  inbound: string
-  process: string
-  finished: string
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
@@ -71,38 +58,34 @@ export function RawMaterialEntryPage({
 }: RawMaterialEntryPageProps) {
   const [rows, setRows] = useState<Row[]>([])
   const [preview, setPreview] = useState<SubulPreview | null>(null)
-  // 원본 파일. 검증을 통과한 뒤 Storage 에 올린다 (§12-5)
+  /** 원본 파일. 검증을 통과한 뒤 Storage 에 올린다 (§12-5) */
   const [file, setFile] = useState<File | null>(null)
+  const [fileName, setFileName] = useState('')
   const [busy, setBusy] = useState('')
-  /** §6-1 : 이미 저장된 투입 실적 */
+  /** §6-1 이미 저장된 투입 실적 */
   const [usages, setUsages] = useState<UsageLine[]>([])
-  /** §10-3 : 이 달에 올린 원본 파일 이력 */
+  /** §10-3 이 달에 올린 원본 파일 */
   const [history, setHistory] = useState<FileHistoryItem[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const hasRows = rows.length > 0
+  const filledCount = rows.filter((row) => row.production.trim() !== '').length
+
   const reloadUsages = useCallback(async () => {
     if (!periodId) { setUsages([]); return }
-    try {
-      setUsages(await fetchMaterialUsages(periodId))
-    } catch {
-      setUsages([])
-    }
+    try { setUsages(await fetchMaterialUsages(periodId)) } catch { setUsages([]) }
   }, [periodId])
 
   const reloadHistory = useCallback(async () => {
     if (!periodId) { setHistory([]); return }
-    try {
-      setHistory(await fetchFileHistory({ periodId, limit: 10 }))
-    } catch {
-      // 버킷·테이블이 없어도 입력 작업은 막지 않는다
-      setHistory([])
-    }
+    // 버킷·테이블이 없어도 입력 작업은 막지 않는다
+    try { setHistory(await fetchFileHistory({ periodId, limit: 10 })) } catch { setHistory([]) }
   }, [periodId])
 
   useEffect(() => { void reloadUsages() }, [reloadUsages])
   useEffect(() => { void reloadHistory() }, [reloadHistory])
 
-  // 저장된 생산량을 제품 목록에 좌측 조인한다.
+  // §5-1 저장된 생산량을 제품 목록에 좌측 조인한다 (F-11).
   // 조인하지 않으면 아직 입력하지 않은 제품이 화면에서 사라진다.
   useEffect(() => {
     let cancelled = false
@@ -110,34 +93,21 @@ export function RawMaterialEntryPage({
       const saved = periodId ? await fetchProduction(periodId).catch(() => []) : []
       if (cancelled) return
       const byId = new Map(saved.map((s) => [s.productId, s]))
-      setRows(
-        products.map((product) => {
-          const hit = byId.get(product.id)
-          return {
-            productId: product.id,
-            name: product.name,
-            sku: product.sku ?? '',
-            production: hit ? String(hit.production) : '',
-            inbound: hit ? String(hit.inboundDefectRate) : '',
-            process: hit ? String(hit.processWasteRate) : '',
-            finished: hit ? String(hit.finishedDefectRate) : '',
-          }
-        }),
-      )
+      setRows(products.map((product) => ({
+        id: product.id,
+        name: product.name,
+        production: byId.has(product.id) ? String(byId.get(product.id)!.production) : '',
+      })))
     }
     void build()
     return () => { cancelled = true }
   }, [periodId, products])
 
-  const filledCount = rows.filter((row) => row.production.trim() !== '').length
-
-  const update = (productId: string, patch: Partial<Row>) => {
-    setRows((current) =>
-      current.map((row) => (row.productId === productId ? { ...row, ...patch } : row)),
-    )
+  const updateProduction = (id: string, value: string) => {
+    setRows((current) => current.map((row) => (row.id === id ? { ...row, production: value } : row)))
   }
 
-  const handleFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0]
     event.target.value = ''
     if (!picked) return
@@ -147,11 +117,12 @@ export function RawMaterialEntryPage({
       const result = await previewSubul(picked)
       setPreview(result)
       setFile(picked)
-      const productCount = result.sheets.length
+      setFileName(picked.name)
+      const missing = result.missingProducts.length + result.missingMaterials.length
       onAction(
-        result.missingProducts.length + result.missingMaterials.length > 0
-          ? `${productCount}개 제품을 읽었습니다. 매칭되지 않은 항목이 있어 확인이 필요합니다.`
-          : `${productCount}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
+        missing > 0
+          ? `${result.sheets.length}개 제품을 읽었습니다. 매칭되지 않은 항목이 있어 확인이 필요합니다.`
+          : `${result.sheets.length}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
       )
     } catch (error) {
       onAction(`읽기 실패: ${error instanceof Error ? error.message : String(error)}`)
@@ -175,6 +146,7 @@ export function RawMaterialEntryPage({
       onAction(`원재료 ${preview.missingMaterials.length}개를 등록했습니다. 파일을 다시 올려주세요.`)
       setPreview(null)
       setFile(null)
+      setFileName('')
     } catch (error) {
       onAction(`등록 실패: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
@@ -197,17 +169,11 @@ export function RawMaterialEntryPage({
       return
     }
 
-    // 검증을 통과한 뒤에만 원본을 보관한다 (§12-5).
-    // 버킷이 없어도 위에서 저장한 투입내역은 유지되어야 하므로 따로 잡는다.
+    // 버킷이 없어도 위에서 저장한 투입내역은 유지되어야 하므로 따로 잡는다
     if (file) {
       setBusy('원본 파일을 보관하는 중…')
       try {
-        await uploadExcel({
-          periodId,
-          file,
-          displayName: `${month} 수불자료`,
-          rowCount: preview.readyCount,
-        })
+        await uploadExcel({ periodId, file, displayName: `${month} 수불자료`, rowCount: preview.readyCount })
         await reloadHistory()
         onAction(`투입내역 ${saved}행 저장 · 원본 파일 보관 완료`)
       } catch (error) {
@@ -227,7 +193,7 @@ export function RawMaterialEntryPage({
     setBusy('')
   }
 
-  /** §10-4 : Private 버킷이라 60초짜리 서명 URL 을 발급받는다 */
+  /** §10-4 Private 버킷이라 60초짜리 서명 URL 을 발급받는다 */
   const download = async (item: FileHistoryItem) => {
     try {
       window.open(await createDownloadUrl(item.storage_path, 60), '_blank')
@@ -236,7 +202,7 @@ export function RawMaterialEntryPage({
     }
   }
 
-  /** §10-5 : Storage 와 테이블 양쪽에서 지운다 */
+  /** §10-5 Storage 와 테이블 양쪽에서 지운다 */
   const removeFile = async (item: FileHistoryItem) => {
     if (!window.confirm(`${item.original_name} 원본을 삭제할까요?\n이미 저장된 투입내역은 그대로 남습니다.`)) return
     try {
@@ -248,7 +214,7 @@ export function RawMaterialEntryPage({
     }
   }
 
-  /** §6-3 : 제품별 투입 실적을 지운다. 지우면 마감 시 표준원가로 돌아간다 */
+  /** §6-3 지우면 마감 시 표준원가로 되돌아간다 */
   const removeUsages = async (productId: string, productName: string) => {
     if (!periodId) return
     if (!window.confirm(`${productName}의 투입내역을 모두 지울까요?\n마감 시 레시피 기준(표준원가)으로 계산됩니다.`)) return
@@ -261,19 +227,11 @@ export function RawMaterialEntryPage({
     }
   }
 
+  /** §5-2 생산량 저장 */
   const persistProduction = async () => {
     if (!periodId) return false
     try {
-      await saveProduction(
-        periodId,
-        rows.map((row) => ({
-          productId: row.productId,
-          production: row.production,
-          inboundDefectRate: row.inbound,
-          processWasteRate: row.process,
-          finishedDefectRate: row.finished,
-        })),
-      )
+      await saveProduction(periodId, rows.map((row) => ({ productId: row.id, production: row.production })))
       return true
     } catch (error) {
       onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
@@ -282,10 +240,10 @@ export function RawMaterialEntryPage({
   }
 
   const saveDraft = async () => {
-    if (await persistProduction()) onAction('생산량을 저장했습니다.')
+    if (await persistProduction()) onAction('제품 생산량을 임시 저장했습니다.')
   }
 
-  const goNext = async () => {
+  const goToNextStep = async () => {
     if (await persistProduction()) onNavigate('data-entry-2')
   }
 
@@ -301,17 +259,13 @@ export function RawMaterialEntryPage({
       <main className="raw-materials-page">
         <header className="workflow-page-heading entry-heading">
           <div>
-            <h1>데이터 입력 1단계: 원재료 투입내역</h1>
+            <h1>데이터 입력 1단계: 제품 생산량</h1>
             <p>수불자료(.xlsx)를 올리면 제품별 투입 재료가 등록됩니다. 생산량은 아래에서 직접 입력하세요.</p>
           </div>
           <label className="entry-month-picker">
             <span className="visually-hidden">기준 월</span>
             <Icon name="calendar" size={17} />
-            <input
-              type="month"
-              value={month}
-              onChange={(event) => onMonthChange(event.target.value)}
-            />
+            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
           </label>
         </header>
 
@@ -322,12 +276,8 @@ export function RawMaterialEntryPage({
         )}
 
         <div className="production-entry">
-          {/* ── 수불자료 업로드 ───────────────────────────── */}
           <section className="production-upload" aria-labelledby="production-upload-title">
             <div className="production-upload__info">
-<<<<<<< HEAD
-              <span className="production-upload__badge"><Icon name="excel" size={24} /></span>
-=======
               <span className="production-upload__badge">
                 <img
                   className="production-upload__badge-img"
@@ -344,26 +294,17 @@ export function RawMaterialEntryPage({
                   <Icon name="excel" size={24} />
                 </span>
               </span>
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
               <div className="production-upload__text">
-                <h2 id="production-upload-title">수불자료 업로드</h2>
-                {file ? (
-                  <p className="production-upload__file"><Icon name="check" size={13} /> {file.name}</p>
+                <h2 id="production-upload-title">엑셀 파일 업로드</h2>
+                {fileName ? (
+                  <p className="production-upload__file">
+                    <Icon name="check" size={13} /> {fileName}
+                  </p>
                 ) : (
-                  <p>제품마다 시트가 하나씩 있고, 각 시트에 품명·수량·단가가 적힌 파일입니다.</p>
+                  <p>제품마다 시트가 하나씩 있고, 각 시트에 품명·수량·단가가 적힌 수불자료입니다.</p>
                 )}
               </div>
             </div>
-<<<<<<< HEAD
-            <button
-              className="production-upload__button"
-              type="button"
-              disabled={Boolean(busy) || isLocked}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon name="upload" size={16} /> {file ? '다시 업로드' : '엑셀 업로드'}
-            </button>
-=======
             <div className="production-upload__actions">
               <button
                 className="production-upload__template"
@@ -375,22 +316,21 @@ export function RawMaterialEntryPage({
               <button
                 className="production-upload__button"
                 type="button"
+                disabled={Boolean(busy) || isLocked}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Icon name="upload" size={16} /> {fileName ? '다시 업로드' : '엑셀 업로드'}
               </button>
             </div>
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
             <input
               ref={fileInputRef}
               className="production-upload__input"
               type="file"
               accept=".xlsx,.xls"
-              onChange={handleFile}
+              onChange={handleFileSelected}
             />
           </section>
 
-<<<<<<< HEAD
           {busy && <p className="entry-busy" role="status">{busy}</p>}
 
           {/* ── 업로드 미리보기 ───────────────────────────── */}
@@ -405,8 +345,7 @@ export function RawMaterialEntryPage({
 
               <div className="subul-preview__sheets">
                 {preview.sheets.map((sheet) => {
-                  const gap =
-                    sheet.statedTotal === null ? 0 : Math.round(sheet.total - sheet.statedTotal)
+                  const gap = sheet.statedTotal === null ? 0 : Math.round(sheet.total - sheet.statedTotal)
                   return (
                     <article
                       className={`subul-sheet${sheet.productId ? '' : ' is-unmatched'}`}
@@ -430,58 +369,6 @@ export function RawMaterialEntryPage({
                         )}
                       </dl>
                     </article>
-=======
-          {hasRows ? (
-            <section className="production-list" aria-labelledby="production-list-title">
-              <header className="production-list__heading">
-                <div className="production-list__title">
-                  <h2 id="production-list-title">엑셀 제품 목록</h2>
-                  <span className="production-list__count">{rows.length}개 제품</span>
-                </div>
-                <div className="production-list__meta">
-                  <p>엑셀에서 불러온 제품입니다. 각 제품의 생산량(kg)을 입력하세요.</p>
-                  <span className="production-list__progress">
-                    입력 완료 <strong>{filledCount}</strong> / {rows.length}
-                  </span>
-                </div>
-              </header>
-
-              <div className="production-list__labels" aria-hidden="true">
-                <span>제품명</span>
-                <span>생산량(kg)</span>
-              </div>
-
-              <div className="production-list__rows">
-                {rows.map((row) => {
-                  const isFilled = row.production.trim() !== ''
-                  return (
-                    <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
-                      <div className="production-item__name">
-                        <span className="production-item__name-text">
-                          <strong>{row.name}</strong>
-                          <em>제품 · 생산량 입력 대상</em>
-                        </span>
-                        {isFilled && (
-                          <span className="production-item__done" aria-label="입력 완료">
-                            <Icon name="check" size={13} />
-                          </span>
-                        )}
-                      </div>
-                      <label className="production-item__field">
-                        <span className="production-item__field-label">생산량(kg)</span>
-                        <div className="production-item__input">
-                          <NumberInput
-                            aria-label={`${row.name} 생산량(kg)`}
-                            min="0"
-                            placeholder="생산량 입력"
-                            value={row.production}
-                            onValueChange={(raw) => updateProduction(row.id, raw)}
-                          />
-                          <em>kg</em>
-                        </div>
-                      </label>
-                    </div>
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
                   )
                 })}
               </div>
@@ -559,19 +446,15 @@ export function RawMaterialEntryPage({
                 <span>{usages.length}행</span>
               </header>
               {rows.map((row) => {
-                const lines = usages.filter((usage) => usage.productId === row.productId)
+                const lines = usages.filter((usage) => usage.productId === row.id)
                 if (lines.length === 0) return null
                 const total = lines.reduce((sum, line) => sum + line.amount, 0)
                 return (
-                  <article className="saved-usages__product" key={row.productId}>
+                  <article className="saved-usages__product" key={row.id}>
                     <div className="saved-usages__head">
                       <strong>{row.name}</strong>
                       <span>재료 {lines.length}개 · {won(total)}원</span>
-                      <button
-                        type="button"
-                        disabled={isLocked}
-                        onClick={() => void removeUsages(row.productId, row.name)}
-                      >
+                      <button type="button" disabled={isLocked} onClick={() => void removeUsages(row.id, row.name)}>
                         <Icon name="trash" size={14} /> 삭제
                       </button>
                     </div>
@@ -591,92 +474,88 @@ export function RawMaterialEntryPage({
             </section>
           )}
 
-          {/* ── 생산량 · 불량률 ───────────────────────────── */}
-          <section className="production-list" aria-labelledby="production-list-title">
-            <header className="production-list__heading">
-              <div className="production-list__title">
-                <span className="production-list__title-icon"><Icon name="box" size={16} /></span>
-                <h2 id="production-list-title">제품별 생산량 · 불량률</h2>
-                <span className="production-list__count">{rows.length}개 제품</span>
-              </div>
-              <div className="production-list__meta">
-                <p>수불자료에는 생산량이 없습니다. 생산 일지를 보고 직접 입력하세요.</p>
-                <span className="production-list__progress">
-                  입력 완료 <strong>{filledCount}</strong> / {rows.length}
-                </span>
-              </div>
-            </header>
-
-            {rows.length === 0 ? (
-              <section className="production-empty">
-                <span className="production-empty__icon"><Icon name="factory" size={30} /></span>
-                <p>등록된 제품이 없습니다</p>
-                <span>제품 관리에서 제품을 먼저 등록해주세요.</span>
-              </section>
-            ) : (
-              <div className="yield-table" role="table">
-                <div className="yield-table__head" role="row">
-                  <span role="columnheader">제품</span>
-                  <span role="columnheader">생산량(kg)</span>
-                  <span role="columnheader">입고 불량률</span>
-                  <span role="columnheader">공정 폐기율</span>
-                  <span role="columnheader">완제품 불량률</span>
-                  <span role="columnheader">최종 수율</span>
+          {hasRows ? (
+            <section className="production-list" aria-labelledby="production-list-title">
+              <header className="production-list__heading">
+                <div className="production-list__title">
+                  <h2 id="production-list-title">제품별 생산량</h2>
+                  <span className="production-list__count">{rows.length}개 제품</span>
                 </div>
-                {rows.map((row) => (
-                  <div className="yield-table__row" role="row" key={row.productId}>
-                    <div className="yield-table__name" role="cell">
-                      <strong>{row.name}</strong>
-                      <small>{row.sku}</small>
-                    </div>
-                    <div role="cell">
-                      <input
-                        type="number" min="0" step="any" placeholder="0"
-                        aria-label={`${row.name} 생산량`}
-                        disabled={isLocked}
-                        value={row.production}
-                        onChange={(e) => update(row.productId, { production: e.target.value })}
-                      />
-                    </div>
-                    {(['inbound', 'process', 'finished'] as const).map((field) => (
-                      <div role="cell" key={field}>
-                        <span className="yield-table__pct">
-                          <input
-                            type="number" min="0" max="100" step="0.1" placeholder="0"
-                            aria-label={`${row.name} ${field}`}
-                            disabled={isLocked}
-                            value={row[field]}
-                            onChange={(e) => update(row.productId, { [field]: e.target.value })}
-                          />
-                          <em>%</em>
-                        </span>
-                      </div>
-                    ))}
-                    <div className="yield-table__yield" role="cell">
-                      {calcYieldRate(row.inbound, row.process, row.finished).toFixed(2)}%
-                    </div>
-                  </div>
-                ))}
+                <div className="production-list__meta">
+                  <p>수불자료에는 생산량이 없습니다. 생산 일지를 보고 직접 입력하세요.</p>
+                  <span className="production-list__progress">
+                    입력 완료 <strong>{filledCount}</strong> / {rows.length}
+                  </span>
+                </div>
+              </header>
+
+              <div className="production-list__labels" aria-hidden="true">
+                <span>제품명</span>
+                <span>생산량(kg)</span>
               </div>
-            )}
-          </section>
+
+              <div className="production-list__rows">
+                {rows.map((row) => {
+                  const isFilled = row.production.trim() !== ''
+                  return (
+                    <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
+                      <div className="production-item__name">
+                        <span className="production-item__name-text">
+                          <strong>{row.name}</strong>
+                          <em>제품 · 생산량 입력 대상</em>
+                        </span>
+                        {isFilled && (
+                          <span className="production-item__done" aria-label="입력 완료">
+                            <Icon name="check" size={13} />
+                          </span>
+                        )}
+                      </div>
+                      <label className="production-item__field">
+                        <span className="production-item__field-label">생산량(kg)</span>
+                        <div className="production-item__input">
+                          <NumberInput
+                            aria-label={`${row.name} 생산량(kg)`}
+                            min="0"
+                            placeholder="생산량 입력"
+                            value={row.production}
+                            onValueChange={(raw) => updateProduction(row.id, raw)}
+                          />
+                          <em>kg</em>
+                        </div>
+                      </label>
+                    </div>
+                  )
+                })}
+              </div>
+            </section>
+          ) : (
+            <section className="production-empty" aria-live="polite">
+              <span className="production-empty__icon">
+                <Icon name="factory" size={30} />
+              </span>
+              <p>등록된 제품이 없습니다</p>
+              <span>제품 관리에서 제품을 먼저 등록해주세요.</span>
+            </section>
+          )}
         </div>
 
         <footer className="raw-materials-footer">
           <div>
             <button
-              className="workflow-outline-button" type="button"
-              disabled={rows.length === 0 || !periodId || isLocked}
-              onClick={saveDraft}
+              className="workflow-outline-button"
+              type="button"
+              onClick={() => void saveDraft()}
+              disabled={!hasRows || !periodId || isLocked}
             >
               임시 저장
             </button>
             <button
-              className="workflow-primary-button" type="button"
-              disabled={rows.length === 0 || !periodId}
-              onClick={goNext}
+              className="workflow-primary-button"
+              type="button"
+              onClick={() => void goToNextStep()}
+              disabled={!hasRows || !periodId}
             >
-              다음 단계: 운영비 <Icon name="chevron-right" size={16} />
+              다음 단계: 제조 공정 입력 <Icon name="chevron-right" size={16} />
             </button>
           </div>
         </footer>

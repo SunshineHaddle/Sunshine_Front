@@ -3,12 +3,8 @@ import { Icon } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-<<<<<<< HEAD
-import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
-=======
 import { parseNumber } from '../../utils/number'
-import type { RecipeProduct } from './productManagementData'
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
+import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
 
 type ProductCreatePageProps = {

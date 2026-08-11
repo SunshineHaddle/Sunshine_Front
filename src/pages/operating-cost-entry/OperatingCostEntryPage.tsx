@@ -10,28 +10,22 @@ import {
   saveCustomCost,
   saveLaborCost,
 } from '../../lib/api/operating'
+import { fetchProduction } from '../../lib/api/production'
 import {
   calculateOperatingCosts,
-<<<<<<< HEAD
-=======
   distributeByProduction,
-  getCurrentMonth,
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
   initialOperatingCosts,
   sumProductFees,
   toWonNumber,
   type CostField,
 } from './operatingCostModel'
-import {
-  PRODUCTION_ENTRY_STORAGE_KEY,
-  parseStoredProductionRows,
-} from '../raw-material-entry/productionEntryData'
 
 type OperatingCostEntryPageProps = {
   products?: RecipeProduct[]
   month: string
   periodId: string | null
   isLocked: boolean
+  onMonthChange: (month: string) => void
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
   hideSidebar?: boolean
@@ -42,41 +36,37 @@ export function OperatingCostEntryPage({
   month,
   periodId,
   isLocked,
+  onMonthChange,
   onNavigate,
   onAction,
   hideSidebar = false,
 }: OperatingCostEntryPageProps) {
   const [costs, setCosts] = useState(initialOperatingCosts)
-  /** DB 에서 읽은 커스텀 항목의 id. 삭제할 때 필요하다 */
-  const [savedIds, setSavedIds] = useState<Record<string, string>>({})
+  /** 커스텀 항목 배분에 쓰는 제품별 생산량. 예전엔 localStorage 에서 읽었다 */
+  const [productions, setProductions] = useState<{ id: string; production: number }[]>([])
+  /** DB 에 이미 있는 항목 id. 삭제 시 필요하다 */
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
 
-<<<<<<< HEAD
-=======
-export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
-  const [storedEntry] = useState(loadStoredOperatingEntry)
-  const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
-  const [costs, setCosts] = useState(() => ({
-    ...initialOperatingCosts,
-    ...storedEntry?.costs,
-    productFees: storedEntry?.costs?.productFees ?? {},
-    customItems: (storedEntry?.costs?.customItems ?? []).map((item) => ({
-      id: item.id,
-      name: item.name,
-      total: item.total ?? '0',
-    })),
-  }))
-  const [productionById] = useState(() => {
-    const rows = parseStoredProductionRows(window.localStorage.getItem(PRODUCTION_ENTRY_STORAGE_KEY)) ?? []
-    return new Map(rows.map((row) => [row.id, toWonNumber(row.production)]))
-  })
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
   const totals = calculateOperatingCosts(costs)
   const laborShareTotal = sumProductFees(costs.productFees)
   const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
 
-<<<<<<< HEAD
-  // §7-1 : 해당 월 운영비를 읽어 화면 모델로 바꾼다
+  // §5-1 생산량 (배분 기준)
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      if (!periodId) { setProductions([]); return }
+      const rows = await fetchProduction(periodId).catch(() => [])
+      if (cancelled) return
+      const byId = new Map(rows.map((row) => [row.productId, row.production]))
+      setProductions(products.map((p) => ({ id: p.id, production: byId.get(p.id) ?? 0 })))
+    }
+    void load()
+    return () => { cancelled = true }
+  }, [periodId, products])
+
+  // §7-1 해당 월 운영비를 읽어 화면 모델로 바꾼다
   useEffect(() => {
     let cancelled = false
     const load = async () => {
@@ -96,12 +86,10 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
           customItems: custom.map((row) => ({
             id: row.id,
             name: row.name,
-            productFees: Object.fromEntries(
-              row.allocations.map((a) => [a.productId, String(a.amount)]),
-            ),
+            total: String(row.totalAmount),
           })),
         })
-        setSavedIds(Object.fromEntries(custom.map((row) => [row.id, row.id])))
+        setSavedIds(new Set(custom.map((row) => row.id)))
       } catch (error) {
         onAction(`조회 실패: ${error instanceof Error ? error.message : String(error)}`)
       }
@@ -109,12 +97,6 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
     void load()
     return () => { cancelled = true }
   }, [periodId, onAction])
-=======
-  const productions = products.map((product) => ({
-    id: product.id,
-    production: productionById.get(product.id) ?? 0,
-  }))
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -141,13 +123,10 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
   }
 
   const addCustomItem = () => {
+    const id = `custom-${Date.now()}`
     setCosts((current) => ({
       ...current,
-<<<<<<< HEAD
-      customItems: [...current.customItems, { id: `new-${Date.now()}`, name: '', productFees: {} }],
-=======
       customItems: [...current.customItems, { id, name: '', total: '0' }],
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     }))
   }
 
@@ -161,42 +140,39 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
   const updateCustomItemTotal = (id: string, value: string) => {
     setCosts((current) => ({
       ...current,
-<<<<<<< HEAD
-      customItems: current.customItems.map((item) =>
-        item.id === id
-          ? { ...item, productFees: { ...item.productFees, [productId]: value } }
-          : item,
-      ),
-=======
       customItems: current.customItems.map((item) => (
         item.id === id ? { ...item, total: value } : item
       )),
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     }))
   }
 
-  // §7-3 : 이미 저장된 항목이면 DB 에서도 지운다
+  // §7-3 이미 저장된 항목이면 DB 에서도 지운다
   const removeCustomItem = (id: string) => {
     setCosts((current) => ({
       ...current,
       customItems: current.customItems.filter((item) => item.id !== id),
     }))
-    if (savedIds[id]) {
+    if (savedIds.has(id)) {
       void deleteOperatingCost(id).catch((error: unknown) =>
         onAction(`삭제 실패: ${error instanceof Error ? error.message : String(error)}`),
       )
     }
   }
 
-  /** §7-2 : 인건비(%) + 커스텀 항목(금액)을 저장한다 */
+  /**
+   * §7-2 인건비(%) + 커스텀 항목(총액)을 저장한다.
+   * 커스텀 항목은 화면에서 총액만 받고, 제품별 금액은 생산량 비례로 배분해 넣는다.
+   */
   const persist = async () => {
     if (!periodId) return false
     setBusy(true)
     try {
-      await saveLaborCost(periodId, Number(costs.laborTotal) || 0, costs.productFees)
+      await saveLaborCost(periodId, toWonNumber(costs.laborTotal), costs.productFees)
+
       for (const [index, item] of costs.customItems.entries()) {
         if (!item.name.trim()) continue
-        await saveCustomCost(periodId, item.name.trim(), item.productFees, { sortOrder: index + 1 })
+        const allocation = distributeByProduction(toWonNumber(item.total), productions)
+        await saveCustomCost(periodId, item.name.trim(), allocation, { sortOrder: index + 1 })
       }
       return true
     } catch (error) {
@@ -209,28 +185,11 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
 
   const goToNextStep = async () => {
     if (!isLaborShareValid) {
-      onAction(
-        `제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`,
-      )
+      onAction(`제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`)
       return
     }
-<<<<<<< HEAD
     if (!(await persist())) return
 
-=======
-    const customItemsWithAllocation = costs.customItems.map((item) => ({
-      ...item,
-      allocation: distributeByProduction(toWonNumber(item.total), productions),
-    }))
-    window.localStorage.setItem(
-      'cost-analysis-operating-costs',
-      JSON.stringify({
-        month,
-        costs: { ...costs, customItems: customItemsWithAllocation },
-        totalCost: totals.totalCost,
-      }),
-    )
->>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     if (hideSidebar) {
       onAction('데이터 입력을 완료했습니다.')
       return
@@ -249,14 +208,16 @@ export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hi
             <h1>2단계: 현장 운영비</h1>
             <p>제조 공정의 인건비와 운영 항목을 입력하세요.</p>
           </div>
-          <span className="operating-month-badge">
-            <Icon name="calendar" size={16} /> {month.replace('-', '년 ')}월
-          </span>
+          <label className="operating-month-picker">
+            <span className="visually-hidden">비용 기준 월</span>
+            <Icon name="calendar" size={17} />
+            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
+          </label>
         </header>
 
         {isLocked && (
           <p className="entry-locked" role="status">
-            <Icon name="check" size={14} /> 이 달은 마감되었습니다. 값을 고치려면 마감을 먼저 취소해주세요.
+            <Icon name="check" size={14} /> 이 달은 마감되었습니다. 값을 고치려면 3단계에서 <strong>마감 취소</strong>를 먼저 눌러주세요.
           </p>
         )}
 
