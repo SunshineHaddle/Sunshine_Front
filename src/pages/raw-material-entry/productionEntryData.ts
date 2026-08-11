@@ -16,6 +16,22 @@ export function buildSampleProductionRows(): ProductionEntryRow[] {
   }))
 }
 
+export function downloadProductionTemplate() {
+  const header = ['품명', '수량', '단가', '금액']
+
+  const csv = header.join(',')
+
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = '원재료_입력_양식.csv'
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+}
+
 export function parseStoredProductionRows(value: string | null): ProductionEntryRow[] | null {
   try {
     const rows: unknown = JSON.parse(value ?? 'null')

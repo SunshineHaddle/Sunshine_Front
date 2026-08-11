@@ -1,7 +1,7 @@
 .operating-cost-groups {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 34px;
+  margin-top: 84px;
   gap: 52px 42px;
 }
 
@@ -81,6 +81,29 @@
   flex: 0 0 auto;
   color: #aaa4a7;
   font-size: 10px;
+}
+
+.operating-cost-alloc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 42px;
+  padding: 0 14px;
+  background: #fafafa;
+  border: 1px solid #eeecec;
+  border-radius: 6px;
+}
+
+.operating-cost-alloc__name {
+  color: #6d676a;
+  font-size: 12px;
+}
+
+.operating-cost-alloc__amount {
+  color: #4b4549;
+  font-size: 12px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
 }
 
 .operating-cost-group__subtotal {

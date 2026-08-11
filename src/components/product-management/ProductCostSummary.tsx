@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Icon } from '../common/Icon'
+import { NumberInput } from '../common/NumberInput'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductCostAnalysisState } from './useProductCostAnalysis'
 import { MonthlyUnitPriceTrend } from './MonthlyUnitPriceTrend'
@@ -22,6 +23,25 @@ const unitPriceFormatter = new Intl.NumberFormat('ko-KR', {
   currency: 'KRW',
   maximumFractionDigits: 1,
 })
+
+function buildMonthOptions(selected: string) {
+  const now = new Date()
+  const options: { value: string; label: string }[] = []
+  for (let i = 0; i < 24; i += 1) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    const year = date.getFullYear()
+    const month = date.getMonth() + 1
+    options.push({
+      value: `${year}-${String(month).padStart(2, '0')}`,
+      label: `${year}년 ${month}월`,
+    })
+  }
+  if (selected && !options.some((option) => option.value === selected)) {
+    const [year, month] = selected.split('-')
+    options.unshift({ value: selected, label: `${year}년 ${Number(month)}월` })
+  }
+  return options
+}
 
 export function ProductCostSummary({ product, state, onAction }: ProductCostSummaryProps) {
   const { draftMonth, setDraftMonth, activeMonth, setActiveMonth, monthLabel } = state
@@ -89,11 +109,16 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
       <div className="cost-analysis-filter cost-analysis-filter--product" aria-label="원가 분석 조회 조건">
         <label>
           <span>분석 월</span>
-          <input
-            type="month"
+          <select
             value={draftMonth}
             onChange={(event) => setDraftMonth(event.target.value)}
-          />
+          >
+            {buildMonthOptions(draftMonth).map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </label>
         <button className="cost-analysis-filter__submit" type="button" onClick={applyFilters}>
           조회하기
@@ -170,15 +195,12 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
           {isEditingYield ? (
             <div className="product-cost-overview__yield-editor" onClick={(event) => event.stopPropagation()}>
               <div className="product-cost-overview__yield-field">
-                <input
-                  type="number"
+                <NumberInput
                   min="0"
-                  step="any"
-                  inputMode="decimal"
                   autoFocus
                   value={yieldInput}
                   placeholder="생산량"
-                  onChange={(event) => setYieldInput(event.target.value)}
+                  onValueChange={(raw) => setYieldInput(raw)}
                   onKeyDown={(event) => {
                     if (event.key === 'Enter') applyYield()
                     if (event.key === 'Escape') setIsEditingYield(false)

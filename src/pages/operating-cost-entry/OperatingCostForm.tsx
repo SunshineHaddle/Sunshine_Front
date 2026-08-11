@@ -1,6 +1,8 @@
 import { Icon, type IconName } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import {
+  distributeByProduction,
   formatWon,
   sumProductFees,
   toWonNumber,
@@ -8,15 +10,18 @@ import {
   type OperatingCosts,
 } from './operatingCostModel'
 
+type ProductionShare = { id: string; production: number }
+
 type OperatingCostFormProps = {
   products: RecipeProduct[]
   costs: OperatingCosts
+  productions: ProductionShare[]
   onCostChange: (field: CostField, value: string) => void
   onProductFeeChange: (productId: string, value: string) => void
   onEqualizeProductFees: () => void
   onAddCustomItem: () => void
   onUpdateCustomItemName: (id: string, name: string) => void
-  onUpdateCustomItemFee: (id: string, productId: string, value: string) => void
+  onUpdateCustomItemTotal: (id: string, value: string) => void
   onRemoveCustomItem: (id: string) => void
 }
 
@@ -35,7 +40,7 @@ function CostInput({ field, label, value, icon, suffix, onChange }: CostInputPro
       <span>{label}</span>
       <span className="operating-cost-input">
         {icon && <Icon name={icon} size={16} />}
-        <input min="0" type="number" value={value} onChange={(event) => onChange(field, event.target.value)} />
+        <NumberInput value={value} onValueChange={(raw) => onChange(field, raw)} />
         {suffix && <small>{suffix}</small>}
       </span>
     </label>
@@ -123,14 +128,16 @@ function ProductFeeList({
 export function OperatingCostForm({
   products,
   costs,
+  productions,
   onCostChange,
   onProductFeeChange,
   onEqualizeProductFees,
   onAddCustomItem,
   onUpdateCustomItemName,
-  onUpdateCustomItemFee,
+  onUpdateCustomItemTotal,
   onRemoveCustomItem,
 }: OperatingCostFormProps) {
+  const productNameById = new Map(products.map((product) => [product.id, product.name]))
   return (
     <>
       <section className="operating-cost-group operating-cost-group--wide" aria-labelledby="labor-cost-title">
@@ -152,37 +159,67 @@ export function OperatingCostForm({
         </div>
       </section>
 
-      {costs.customItems.map((item) => (
-        <section className="operating-cost-group operating-cost-group--wide operating-cost-group--custom" key={item.id}>
-          <header>
-            <Icon name="landmark" size={18} />
-            <input
-              className="operating-cost-group__name-input"
-              type="text"
-              value={item.name}
-              placeholder="항목 이름"
-              onChange={(event) => onUpdateCustomItemName(item.id, event.target.value)}
-            />
-            <button
-              type="button"
-              className="operating-cost-group__remove"
-              aria-label="항목 삭제"
-              onClick={() => onRemoveCustomItem(item.id)}
-            >
-              <Icon name="trash" size={15} />
-            </button>
-          </header>
-          <div className="operating-cost-labor">
-            <div className="operating-cost-labor__total" />
-            <ProductFeeList
-              products={products}
-              values={item.productFees}
-              onChange={(productId, value) => onUpdateCustomItemFee(item.id, productId, value)}
-              title="제품별 금액"
-            />
-          </div>
-        </section>
-      ))}
+      {costs.customItems.map((item) => {
+        const itemTotal = toWonNumber(item.total)
+        const allocation = distributeByProduction(itemTotal, productions)
+        return (
+          <section className="operating-cost-group operating-cost-group--wide operating-cost-group--custom" key={item.id}>
+            <header>
+              <Icon name="landmark" size={18} />
+              <input
+                className="operating-cost-group__name-input"
+                type="text"
+                value={item.name}
+                placeholder="항목 이름"
+                onChange={(event) => onUpdateCustomItemName(item.id, event.target.value)}
+              />
+              <button
+                type="button"
+                className="operating-cost-group__remove"
+                aria-label="항목 삭제"
+                onClick={() => onRemoveCustomItem(item.id)}
+              >
+                <Icon name="trash" size={15} />
+              </button>
+            </header>
+            <div className="operating-cost-labor">
+              <div className="operating-cost-labor__total">
+                <label className="operating-cost-field">
+                  <span>항목 비용</span>
+                  <span className="operating-cost-input">
+                    <NumberInput
+                      value={item.total}
+                      onValueChange={(raw) => onUpdateCustomItemTotal(item.id, raw)}
+                    />
+                    <small>원</small>
+                  </span>
+                </label>
+              </div>
+              <div className="operating-cost-labor__products">
+                <div className="operating-cost-labor__products-head">
+                  <span className="operating-cost-labor__products-title">제품별 배분 (생산량 기준)</span>
+                </div>
+                <div className="operating-cost-labor__products-list">
+                  {productions.length > 0 ? (
+                    productions.map((production) => (
+                      <div className="operating-cost-alloc" key={production.id}>
+                        <span className="operating-cost-alloc__name">
+                          {productNameById.get(production.id) ?? production.id}
+                        </span>
+                        <span className="operating-cost-alloc__amount">
+                          {formatWon(allocation[production.id] ?? 0)}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="operating-cost-labor__empty">등록된 제품이 없습니다.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </section>
+        )
+      })}
 
       <button type="button" className="operating-cost-add" onClick={onAddCustomItem}>
         <Icon name="add" size={16} /> 항목 추가

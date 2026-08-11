@@ -12,10 +12,20 @@ import {
 } from '../../lib/api/operating'
 import {
   calculateOperatingCosts,
+<<<<<<< HEAD
+=======
+  distributeByProduction,
+  getCurrentMonth,
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
   initialOperatingCosts,
   sumProductFees,
+  toWonNumber,
   type CostField,
 } from './operatingCostModel'
+import {
+  PRODUCTION_ENTRY_STORAGE_KEY,
+  parseStoredProductionRows,
+} from '../raw-material-entry/productionEntryData'
 
 type OperatingCostEntryPageProps = {
   products?: RecipeProduct[]
@@ -41,10 +51,31 @@ export function OperatingCostEntryPage({
   const [savedIds, setSavedIds] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState(false)
 
+<<<<<<< HEAD
+=======
+export function OperatingCostEntryPage({ products = [], onNavigate, onAction, hideSidebar = false }: OperatingCostEntryPageProps) {
+  const [storedEntry] = useState(loadStoredOperatingEntry)
+  const [month, setMonth] = useState(() => storedEntry?.month ?? getCurrentMonth())
+  const [costs, setCosts] = useState(() => ({
+    ...initialOperatingCosts,
+    ...storedEntry?.costs,
+    productFees: storedEntry?.costs?.productFees ?? {},
+    customItems: (storedEntry?.costs?.customItems ?? []).map((item) => ({
+      id: item.id,
+      name: item.name,
+      total: item.total ?? '0',
+    })),
+  }))
+  const [productionById] = useState(() => {
+    const rows = parseStoredProductionRows(window.localStorage.getItem(PRODUCTION_ENTRY_STORAGE_KEY)) ?? []
+    return new Map(rows.map((row) => [row.id, toWonNumber(row.production)]))
+  })
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
   const totals = calculateOperatingCosts(costs)
   const laborShareTotal = sumProductFees(costs.productFees)
   const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
 
+<<<<<<< HEAD
   // §7-1 : 해당 월 운영비를 읽어 화면 모델로 바꾼다
   useEffect(() => {
     let cancelled = false
@@ -78,6 +109,12 @@ export function OperatingCostEntryPage({
     void load()
     return () => { cancelled = true }
   }, [periodId, onAction])
+=======
+  const productions = products.map((product) => ({
+    id: product.id,
+    production: productionById.get(product.id) ?? 0,
+  }))
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -106,7 +143,11 @@ export function OperatingCostEntryPage({
   const addCustomItem = () => {
     setCosts((current) => ({
       ...current,
+<<<<<<< HEAD
       customItems: [...current.customItems, { id: `new-${Date.now()}`, name: '', productFees: {} }],
+=======
+      customItems: [...current.customItems, { id, name: '', total: '0' }],
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     }))
   }
 
@@ -117,14 +158,20 @@ export function OperatingCostEntryPage({
     }))
   }
 
-  const updateCustomItemFee = (id: string, productId: string, value: string) => {
+  const updateCustomItemTotal = (id: string, value: string) => {
     setCosts((current) => ({
       ...current,
+<<<<<<< HEAD
       customItems: current.customItems.map((item) =>
         item.id === id
           ? { ...item, productFees: { ...item.productFees, [productId]: value } }
           : item,
       ),
+=======
+      customItems: current.customItems.map((item) => (
+        item.id === id ? { ...item, total: value } : item
+      )),
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     }))
   }
 
@@ -167,8 +214,23 @@ export function OperatingCostEntryPage({
       )
       return
     }
+<<<<<<< HEAD
     if (!(await persist())) return
 
+=======
+    const customItemsWithAllocation = costs.customItems.map((item) => ({
+      ...item,
+      allocation: distributeByProduction(toWonNumber(item.total), productions),
+    }))
+    window.localStorage.setItem(
+      'cost-analysis-operating-costs',
+      JSON.stringify({
+        month,
+        costs: { ...costs, customItems: customItemsWithAllocation },
+        totalCost: totals.totalCost,
+      }),
+    )
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
     if (hideSidebar) {
       onAction('데이터 입력을 완료했습니다.')
       return
@@ -201,12 +263,13 @@ export function OperatingCostEntryPage({
         <OperatingCostForm
           products={products}
           costs={costs}
+          productions={productions}
           onCostChange={updateCost}
           onProductFeeChange={updateProductFee}
           onEqualizeProductFees={equalizeProductFees}
           onAddCustomItem={addCustomItem}
           onUpdateCustomItemName={updateCustomItemName}
-          onUpdateCustomItemFee={updateCustomItemFee}
+          onUpdateCustomItemTotal={updateCustomItemTotal}
           onRemoveCustomItem={removeCustomItem}
         />
 

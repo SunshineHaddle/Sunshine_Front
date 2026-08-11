@@ -171,6 +171,116 @@
   font-variant-numeric: tabular-nums;
 }
 
+.exchange-currency-picker__control {
+  display: inline-flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.exchange-currency-picker__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  color: #665f61;
+  background: #fff;
+  border: 1px solid #e2dde0;
+  border-radius: 0;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.exchange-currency-picker__add:hover,
+.exchange-currency-picker__add[aria-expanded='true'] {
+  color: var(--color-brand);
+  border-color: rgba(186, 0, 54, 0.4);
+}
+
+.exchange-currency-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 20px 22px;
+  background: #fff;
+  border: 1px solid #e7e4e2;
+}
+
+.exchange-currency-form__fields {
+  display: flex;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+  gap: 16px;
+}
+
+.exchange-currency-form__fields label {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 150px;
+}
+
+.exchange-currency-form__fields span {
+  color: #8a8386;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.exchange-currency-form__fields input {
+  padding: 11px 14px;
+  color: #2b2528;
+  font-size: 13px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid #e2dde0;
+  border-radius: 0;
+}
+
+.exchange-currency-form__fields input:focus {
+  outline: none;
+  border-color: rgba(186, 0, 54, 0.4);
+}
+
+.exchange-currency-form__actions {
+  display: inline-flex;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.exchange-currency-form__cancel,
+.exchange-currency-form__submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 11px 18px;
+  font-size: 12px;
+  font-weight: 700;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.exchange-currency-form__cancel {
+  color: #665f61;
+  background: #fff;
+  border: 1px solid #e2dde0;
+}
+
+.exchange-currency-form__cancel:hover {
+  color: var(--color-brand);
+  border-color: rgba(186, 0, 54, 0.4);
+}
+
+.exchange-currency-form__submit {
+  color: #fff;
+  background: var(--color-brand);
+  border: 1px solid var(--color-brand);
+}
+
+.exchange-currency-form__submit:hover {
+  opacity: 0.9;
+}
+
 .exchange-table td:last-child {
   padding-right: 24px;
 }

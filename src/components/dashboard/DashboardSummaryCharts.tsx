@@ -24,7 +24,6 @@ const exchangeCurrencyCodes = Object.keys(exchangeRates) as ExchangeCurrencyCode
 type ProductCostTrendCarouselProps = {
   products: RecipeProduct[]
   onOpen: (productId: string) => void
-  onRename?: (productId: string, name: string) => void
   compact?: boolean
 }
 
@@ -81,49 +80,73 @@ function getProductCostTrend(product: RecipeProduct, productIndex: number) {
   }
 }
 
-type ProductNameFieldProps = {
-  name: string
-  editable: boolean
-  onCommit: (value: string) => void
+type ProductSelectorProps = {
+  products: RecipeProduct[]
+  activeIndex: number
+  interactive: boolean
+  onSelect: (index: number) => void
 }
 
-function ProductNameField({ name, editable, onCommit }: ProductNameFieldProps) {
-  const [draft, setDraft] = useState(name)
+function ProductSelector({ products, activeIndex, interactive, onSelect }: ProductSelectorProps) {
+  const [open, setOpen] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const activeName = products[activeIndex]?.name ?? ''
 
   useEffect(() => {
-    setDraft(name)
-  }, [name])
+    if (!open) return
+    const handlePointer = (event: PointerEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false)
+    }
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointer)
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointer)
+      document.removeEventListener('keydown', handleKey)
+    }
+  }, [open])
 
-  if (!editable) {
-    return <strong className="product-cost-slide__name">{name}</strong>
-  }
-
-  const commit = () => {
-    const trimmed = draft.trim()
-    if (trimmed && trimmed !== name) onCommit(trimmed)
-    else setDraft(name)
+  if (!interactive) {
+    return <strong className="product-cost-slide__name">{activeName}</strong>
   }
 
   return (
-    <input
-      className="product-cost-slide__name-input"
-      value={draft}
-      aria-label="제품명 편집"
-      onChange={(event) => setDraft(event.target.value)}
-      onBlur={commit}
-      onPointerDown={(event) => event.stopPropagation()}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter') event.currentTarget.blur()
-        else if (event.key === 'Escape') {
-          setDraft(name)
-          event.currentTarget.blur()
-        }
-      }}
-    />
+    <div className="product-cost-slide__selector" ref={containerRef} onPointerDown={(event) => event.stopPropagation()}>
+      <button
+        type="button"
+        className="product-cost-slide__selector-trigger"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{activeName}</span>
+        <Icon name="chevron-down" size={18} />
+      </button>
+      {open && (
+        <ul className="product-cost-slide__selector-menu" role="listbox">
+          {products.map((product, index) => (
+            <li key={product.id} role="option" aria-selected={index === activeIndex}>
+              <button
+                type="button"
+                className={index === activeIndex ? 'is-active' : undefined}
+                onClick={() => {
+                  onSelect(index)
+                  setOpen(false)
+                }}
+              >
+                {product.name}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 
-export function ProductCostTrendCarousel({ products, onOpen, onRename, compact = false }: ProductCostTrendCarouselProps) {
+export function ProductCostTrendCarousel({ products, onOpen, compact = false }: ProductCostTrendCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
@@ -226,14 +249,15 @@ export function ProductCostTrendCarousel({ products, onOpen, onRename, compact =
               <article className="product-cost-slide" aria-hidden={index !== visibleIndex} key={product.id}>
                 <div className="product-cost-slide__product">
                   <div>
-                    <ProductNameField
-                      name={product.name}
-                      editable={Boolean(onRename) && index === visibleIndex}
-                      onCommit={(value) => onRename?.(product.id, value)}
+                    <ProductSelector
+                      products={products}
+                      activeIndex={visibleIndex}
+                      interactive={index === visibleIndex}
+                      onSelect={setActiveIndex}
                     />
                   </div>
                   <button type="button" onClick={() => onOpen(product.id)} tabIndex={index === visibleIndex ? 0 : -1}>
-                    상세 보기 <Icon name="chevron-right" size={14} />
+                    상세 보기 <Icon name="chevron-right" size={18} />
                   </button>
                 </div>
 

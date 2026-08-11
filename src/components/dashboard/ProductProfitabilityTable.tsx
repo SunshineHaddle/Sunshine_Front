@@ -44,8 +44,6 @@ export function ProductProfitabilityTable({
           <tbody>
             {items.length > 0 ? (
               items.map((item) => {
-                const marginTone = item.marginRate < 0 ? 'loss' : item.marginRate < 20 ? 'watch' : 'good'
-
                 return (
                   <tr key={item.id}>
                     <td>
@@ -64,7 +62,7 @@ export function ProductProfitabilityTable({
                     <td className="money-cell">₩{numberFormatter.format(item.totalCost)}</td>
                     <td className="money-cell money-cell--sale">₩{numberFormatter.format(item.salePrice)}</td>
                     <td>
-                      <span className={`margin-pill margin-pill--${marginTone}`}>
+                      <span className="margin-pill">
                         {item.marginRate.toFixed(1)}%
                       </span>
                     </td>

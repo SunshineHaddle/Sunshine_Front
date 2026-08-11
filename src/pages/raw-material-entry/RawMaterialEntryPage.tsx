@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { AppRoute } from '../../data/navigation'
 import { Icon } from '../../components/common/Icon'
+import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import {
+<<<<<<< HEAD
   commitSubul,
   createMissingMaterials,
   previewSubul,
@@ -24,6 +26,14 @@ import {
   uploadExcel,
   type FileHistoryItem,
 } from '../../lib/api/files'
+=======
+  PRODUCTION_ENTRY_STORAGE_KEY,
+  buildSampleProductionRows,
+  downloadProductionTemplate,
+  parseStoredProductionRows,
+  type ProductionEntryRow,
+} from './productionEntryData'
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
 
 type RawMaterialEntryPageProps = {
   products: RecipeProduct[]
@@ -315,7 +325,26 @@ export function RawMaterialEntryPage({
           {/* ── 수불자료 업로드 ───────────────────────────── */}
           <section className="production-upload" aria-labelledby="production-upload-title">
             <div className="production-upload__info">
+<<<<<<< HEAD
               <span className="production-upload__badge"><Icon name="excel" size={24} /></span>
+=======
+              <span className="production-upload__badge">
+                <img
+                  className="production-upload__badge-img"
+                  src="/excel-logo.png"
+                  alt="엑셀"
+                  onError={(event) => {
+                    const img = event.currentTarget
+                    img.style.display = 'none'
+                    const fallback = img.nextElementSibling as HTMLElement | null
+                    if (fallback) fallback.style.display = ''
+                  }}
+                />
+                <span className="production-upload__badge-fallback" style={{ display: 'none' }}>
+                  <Icon name="excel" size={24} />
+                </span>
+              </span>
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
               <div className="production-upload__text">
                 <h2 id="production-upload-title">수불자료 업로드</h2>
                 {file ? (
@@ -325,6 +354,7 @@ export function RawMaterialEntryPage({
                 )}
               </div>
             </div>
+<<<<<<< HEAD
             <button
               className="production-upload__button"
               type="button"
@@ -333,6 +363,24 @@ export function RawMaterialEntryPage({
             >
               <Icon name="upload" size={16} /> {file ? '다시 업로드' : '엑셀 업로드'}
             </button>
+=======
+            <div className="production-upload__actions">
+              <button
+                className="production-upload__template"
+                type="button"
+                onClick={downloadProductionTemplate}
+              >
+                <Icon name="download" size={16} /> 엑셀 양식 다운로드
+              </button>
+              <button
+                className="production-upload__button"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icon name="upload" size={16} /> {fileName ? '다시 업로드' : '엑셀 업로드'}
+              </button>
+            </div>
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
             <input
               ref={fileInputRef}
               className="production-upload__input"
@@ -342,6 +390,7 @@ export function RawMaterialEntryPage({
             />
           </section>
 
+<<<<<<< HEAD
           {busy && <p className="entry-busy" role="status">{busy}</p>}
 
           {/* ── 업로드 미리보기 ───────────────────────────── */}
@@ -381,6 +430,58 @@ export function RawMaterialEntryPage({
                         )}
                       </dl>
                     </article>
+=======
+          {hasRows ? (
+            <section className="production-list" aria-labelledby="production-list-title">
+              <header className="production-list__heading">
+                <div className="production-list__title">
+                  <h2 id="production-list-title">엑셀 제품 목록</h2>
+                  <span className="production-list__count">{rows.length}개 제품</span>
+                </div>
+                <div className="production-list__meta">
+                  <p>엑셀에서 불러온 제품입니다. 각 제품의 생산량(kg)을 입력하세요.</p>
+                  <span className="production-list__progress">
+                    입력 완료 <strong>{filledCount}</strong> / {rows.length}
+                  </span>
+                </div>
+              </header>
+
+              <div className="production-list__labels" aria-hidden="true">
+                <span>제품명</span>
+                <span>생산량(kg)</span>
+              </div>
+
+              <div className="production-list__rows">
+                {rows.map((row) => {
+                  const isFilled = row.production.trim() !== ''
+                  return (
+                    <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
+                      <div className="production-item__name">
+                        <span className="production-item__name-text">
+                          <strong>{row.name}</strong>
+                          <em>제품 · 생산량 입력 대상</em>
+                        </span>
+                        {isFilled && (
+                          <span className="production-item__done" aria-label="입력 완료">
+                            <Icon name="check" size={13} />
+                          </span>
+                        )}
+                      </div>
+                      <label className="production-item__field">
+                        <span className="production-item__field-label">생산량(kg)</span>
+                        <div className="production-item__input">
+                          <NumberInput
+                            aria-label={`${row.name} 생산량(kg)`}
+                            min="0"
+                            placeholder="생산량 입력"
+                            value={row.production}
+                            onValueChange={(raw) => updateProduction(row.id, raw)}
+                          />
+                          <em>kg</em>
+                        </div>
+                      </label>
+                    </div>
+>>>>>>> ac4d5a4c5a5d677ec26236e2cd3e780556e1ca4c
                   )
                 })}
               </div>

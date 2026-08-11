@@ -3,7 +3,36 @@ export type CostField = 'laborTotal'
 export type CustomCostItem = {
   id: string
   name: string
-  productFees: Record<string, string>
+  total: string
+  allocation?: Record<string, number>
+}
+
+export function distributeByProduction(
+  total: number,
+  productions: Array<{ id: string; production: number }>,
+): Record<string, number> {
+  const result: Record<string, number> = {}
+  if (productions.length === 0) return result
+
+  const totalProduction = productions.reduce((sum, item) => sum + Math.max(0, item.production), 0)
+  const useEven = totalProduction <= 0
+
+  let allocated = 0
+  productions.forEach((item, index) => {
+    const isLast = index === productions.length - 1
+    if (isLast) {
+      result[item.id] = Math.round(total - allocated)
+      return
+    }
+    const ratio = useEven
+      ? 1 / productions.length
+      : Math.max(0, item.production) / totalProduction
+    const share = Math.round(total * ratio)
+    result[item.id] = share
+    allocated += share
+  })
+
+  return result
 }
 
 export type OperatingCosts = {
@@ -34,7 +63,7 @@ export function sumProductFees(productFees: Record<string, string>) {
 export function calculateOperatingCosts(costs: OperatingCosts) {
   const laborCost = toWonNumber(costs.laborTotal)
   const customTotal = (costs.customItems ?? []).reduce(
-    (sum, item) => sum + sumProductFees(item.productFees),
+    (sum, item) => sum + toWonNumber(item.total),
     0,
   )
   const utilityCost = customTotal
