@@ -12,6 +12,7 @@ import {
   type SubulPreview,
 } from '../../lib/api/importSubul'
 import {
+  calcYieldRate,
   deleteMaterialUsages,
   fetchMaterialUsages,
   fetchProduction,
@@ -42,6 +43,10 @@ type Row = {
   id: string
   name: string
   production: string
+  /** 설계서 §4-2 3단계 불량률. 최종 수율 계산에 쓴다 */
+  inbound: string
+  process: string
+  finished: string
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
@@ -66,6 +71,8 @@ export function RawMaterialEntryPage({
   const [usages, setUsages] = useState<UsageLine[]>([])
   /** §10-3 이 달에 올린 원본 파일 */
   const [history, setHistory] = useState<FileHistoryItem[]>([])
+  /** 불량률 입력을 펼친 제품. 기본은 접어두고 필요할 때만 편다 */
+  const [openYield, setOpenYield] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const hasRows = rows.length > 0
@@ -99,19 +106,35 @@ export function RawMaterialEntryPage({
     const build = async () => {
       const saved = periodId ? await fetchProduction(periodId).catch(() => []) : []
       if (cancelled) return
-      const byId = new Map(saved.map((s) => [s.productId, s]))
-      setRows(products.map((product) => ({
-        id: product.id,
-        name: product.name,
-        production: byId.has(product.id) ? String(byId.get(product.id)!.production) : '',
-      })))
+      const byId = new Map(saved.map((s) => [s.productId, s] as const))
+      setRows(products.map((product) => {
+        const hit = byId.get(product.id)
+        return {
+          id: product.id,
+          name: product.name,
+          production: hit ? String(hit.production) : '',
+          inbound: hit ? String(hit.inboundDefectRate) : '',
+          process: hit ? String(hit.processWasteRate) : '',
+          finished: hit ? String(hit.finishedDefectRate) : '',
+        }
+      }))
     }
     void build()
     return () => { cancelled = true }
   }, [periodId, products])
 
-  const updateProduction = (id: string, value: string) => {
-    setRows((current) => current.map((row) => (row.id === id ? { ...row, production: value } : row)))
+  const updateRow = (id: string, patch: Partial<Row>) => {
+    setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
+  }
+
+  /** 불량률 입력을 펼친 제품 id */
+  const toggleYield = (id: string) => {
+    setOpenYield((current) => {
+      const next = new Set(current)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
   }
 
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -238,7 +261,13 @@ export function RawMaterialEntryPage({
   const persistProduction = async () => {
     if (!periodId) return false
     try {
-      await saveProduction(periodId, rows.map((row) => ({ productId: row.id, production: row.production })))
+      await saveProduction(periodId, rows.map((row) => ({
+        productId: row.id,
+        production: row.production,
+        inboundDefectRate: row.inbound,
+        processWasteRate: row.process,
+        finishedDefectRate: row.finished,
+      })))
       return true
     } catch (error) {
       onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
@@ -504,6 +533,8 @@ export function RawMaterialEntryPage({
               <div className="production-list__rows">
                 {rows.map((row) => {
                   const isFilled = row.production.trim() !== ''
+                  const isOpen = openYield.has(row.id)
+                  const yieldRate = calcYieldRate(row.inbound, row.process, row.finished)
                   return (
                     <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
                       <div className="production-item__name">
@@ -525,11 +556,52 @@ export function RawMaterialEntryPage({
                             min="0"
                             placeholder="생산량 입력"
                             value={row.production}
-                            onValueChange={(raw) => updateProduction(row.id, raw)}
+                            onValueChange={(raw) => updateRow(row.id, { production: raw })}
                           />
                           <em>kg</em>
                         </div>
                       </label>
+
+                      {/* 불량률은 기본으로 접어둔다. 안 넣으면 수율 100%로 계산된다 */}
+                      <button
+                        className="yield-toggle"
+                        type="button"
+                        aria-expanded={isOpen}
+                        onClick={() => toggleYield(row.id)}
+                      >
+                        <Icon name={isOpen ? 'chevron-left' : 'chevron-right'} size={13} />
+                        불량률 입력
+                        <em>수율 {yieldRate.toFixed(2)}%</em>
+                      </button>
+
+                      {isOpen && (
+                        <div className="yield-fields">
+                          {([
+                            ['inbound', '입고 불량률'],
+                            ['process', '공정 폐기율'],
+                            ['finished', '완제품 불량률'],
+                          ] as const).map(([field, label]) => (
+                            <label key={field}>
+                              <span>{label}</span>
+                              <div className="production-item__input">
+                                <NumberInput
+                                  aria-label={`${row.name} ${label}`}
+                                  min="0"
+                                  max="100"
+                                  placeholder="0"
+                                  value={row[field]}
+                                  onValueChange={(raw) => updateRow(row.id, { [field]: raw })}
+                                />
+                                <em>%</em>
+                              </div>
+                            </label>
+                          ))}
+                          <p className="yield-fields__result">
+                            최종 수율 <strong>{yieldRate.toFixed(2)}%</strong>
+                            <small>(1−입고)(1−공정)(1−완제품)</small>
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )
                 })}
