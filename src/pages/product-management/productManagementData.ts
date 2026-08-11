@@ -8,6 +8,8 @@ export type RecipeIngredientCost = {
   unit: IngredientUnit
   cost: number
   unitPrice?: number
+  /** materials.id (uuid). 배합 저장(§3-3, §3-6)에 필요하다 */
+  materialId?: string
 }
 
 export type IndirectCost = {
@@ -16,6 +18,7 @@ export type IndirectCost = {
 }
 
 export type RecipeProduct = {
+  /** DB 연동 후에는 products.id (uuid). 표시용 코드는 sku 를 쓴다 */
   id: string
   name: string
   description: string
@@ -27,6 +30,13 @@ export type RecipeProduct = {
   ingredients: RecipeIngredientCost[]
   laborCost: number
   indirectCosts: IndirectCost[]
+  /** 아래는 DB 연동으로 추가된 필드 (목데이터에는 없음) */
+  sku?: string
+  variant?: string
+  specification?: string
+  packageUnit?: string
+  salePrice?: number
+  marginRate?: number
 }
 
 export type IngredientCatalogItem = {

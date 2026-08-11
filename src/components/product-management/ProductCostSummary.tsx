@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Icon } from '../common/Icon'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductCostAnalysisState } from './useProductCostAnalysis'
 import { MonthlyUnitPriceTrend } from './MonthlyUnitPriceTrend'
+import { fetchUnitCostTrend } from '../../lib/api/results'
 
 type ProductCostSummaryProps = {
   product: RecipeProduct
@@ -34,6 +35,23 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
   const [yieldKg, setYieldKg] = useState<number | null>(null)
 
   const [selectedMetric, setSelectedMetric] = useState<'material' | 'sub' | 'total'>('total')
+
+  // §9-2 : 확정된 달의 실제 단가 추이. 없으면 빈 배열이라 예시 곡선으로 대체된다
+  const [unitCostSeries, setUnitCostSeries] = useState<
+    { period: string; label: string; unitCost: number }[]
+  >([])
+
+  useEffect(() => {
+    let cancelled = false
+    const from = new Date()
+    from.setMonth(from.getMonth() - 11)
+    const fromPeriod = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`
+
+    fetchUnitCostTrend(product.id, fromPeriod)
+      .then((rows) => { if (!cancelled) setUnitCostSeries(rows) })
+      .catch(() => { if (!cancelled) setUnitCostSeries([]) })
+    return () => { cancelled = true }
+  }, [product.id])
 
   const unitPrice = yieldKg && yieldKg > 0 ? totalCost / yieldKg : null
 
@@ -192,6 +210,8 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
         productId={`${product.id}-${selectedMetric}`}
         anchorMonth={activeMonth}
         formatValue={trend.formatValue}
+        // 단가 지표일 때만 실제 스냅샷을 쓴다. 재료비·부자재비는 월별 스냅샷이 따로 없다
+        series={selectedMetric === 'total' ? unitCostSeries : undefined}
       />
     </div>
   )

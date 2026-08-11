@@ -2,15 +2,30 @@ import { useRef, useState, type ChangeEvent } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import type { RecipeProduct } from './productManagementData'
+import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { ProductCostSummary } from '../../components/product-management/ProductCostSummary'
 import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
+import { saveRecipeItems, uploadProductImage } from '../../lib/api/products'
 
 type ProductDetailPageProps = {
   product: RecipeProduct
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
   onUpdateImage?: (imageUrl: string) => void
+  /** DB 원재료 목록(§2-1). 배합 수정에서 재료를 고를 때 쓴다 */
+  catalog?: IngredientCatalogItem[]
+  /** 저장 후 제품 목록을 다시 읽는다 */
+  onRefresh?: () => Promise<void>
+  /** §3-7 제품 비활성화 */
+  onDeactivate?: () => Promise<void>
+}
+
+/** 화면 입력은 문자열로 들고 있다가 저장 시 숫자로 바꾼다 */
+type RecipeRow = {
+  materialId: string
+  name: string
+  usage: string
+  unitPrice: string
 }
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024
@@ -28,8 +43,73 @@ const percentFormatter = new Intl.NumberFormat('ko-KR', {
   maximumFractionDigits: 1,
 })
 
-export function ProductDetailPage({ product, onNavigate, onAction, onUpdateImage }: ProductDetailPageProps) {
+export function ProductDetailPage({
+  product,
+  onNavigate,
+  onAction,
+  onUpdateImage,
+  catalog = [],
+  onRefresh,
+  onDeactivate,
+}: ProductDetailPageProps) {
   const analysisState = useProductCostAnalysis(product)
+
+  // ── §3-6 배합 수정 ────────────────────────────────────────
+  const [isEditingRecipe, setIsEditingRecipe] = useState(false)
+  const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
+  const [savingRecipe, setSavingRecipe] = useState(false)
+
+  const startEditRecipe = () => {
+    setRecipeRows(
+      product.ingredients.flatMap((ingredient) =>
+        ingredient.materialId
+          ? [{
+              materialId: ingredient.materialId,
+              name: ingredient.name,
+              usage: String(ingredient.usage),
+              unitPrice: String(ingredient.unitPrice ?? 0),
+            }]
+          : [],
+      ),
+    )
+    setIsEditingRecipe(true)
+  }
+
+  const updateRecipeRow = (materialId: string, patch: Partial<RecipeRow>) => {
+    setRecipeRows((current) =>
+      current.map((row) => (row.materialId === materialId ? { ...row, ...patch } : row)),
+    )
+  }
+
+  const addRecipeRow = (item: IngredientCatalogItem) => {
+    if (recipeRows.some((row) => row.materialId === item.id)) return
+    setRecipeRows((current) => [
+      ...current,
+      { materialId: item.id, name: item.name, usage: '0', unitPrice: String(item.unitPrice) },
+    ])
+  }
+
+  const saveRecipe = async () => {
+    setSavingRecipe(true)
+    try {
+      await saveRecipeItems(
+        product.id,
+        recipeRows.map((row) => ({
+          materialId: row.materialId,
+          usage: Number(row.usage) || 0,
+          unit: 'kg' as const,
+          unitPrice: Number(row.unitPrice) || 0,
+        })),
+      )
+      await onRefresh?.()
+      setIsEditingRecipe(false)
+      onAction('배합을 저장했습니다.')
+    } catch (error) {
+      onAction(`배합 저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setSavingRecipe(false)
+    }
+  }
 
   const indirectCost = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
   const totalCost = product.materialCost + product.laborCost + indirectCost
@@ -42,7 +122,8 @@ export function ProductDetailPage({ product, onNavigate, onAction, onUpdateImage
 
   const canEditImage = Boolean(onUpdateImage)
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  /** §3-5 : base64 로 DB 에 밀어넣지 않고 Storage 에 올린 뒤 공개 URL 을 저장한다 */
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -54,14 +135,20 @@ export function ProductDetailPage({ product, onNavigate, onAction, onUpdateImage
       onAction('이미지 용량은 3MB 이하만 가능합니다.')
       return
     }
-    const reader = new FileReader()
-    reader.onload = () => {
-      onUpdateImage?.(String(reader.result))
+
+    try {
+      const publicUrl = await uploadProductImage(product.id, file)
+      onUpdateImage?.(publicUrl)
       setIsEditingImage(false)
       onAction(`${product.name} 사진을 변경했습니다.`)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      onAction(
+        message.includes('Bucket not found')
+          ? 'Supabase Storage 에 product-images 버킷을 먼저 만들어주세요.'
+          : `사진 업로드 실패: ${message}`,
+      )
     }
-    reader.onerror = () => onAction('사진을 읽는 중 문제가 발생했습니다.')
-    reader.readAsDataURL(file)
   }
 
   const applyImageUrl = () => {
@@ -87,9 +174,26 @@ export function ProductDetailPage({ product, onNavigate, onAction, onUpdateImage
       <Sidebar activeRoute="product-detail" onNavigate={onNavigate} />
 
       <main className="product-detail-page">
-        <button className="product-create-back" type="button" onClick={() => onNavigate('product-management')}>
-          <Icon name="chevron-left" size={16} /> 제품 목록
-        </button>
+        <div className="product-detail-topbar">
+          <button className="product-create-back" type="button" onClick={() => onNavigate('product-management')}>
+            <Icon name="chevron-left" size={16} /> 제품 목록
+          </button>
+          {onDeactivate && (
+            // §3-7 : 과거 원가 스냅샷이 FK 로 참조하므로 삭제가 아니라 비활성화한다
+            <button
+              className="product-deactivate"
+              type="button"
+              onClick={() => {
+                if (!window.confirm(`${product.name}을(를) 목록에서 숨길까요?\n과거 원가 기록은 그대로 남습니다.`)) return
+                void onDeactivate().catch((error: unknown) =>
+                  onAction(`처리 실패: ${error instanceof Error ? error.message : String(error)}`),
+                )
+              }}
+            >
+              <Icon name="trash" size={14} /> 제품 숨기기
+            </button>
+          )}
+        </div>
 
         <header className="product-detail-header">
           <div className="product-detail-header__photo-wrap">
@@ -169,8 +273,66 @@ export function ProductDetailPage({ product, onNavigate, onAction, onUpdateImage
 
         <div className="product-detail-grid">
           <section className="product-cost-panel" aria-labelledby="material-cost-title">
-            <header><div><h2 id="material-cost-title">원재료비 상세</h2><p>레시피 사용량 기준 재료별 비용입니다.</p></div><strong>{currencyFormatter.format(product.materialCost)}</strong></header>
-            <div className="material-cost-list material-cost-list--with-price">
+            <header>
+              <div><h2 id="material-cost-title">원재료비 상세</h2><p>레시피 사용량 기준 재료별 비용입니다.</p></div>
+              {isEditingRecipe ? (
+                <div className="recipe-edit-actions">
+                  <button type="button" onClick={() => setIsEditingRecipe(false)} disabled={savingRecipe}>취소</button>
+                  <button type="button" className="is-primary" onClick={() => void saveRecipe()} disabled={savingRecipe}>
+                    {savingRecipe ? '저장 중…' : '배합 저장'}
+                  </button>
+                </div>
+              ) : (
+                <div className="recipe-edit-actions">
+                  <button type="button" onClick={startEditRecipe}>배합 수정</button>
+                  <strong>{currencyFormatter.format(product.materialCost)}</strong>
+                </div>
+              )}
+            </header>
+
+            {isEditingRecipe && (
+              <div className="recipe-edit">
+                <div className="material-cost-list__head"><span>품명</span><span>수량(kg)</span><span>단가(원)</span><span /></div>
+                {recipeRows.map((row) => (
+                  <div className="recipe-edit__row" key={row.materialId}>
+                    <strong>{row.name}</strong>
+                    <input type="number" min="0" step="any" aria-label={`${row.name} 수량`}
+                      value={row.usage}
+                      onChange={(e) => updateRecipeRow(row.materialId, { usage: e.target.value })} />
+                    <input type="number" min="0" step="any" aria-label={`${row.name} 단가`}
+                      value={row.unitPrice}
+                      onChange={(e) => updateRecipeRow(row.materialId, { unitPrice: e.target.value })} />
+                    <button type="button" aria-label={`${row.name} 제거`}
+                      onClick={() => setRecipeRows((c) => c.filter((r) => r.materialId !== row.materialId))}>
+                      <Icon name="trash" size={14} />
+                    </button>
+                  </div>
+                ))}
+                {recipeRows.length === 0 && <p className="recipe-edit__empty">재료를 추가해주세요.</p>}
+                <label className="recipe-edit__add">
+                  <span>재료 추가</span>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const item = catalog.find((c) => c.id === e.target.value)
+                      if (item) addRecipeRow(item)
+                      e.target.value = ''
+                    }}
+                  >
+                    <option value="">선택…</option>
+                    {catalog
+                      .filter((item) => !recipeRows.some((row) => row.materialId === item.id))
+                      .map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name} ({numberFormatter.format(item.unitPrice)}원/kg)
+                        </option>
+                      ))}
+                  </select>
+                </label>
+              </div>
+            )}
+
+            <div className="material-cost-list material-cost-list--with-price" hidden={isEditingRecipe}>
               <div className="material-cost-list__head"><span>품명</span><span>수량(kg)</span><span>단가(원)</span><span>금액(원)</span></div>
               {product.ingredients.map((ingredient) => (
                 <div key={ingredient.name}>

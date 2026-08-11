@@ -89,6 +89,28 @@ button {
   border: 0;
 }
 
+.app-load-error {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--color-brand);
+  color: #fff;
+  font-size: 13px;
+  text-align: center;
+}
+
+.app-empty-state {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: 24px;
+  color: var(--color-text-subtle);
+  font-size: 14px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

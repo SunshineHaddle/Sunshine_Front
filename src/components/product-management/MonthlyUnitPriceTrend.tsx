@@ -6,6 +6,11 @@ type MonthlyUnitPriceTrendProps = {
   productId: string
   anchorMonth: string
   formatValue: (value: number) => string
+  /**
+   * §9-2 로 조회한 실제 월별 단가. 확정된 달만 들어온다.
+   * 넘기지 않으면 예전처럼 seededFactor 로 만든 예시 곡선을 그린다.
+   */
+  series?: { period: string; label: string; unitCost: number }[]
 }
 
 function seededFactor(seedText: string, index: number) {
@@ -65,16 +70,45 @@ export function MonthlyUnitPriceTrend({
   productId,
   anchorMonth,
   formatValue,
+  series,
 }: MonthlyUnitPriceTrendProps) {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
 
-  const months = buildMonths(anchorMonth, MONTH_COUNT)
+  const isReal = Array.isArray(series) && series.length > 0
 
-  const values = new Array<number>(MONTH_COUNT)
-  values[MONTH_COUNT - 1] = currentValue
-  for (let index = MONTH_COUNT - 2; index >= 0; index -= 1) {
-    const factor = seededFactor(productId, index) * 0.5
-    values[index] = Math.max(1, values[index + 1] * (1 - factor))
+  // 실제 데이터가 있으면 그 달들만, 없으면 최근 12개월 축을 만든다
+  const months = isReal
+    ? series.map((point) => ({ key: point.period, label: point.label }))
+    : buildMonths(anchorMonth, MONTH_COUNT)
+
+  const values = new Array<number>(months.length)
+  if (isReal) {
+    series.forEach((point, index) => { values[index] = point.unitCost })
+  } else {
+    values[months.length - 1] = currentValue
+    for (let index = months.length - 2; index >= 0; index -= 1) {
+      const factor = seededFactor(productId, index) * 0.5
+      values[index] = Math.max(1, values[index + 1] * (1 - factor))
+    }
+  }
+
+  // 점이 하나뿐이면 선이 그려지지 않는다. 안내만 띄운다
+  if (isReal && values.length < 2) {
+    return (
+      <section className="unit-price-trend" aria-labelledby="unit-price-trend-title">
+        <div className="unit-price-trend__heading">
+          <div>
+            <h3 id="unit-price-trend-title">{label} 월별 추이</h3>
+            <p>확정된 달이 {values.length}개뿐이라 추이를 그릴 수 없습니다.</p>
+          </div>
+        </div>
+        <p className="unit-price-trend__empty">
+          {values.length === 1
+            ? `${months[0].label} ${formatValue(values[0])}`
+            : '데이터 입력 3단계에서 원가를 계산하면 표시됩니다.'}
+        </p>
+      </section>
+    )
   }
 
   const rawMax = Math.max(...values, 1)
@@ -85,7 +119,9 @@ export function MonthlyUnitPriceTrend({
 
   const plotW = VIEW_W - PAD_LEFT - PAD_RIGHT
   const plotH = VIEW_H - PAD_TOP - PAD_BOTTOM
-  const stepX = plotW / (MONTH_COUNT - 1)
+  // 실제 데이터는 확정된 달 수만큼만 온다. 12 로 고정하면 축이 어긋난다
+  const pointCount = months.length
+  const stepX = plotW / Math.max(pointCount - 1, 1)
 
   const yFor = (value: number) => PAD_TOP + plotH - ((value - axisMin) / range) * plotH
 
@@ -144,12 +180,12 @@ export function MonthlyUnitPriceTrend({
             <circle
               key={months[index].key}
               className={
-                (index === MONTH_COUNT - 1 ? 'unit-price-trend__dot unit-price-trend__dot--latest' : 'unit-price-trend__dot')
+                (index === pointCount - 1 ? 'unit-price-trend__dot unit-price-trend__dot--latest' : 'unit-price-trend__dot')
                 + (hoverIndex === index ? ' is-active' : '')
               }
               cx={p.x}
               cy={p.y}
-              r={index === MONTH_COUNT - 1 ? 3.5 : 2.5}
+              r={index === pointCount - 1 ? 3.5 : 2.5}
             />
           ))}
 

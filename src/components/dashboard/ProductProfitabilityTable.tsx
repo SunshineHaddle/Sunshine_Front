@@ -4,6 +4,8 @@ import type {
 
 type ProductProfitabilityTableProps = {
   items: ProductProfitabilityItem[]
+  /** '2026년 8월' 형태. 어느 달 스냅샷인지 표시한다 */
+  periodLabel?: string
 }
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
@@ -15,13 +17,14 @@ function getQuantityUnit(specification: string) {
 
 export function ProductProfitabilityTable({
   items,
+  periodLabel,
 }: ProductProfitabilityTableProps) {
   return (
     <section className="card profitability-card" aria-labelledby="profitability-table-title">
       <div className="profitability-card__heading">
         <div>
-          <h2 id="profitability-table-title">이번달 수익성 현황</h2>
-          <p>이달의 품목별 생산 마진을 확인하세요.</p>
+          <h2 id="profitability-table-title">{periodLabel ? `${periodLabel} 수익성 현황` : '수익성 현황'}</h2>
+          <p>포장 1개 기준 원가와 판매 마진입니다.</p>
         </div>
       </div>
 

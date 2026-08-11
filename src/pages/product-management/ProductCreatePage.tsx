@@ -1,7 +1,7 @@
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import type { RecipeProduct } from './productManagementData'
+import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
 
 type ProductCreatePageProps = {
@@ -9,6 +9,8 @@ type ProductCreatePageProps = {
   onNavigate: (route: AppRoute) => void
   onCreate: (product: RecipeProduct) => void
   onAction: (message: string) => void
+  /** DB에서 불러온 원재료 목록(§2-1) */
+  catalog?: IngredientCatalogItem[]
 }
 
 const currencyFormatter = new Intl.NumberFormat('ko-KR', {
@@ -22,8 +24,9 @@ export function ProductCreatePage({
   onNavigate,
   onCreate,
   onAction,
+  catalog,
 }: ProductCreatePageProps) {
-  const recipe = useProductRecipeForm({ nextProductNumber, onCreate })
+  const recipe = useProductRecipeForm({ nextProductNumber, onCreate, catalog })
   const {
     productName, setProductName, description, setDescription,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
@@ -112,7 +115,7 @@ export function ProductCreatePage({
                   <button
                     className="new-ingredient__add"
                     type="button"
-                    onClick={() => onAction(addNewIngredient() ? '새 재료를 추가했습니다.' : '재료명과 단가를 확인해 주세요.')}
+                    onClick={() => { void addNewIngredient().then((result) => onAction(result.message)) }}
                   >
                     <Icon name="add" size={16} /> 추가
                   </button>
