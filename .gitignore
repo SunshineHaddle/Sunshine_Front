@@ -23,3 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 .gstack/
+
+# 환경 변수 (.env.example 은 커밋)
+.env
+.env.*
+!.env.example
