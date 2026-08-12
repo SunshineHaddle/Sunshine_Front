@@ -139,7 +139,6 @@ export function ProductionResultPage({
                     <th scope="col">단위원가</th>
                     <th scope="col">판매가</th>
                     <th scope="col">마진율</th>
-                    <th scope="col">수율</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -163,7 +162,6 @@ export function ProductionResultPage({
                           {s.marginRate.toFixed(1)}% · {STATUS_LABEL[s.status]}
                         </span>
                       </td>
-                      <td data-label="수율">{s.yieldRate.toFixed(1)}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -175,7 +173,7 @@ export function ProductionResultPage({
                     <td>{won(grand.labor)}</td>
                     <td>{won(grand.utility)}</td>
                     <td><strong>{won(grand.total)}</strong></td>
-                    <td colSpan={4} />
+                    <td colSpan={3} />
                   </tr>
                 </tfoot>
               </table>

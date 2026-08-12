@@ -12,33 +12,20 @@ export type ProductionLine = {
   sku: string
   name: string
   production: number
-  defect: number
-  /** 설계서 §4-2 3단계: 불량률 3종 */
-  inboundDefectRate: number
-  processWasteRate: number
-  finishedDefectRate: number
 }
 
-/** 최종 수율 = (1-입고불량)(1-공정폐기)(1-완제품불량) × 100 */
-export function calcYieldRate(
-  inbound: string | number,
-  process: string | number,
-  finished: string | number,
-) {
-  const y =
-    (1 - num(inbound) / 100) * (1 - num(process) / 100) * (1 - num(finished) / 100) * 100
-  return Math.round(y * 100) / 100
-}
+/**
+ * 수율·불량률은 다루지 않는다.
+ * 월말 재고조사로 확정된 소요량이 material_usages 에 들어오므로
+ * 로스가 이미 그 값에 포함되어 있다. 여기서 또 곱하면 이중 반영이다.
+ */
 
 // ── §5-1. 생산량 조회 ───────────────────────────────────────
 export async function fetchProduction(periodId: string): Promise<ProductionLine[]> {
   const rows = unwrap(
     await supabase
       .from('production_records')
-      .select(
-        'product_id, production_qty, defect_qty, inbound_defect_rate,' +
-          ' process_waste_rate, finished_defect_rate, products(sku, name)',
-      )
+      .select('product_id, production_qty, products(sku, name)')
       .eq('period_id', periodId),
   ) as unknown as Record<string, unknown>[]
 
@@ -49,10 +36,6 @@ export async function fetchProduction(periodId: string): Promise<ProductionLine[
       sku: product?.sku ?? '',
       name: product?.name ?? '',
       production: num(row.production_qty),
-      defect: num(row.defect_qty),
-      inboundDefectRate: num(row.inbound_defect_rate),
-      processWasteRate: num(row.process_waste_rate),
-      finishedDefectRate: num(row.finished_defect_rate),
     }
   })
 }
@@ -60,14 +43,7 @@ export async function fetchProduction(periodId: string): Promise<ProductionLine[
 // ── §5-2. 생산량 저장 ───────────────────────────────────────
 export async function saveProduction(
   periodId: string,
-  rows: {
-    productId: string
-    production: string | number
-    defect?: string | number
-    inboundDefectRate?: string | number
-    processWasteRate?: string | number
-    finishedDefectRate?: string | number
-  }[],
+  rows: { productId: string; production: string | number }[],
 ) {
   if (rows.length === 0) return
 
@@ -78,10 +54,6 @@ export async function saveProduction(
         product_id: row.productId,
         // 화면 입력은 문자열이라 빈 칸이 그대로 가면 22P02 가 난다
         production_qty: num(row.production),
-        defect_qty: num(row.defect),
-        inbound_defect_rate: num(row.inboundDefectRate),
-        process_waste_rate: num(row.processWasteRate),
-        finished_defect_rate: num(row.finishedDefectRate),
       })),
       { onConflict: 'period_id,product_id' },
     ),

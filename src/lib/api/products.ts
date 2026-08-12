@@ -62,7 +62,6 @@ type ProductWithRecipe = {
   image_url: string | null
   specification: string | null
   package_unit: string | null
-  yield_rate: number
   sale_price: number
   margin_rate: number
   status: ProductStatus
@@ -88,7 +87,9 @@ function toRecipeProduct(row: ProductWithRecipe): RecipeProduct {
     imageUrl: row.image_url ?? undefined,
     specification: row.specification ?? undefined,
     packageUnit: row.package_unit ?? undefined,
-    yieldRate: num(row.yield_rate),
+    // 수율은 더 이상 계산하지 않는다. 화면 타입 호환을 위해 100 으로 채운다.
+    // 월말 재고조사로 확정된 소요량에 로스가 이미 포함되어 있다.
+    yieldRate: 100,
     salePrice: num(row.sale_price),
     marginRate: num(row.margin_rate),
     status: row.status,
@@ -112,7 +113,7 @@ function toRecipeProduct(row: ProductWithRecipe): RecipeProduct {
 
 const PRODUCT_SELECT = `
   id, sku, name, variant, description, image_url,
-  specification, package_unit, yield_rate, sale_price, margin_rate, status,
+  specification, package_unit, sale_price, margin_rate, status,
   recipe_items ( usage_qty, unit, unit_price, amount, sort_order,
                  materials ( id, code, name ) )
 `
@@ -144,7 +145,6 @@ export async function createProductWithRecipe(input: {
   sku: string
   name: string
   description?: string
-  yieldRate?: number
   items: { materialId: string; usage: number; unit: MaterialUnit; unitPrice: number }[]
 }): Promise<string> {
   return unwrap(
@@ -153,7 +153,6 @@ export async function createProductWithRecipe(input: {
         sku: input.sku,
         name: input.name,
         description: input.description ?? null,
-        yield_rate: input.yieldRate ?? 100,
         status: 'review',
       },
       p_items: input.items.map((item, index) => ({
@@ -178,8 +177,7 @@ export async function updateProduct(
     margin_rate: number
     specification: string
     package_unit: string
-    yield_rate: number
-    status: ProductStatus
+      status: ProductStatus
   }>,
 ) {
   unwrap(await supabase.from('products').update(patch).eq('id', productId).select())

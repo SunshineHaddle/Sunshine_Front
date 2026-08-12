@@ -14,8 +14,9 @@ export type ProductProfitabilityItem = {
   totalCost: number
   salePrice: number
   marginRate: number
-  yieldRate: number
-  defectRate: number
+  /** 수율·불량률은 더 이상 계산하지 않는다. 옛 목데이터 호환용으로만 남긴다 */
+  yieldRate?: number
+  defectRate?: number
   status: ProductStatus
 }
 

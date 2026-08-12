@@ -1,36 +1,33 @@
 import { useState, type FormEvent } from "react";
+import { signIn, type LoginRole } from "../../lib/api/auth";
 
-const ADMIN_LOGIN_ID = "qwer1234";
-const WORKER_LOGIN_ID = "worker1234";
-const LOGIN_PASSWORD = "0000";
-
-export type LoginRole = "admin" | "worker";
+export type { LoginRole };
 
 type LoginPageProps = {
-  onLogin: (role: LoginRole) => void;
+  onLogin: (role: LoginRole, userName: string, loginId: string) => void;
 };
 
 export function LoginPage({ onLogin }: LoginPageProps) {
   const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  // §11-1 : 아이디 뒤에 내부 도메인을 붙여 Supabase Auth 로 로그인한다.
+  // 세션이 생겨야 RLS 의 authenticated 정책이 적용된다.
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (busy) return;
 
-    const role =
-      loginId === ADMIN_LOGIN_ID
-        ? "admin"
-        : loginId === WORKER_LOGIN_ID
-          ? "worker"
-          : null;
+    setBusy(true);
+    const result = await signIn(loginId, password);
+    setBusy(false);
 
-    if (role && password === LOGIN_PASSWORD) {
-      onLogin(role);
+    if (result.ok) {
+      onLogin(result.role, result.profile.name, result.profile.login_id);
       return;
     }
-
-    setError("아이디 또는 비밀번호를 확인해 주세요.");
+    setError(result.message);
   };
 
   return (
@@ -44,7 +41,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       </section>
 
       <section className="login-panel">
-        <form className="login-form" onSubmit={handleSubmit}>
+        <form className="login-form" onSubmit={(event) => void handleSubmit(event)}>
           <header>
             <p>반갑습니다</p>
             <h2>로그인</h2>
@@ -94,7 +91,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
             {error}
           </p>
 
-          <button type="submit">로그인</button>
+          <button type="submit" disabled={busy}>{busy ? "확인 중…" : "로그인"}</button>
         </form>
       </section>
     </main>

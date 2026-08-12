@@ -31,8 +31,6 @@ export type CostSummary = {
   salePrice: number
   marginRate: number
   costRate: number
-  yieldRate: number
-  defectRate: number
   status: ProfitStatus
   costSource: CostSource
 }
@@ -40,7 +38,7 @@ export type CostSummary = {
 const SUMMARY_SELECT = `
   product_id, production_qty, material_cost, labor_cost, utility_cost,
   manufacturing_cost, total_cost, unit_cost, cost_source,
-  sale_price, margin_rate, cost_rate, yield_rate, defect_rate, status,
+  sale_price, margin_rate, cost_rate, status,
   products ( sku, name, variant, specification, package_unit )
 `
 
@@ -79,8 +77,6 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       salePrice: num(row.sale_price),
       marginRate: num(row.margin_rate),
       costRate: num(row.cost_rate),
-      yieldRate: num(row.yield_rate),
-      defectRate: num(row.defect_rate),
       status: row.status as ProfitStatus,
       costSource: row.cost_source as CostSource,
     }

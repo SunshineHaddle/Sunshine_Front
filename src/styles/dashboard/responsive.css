@@ -255,3 +255,23 @@
     bottom: 88px;
   }
 }
+
+/* ── 사이드바 하단 계정 · 로그아웃 (반응형) ───────────────── */
+@media (max-width: 1179px) {
+  /* 아이콘만 남는 폭이라 nav 와 동일하게 블리드를 없앤다 */
+  .sidebar__footer {
+    margin-inline: 0;
+  }
+
+  /* 84px 안에 이름·아이디가 들어가지 않는다. 로그아웃 아이콘만 남긴다 */
+  .sidebar__account {
+    display: none;
+  }
+}
+
+@media (max-width: 719px) {
+  /* 하단 고정 바로 바뀌면 계정 영역은 자리를 차지하면 안 된다 */
+  .sidebar__footer {
+    display: none;
+  }
+}

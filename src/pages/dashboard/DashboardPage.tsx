@@ -44,8 +44,6 @@ function toTableItem(summary: CostSummary): ProductProfitabilityItem {
     totalCost: Math.round(summary.unitCost),
     salePrice: summary.salePrice,
     marginRate: summary.marginRate,
-    yieldRate: summary.yieldRate,
-    defectRate: summary.defectRate,
     status: summary.status,
   }
 }

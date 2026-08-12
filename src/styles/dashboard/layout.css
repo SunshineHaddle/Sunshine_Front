@@ -460,3 +460,35 @@
     text-align: left;
   }
 }
+
+/* ── 사이드바 하단 계정 · 로그아웃 ─────────────────────────
+   nav 와 같은 -16px 블리드를 써서 hover 배경이 위 항목들과 나란히 맞는다 */
+.sidebar__footer {
+  margin: auto -16px 0;
+  padding-top: 14px;
+}
+
+.sidebar__account {
+  display: grid;
+  gap: 1px;
+  margin: 0 0 6px;
+  padding: 0 16px;
+  line-height: 1.35;
+}
+
+.sidebar__account strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-sidebar-text);
+}
+
+.sidebar__account span {
+  font-size: 12px;
+  color: #938c8f;
+}
+
+.sidebar__signout {
+  width: 100%;
+  font-size: 14.5px;
+  color: #736d70;
+}

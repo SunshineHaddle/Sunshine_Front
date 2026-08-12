@@ -28,6 +28,9 @@ import { ensurePeriod } from '../lib/api/periods'
 import { fetchRecipeCostSummary, type RecipeCostSummary } from '../lib/api/results'
 import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
+import { fetchMyProfile, getSessionUserId, signOut, toLoginRole } from '../lib/api/auth'
+import { SessionProvider } from '../lib/session'
+
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
 import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
 import { UserManagementPage } from '../pages/user-management/UserManagementPage'
@@ -45,6 +48,10 @@ function EmptyState({ message }: { message: string }) {
 
 function App() {
   const [loginRole, setLoginRole] = useState<LoginRole | null>(null)
+  const [userName, setUserName] = useState('')
+  const [loginId, setLoginId] = useState('')
+  /** 새로고침 후 세션 복구가 끝날 때까지 로그인 화면을 띄우지 않는다 */
+  const [authChecked, setAuthChecked] = useState(false)
   const [route, setRoute] = useState<AppRoute>(() =>
     routeFromHash(typeof window === 'undefined' ? '' : window.location.hash),
   )
@@ -100,6 +107,23 @@ function App() {
     }
   }, [month])
 
+  // §11-2 : 새로고침해도 세션이 남아 있으면 로그인 상태를 되살린다
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const userId = isSupabaseConfigured ? await getSessionUserId() : null
+      const profile = userId ? await fetchMyProfile(userId) : null
+      if (cancelled) return
+      if (profile?.is_active) {
+        setLoginRole(toLoginRole(profile.role))
+        setUserName(profile.name)
+        setLoginId(profile.login_id)
+      }
+      setAuthChecked(true)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   useEffect(() => {
     const handleHashChange = () => setRoute(routeFromHash(window.location.hash))
     window.addEventListener('hashchange', handleHashChange)
@@ -111,9 +135,9 @@ function App() {
   }, [])
 
   // §3-1 제품 · §2-1 원재료를 Supabase 에서 불러온다.
-  // setState 는 전부 await 뒤에서만 호출한다 (이펙트 본문의 동기 setState 금지)
+  // RLS 때문에 로그인 전에 조회하면 조용히 0행이 온다. 반드시 세션이 선 뒤에 부른다.
   useEffect(() => {
-    if (!isSupabaseConfigured) return
+    if (!isSupabaseConfigured || !loginRole) return
     let cancelled = false
 
     void (async () => {
@@ -128,10 +152,10 @@ function App() {
     })()
 
     return () => { cancelled = true }
-  }, [reloadProducts])
+  }, [reloadProducts, loginRole])
 
   useEffect(() => {
-    if (!isSupabaseConfigured) return
+    if (!isSupabaseConfigured || !loginRole) return
     let cancelled = false
 
     void (async () => {
@@ -144,7 +168,7 @@ function App() {
     })()
 
     return () => { cancelled = true }
-  }, [month])
+  }, [month, loginRole])
 
   useEffect(() => {
     window.localStorage.setItem(SELECTED_PRODUCT_STORAGE_KEY, selectedProductId)
@@ -162,6 +186,15 @@ function App() {
     messageTimer.current = window.setTimeout(() => setMessage(''), 2600)
   }
 
+  const handleSignOut = async () => {
+    await signOut()
+    setLoginRole(null)
+    setUserName('')
+    setLoginId('')
+    setRecipeProducts([])
+    setPeriod(null)
+  }
+
   const workerAllowedRoutes: AppRoute[] = ['data-entry-1', 'data-entry-2']
 
   const navigate = (nextRoute: AppRoute) => {
@@ -172,11 +205,17 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  if (!authChecked) {
+    return <div className="app-empty-state" role="status"><p>불러오는 중…</p></div>
+  }
+
   if (!loginRole) {
     return (
       <LoginPage
-        onLogin={(role) => {
+        onLogin={(role, name, id) => {
           setLoginRole(role)
+          setUserName(name)
+          setLoginId(id)
           if (role === 'worker') navigate('data-entry-1')
         }}
       />
@@ -198,9 +237,9 @@ function App() {
   if (loginRole === 'worker') {
     page =
       route === 'data-entry-2' ? (
-        <OperatingCostEntryPage {...entryProps} hideSidebar />
+        <OperatingCostEntryPage {...entryProps} />
       ) : (
-        <RawMaterialEntryPage {...entryProps} hideSidebar />
+        <RawMaterialEntryPage {...entryProps} />
       )
   } else if (route === 'data-entry-1') {
     page = <RawMaterialEntryPage {...entryProps} />
@@ -241,7 +280,6 @@ function App() {
             sku: `SKU-${new Date().getFullYear()}-${String(recipeProducts.length + 1).padStart(3, '0')}`,
             name: product.name,
             description: product.description,
-            yieldRate: product.yieldRate,
             items: product.ingredients.flatMap((ingredient) =>
               ingredient.materialId
                 ? [{
@@ -317,7 +355,9 @@ function App() {
   }
 
   return (
-    <>
+    <SessionProvider
+      value={{ role: loginRole, userName, loginId, signOut: () => void handleSignOut() }}
+    >
       {displayError && (
         <div className="app-load-error" role="alert">Supabase 연결 오류: {displayError}</div>
       )}
@@ -329,7 +369,7 @@ function App() {
       >
         {message}
       </div>
-    </>
+    </SessionProvider>
   )
 }
 
