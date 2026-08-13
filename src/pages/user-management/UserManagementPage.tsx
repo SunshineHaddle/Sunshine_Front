@@ -1,24 +1,15 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import {
   formatCompletionTime,
   loadCompletionHistory,
-  loadLatestCompletion,
   revertToCompletion,
   type DataEntryCompletion,
 } from '../../utils/dataEntryLog'
-
-type UserRole = '시스템 관리자' | '데이터 입력'
-
-type ManagedUser = {
-  id: string
-  name: string
-  lastActive: string
-  role: UserRole
-  active: boolean
-}
+import { fetchProfiles, setProfileActive, setProfileRole } from '../../lib/api/auth'
+import type { ProfileRow, UserRole } from '../../lib/types'
 
 type UserManagementPageProps = {
   onNavigate: (route: AppRoute) => void
@@ -27,49 +18,66 @@ type UserManagementPageProps = {
 
 const WORKER_ACCOUNT = 'worker1234'
 
-const buildInitialUsers = (): ManagedUser[] => {
-  const workerCompletion = loadLatestCompletion(WORKER_ACCOUNT)
-
-  return [
-    {
-      id: 'admin-user',
-      name: '관리자 (qwer1234)',
-      lastActive: '방금 전',
-      role: '시스템 관리자',
-      active: true,
-    },
-    {
-      id: 'field-worker-a',
-      name: '실무자 (worker1234)',
-      lastActive: workerCompletion
-        ? `${formatCompletionTime(workerCompletion.completedAt)} 데이터 입력 완료`
-        : '데이터 입력 대기',
-      role: '데이터 입력',
-      active: true,
-    },
-  ]
+const ROLE_LABEL: Record<UserRole, string> = {
+  admin: '시스템 관리자',
+  entry: '데이터 입력',
+  reviewer: '검토자',
 }
 
-const roleClassNames: Record<UserRole, string> = {
-  '시스템 관리자': 'is-admin',
-  '데이터 입력': 'is-entry',
+const ROLE_CLASS: Record<UserRole, string> = {
+  admin: 'is-admin',
+  entry: 'is-entry',
+  reviewer: 'is-reviewer',
+}
+
+function formatLastActive(iso: string | null) {
+  if (!iso) return '접속 기록 없음'
+  return new Date(iso).toLocaleString('ko-KR', {
+    month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  })
 }
 
 export function UserManagementPage({
   onNavigate,
   onAction,
 }: UserManagementPageProps) {
-  const [users, setUsers] = useState(buildInitialUsers)
+  const [users, setUsers] = useState<ProfileRow[]>([])
   const [history, setHistory] = useState<DataEntryCompletion[]>(() => loadCompletionHistory(WORKER_ACCOUNT))
 
-  const toggleUser = (userId: string) => {
-    setUsers((current) => current.map((user) => (
-      user.id === userId ? { ...user, active: !user.active } : user
-    )))
+  // §11-4 : setState 는 await 뒤에서만 (이펙트 본문 동기 setState 금지)
+  const reload = useCallback(async () => {
+    const rows = await fetchProfiles().catch((): ProfileRow[] => [])
+    setUsers(rows)
+  }, [])
 
-    const target = users.find((user) => user.id === userId)
-    if (target) {
-      onAction(`${target.name} 계정을 ${target.active ? '비활성화' : '활성화'}했습니다.`)
+  useEffect(() => { void (async () => { await reload() })() }, [reload])
+
+  // §11-5 : 관리자가 아니면 RLS 가 조용히 0행 처리하므로 반환값으로 확인한다
+  const toggleUser = async (user: ProfileRow) => {
+    const next = !user.is_active
+    try {
+      if (!(await setProfileActive(user.id, next))) {
+        onAction('권한이 없어 변경되지 않았습니다. 관리자만 수정할 수 있습니다.')
+        return
+      }
+      await reload()
+      onAction(`${user.name} 계정을 ${next ? '활성화' : '비활성화'}했습니다.`)
+    } catch (error) {
+      onAction(`변경 실패: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+
+  const changeRole = async (user: ProfileRow, role: UserRole) => {
+    if (role === user.role) return
+    try {
+      if (!(await setProfileRole(user.id, role))) {
+        onAction('권한이 없어 변경되지 않았습니다. 관리자만 수정할 수 있습니다.')
+        return
+      }
+      await reload()
+      onAction(`${user.name}의 역할을 ${ROLE_LABEL[role]}(으)로 변경했습니다.`)
+    } catch (error) {
+      onAction(`변경 실패: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -101,28 +109,43 @@ export function UserManagementPage({
             </div>
 
             <div className="user-table__body" role="rowgroup">
+              {users.length === 0 && (
+                <p className="user-table__empty" role="status">
+                  등록된 사용자가 없습니다. Supabase 콘솔에서 계정을 만든 뒤 profiles 에 연결해주세요.
+                </p>
+              )}
               {users.map((user) => (
-                <div className={`user-row${user.active ? '' : ' is-inactive'}`} role="row" key={user.id}>
+                <div className={`user-row${user.is_active ? '' : ' is-inactive'}`} role="row" key={user.id}>
                   <div className="user-identity" role="cell">
                     <div>
-                      <strong>{user.name}</strong>
-                      <small>마지막 접속: {user.lastActive}</small>
+                      <strong>{user.name} ({user.login_id})</strong>
+                      <small>마지막 접속: {formatLastActive(user.last_active_at)}</small>
                     </div>
                   </div>
 
                   <div role="cell">
-                    <span className={`user-role ${roleClassNames[user.role]}`}>{user.role}</span>
+                    <select
+                      className={`user-role user-role--select ${ROLE_CLASS[user.role]}`}
+                      aria-label={`${user.name} 역할`}
+                      value={user.role}
+                      onChange={(event) => void changeRole(user, event.target.value as UserRole)}
+                    >
+                      {(Object.keys(ROLE_LABEL) as UserRole[]).map((key) => (
+                        <option key={key} value={key}>{ROLE_LABEL[key]}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div role="cell">
-                    {user.role !== '시스템 관리자' && (
+                    {/* 관리자를 비활성화하면 아무도 쓰기를 못 하게 되므로 막는다 */}
+                    {user.role !== 'admin' && (
                       <button
-                        className={`user-status-switch${user.active ? ' is-active' : ''}`}
+                        className={`user-status-switch${user.is_active ? ' is-active' : ''}`}
                         type="button"
                         role="switch"
-                        aria-checked={user.active}
-                        aria-label={`${user.name} 계정 ${user.active ? '비활성화' : '활성화'}`}
-                        onClick={() => toggleUser(user.id)}
+                        aria-checked={user.is_active}
+                        aria-label={`${user.name} 계정 ${user.is_active ? '비활성화' : '활성화'}`}
+                        onClick={() => void toggleUser(user)}
                       >
                         <span />
                       </button>

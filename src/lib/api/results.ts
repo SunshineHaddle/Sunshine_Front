@@ -10,7 +10,18 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 // ── §8-1. 월 마감 ───────────────────────────────────────────
 /** @returns 저장된 제품 수 */
 export async function confirmPeriod(periodId: string): Promise<number> {
-  return num(unwrap(await supabase.rpc('confirm_period', { p_period_id: periodId })))
+  const res = await supabase.rpc('confirm_period', { p_period_id: periodId })
+
+  // 22003 = numeric overflow. 생산량이 재료비에 비해 터무니없이 작으면
+  // 단위원가가 폭발해 마진율이 컬럼 범위를 넘는다. 원인을 바로 알려준다.
+  if (res.error?.code === '22003') {
+    throw new Error(
+      '생산량이 재료비에 비해 너무 작아 단위원가가 비정상적으로 커졌습니다. ' +
+      '1단계에서 제품별 생산량(kg)이 실제 값인지 확인해주세요.',
+    )
+  }
+  if (res.error) throw new Error(res.error.message)
+  return num(res.data)
 }
 
 // ── §8-2. 결과 · 수익성 조회 ────────────────────────────────

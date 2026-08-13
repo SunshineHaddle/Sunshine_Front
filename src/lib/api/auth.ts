@@ -43,7 +43,7 @@ export async function signIn(loginId: string, password: string): Promise<SignInR
     return { ok: false, message: '비활성화된 계정입니다.' }
   }
 
-  void touchLastActive(profile.id)
+  void touchLastActive()
   return { ok: true, profile, role: toLoginRole(profile.role) }
 }
 
@@ -69,9 +69,41 @@ export async function fetchMyProfile(userId: string): Promise<ProfileRow | null>
 }
 
 // ── §11-6 마지막 접속 갱신 ──────────────────────────────────
-export async function touchLastActive(userId: string) {
-  await supabase
+/**
+ * 직접 update 하지 않고 RPC 를 쓴다.
+ * "자기 행은 수정 가능" 정책을 열어두면 RLS 로는 컬럼을 제한할 수 없어
+ * 사용자가 자기 role 을 admin 으로 바꿀 수 있다(권한 상승).
+ * touch_last_active() 는 security definer 로 last_active_at 만 건드린다.
+ */
+export async function touchLastActive() {
+  await supabase.rpc('touch_last_active')
+}
+
+// ── §11-4 사용자 목록 조회 (관리자 전용 화면) ────────────────
+export async function fetchProfiles(): Promise<ProfileRow[]> {
+  const { data, error } = await supabase
     .from('profiles')
-    .update({ last_active_at: new Date().toISOString() })
-    .eq('id', userId)
+    .select('id, login_id, name, role, is_active, last_active_at')
+    .order('created_at')
+  if (error) throw new Error(error.message)
+  return (data ?? []) as ProfileRow[]
+}
+
+// ── §11-5 활성 토글 · 역할 변경 ─────────────────────────────
+/**
+ * RLS 의 "admin write" 를 통과해야 한다.
+ * 관리자가 아니면 에러 없이 0행이 수정되므로, 반영 여부를 반환값으로 알린다.
+ */
+export async function setProfileActive(userId: string, isActive: boolean): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profiles').update({ is_active: isActive }).eq('id', userId).select('id')
+  if (error) throw new Error(error.message)
+  return (data?.length ?? 0) > 0
+}
+
+export async function setProfileRole(userId: string, role: UserRole): Promise<boolean> {
+  const { data, error } = await supabase
+    .from('profiles').update({ role }).eq('id', userId).select('id')
+  if (error) throw new Error(error.message)
+  return (data?.length ?? 0) > 0
 }
