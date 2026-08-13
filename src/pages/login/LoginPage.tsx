@@ -36,7 +36,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <div className="login-intro__brand">원가분석 프로그램</div>
         <div className="login-intro__content">
           <p className="login-intro__eyebrow">COST MANAGEMENT</p>
-          <h1>헷살 종합 식품</h1>
+          <h1>해뜰 종합 식품</h1>
         </div>
       </section>
 
