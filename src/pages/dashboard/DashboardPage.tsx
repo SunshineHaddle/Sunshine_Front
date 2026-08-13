@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { DashboardHeader } from '../../components/dashboard/DashboardChrome'
 import { ProductCostTrendCarousel } from '../../components/dashboard/DashboardSummaryCharts'
 import { ProductProfitabilityTable } from '../../components/dashboard/ProductProfitabilityTable'
@@ -15,6 +15,7 @@ import {
 } from '../../lib/api/results'
 import { toMonth } from '../../lib/types'
 import { CostTrendChart } from '../../components/dashboard/CostTrendChart'
+import { exportElementToPdf } from '../../lib/pdf/exportElementToPdf'
 
 type DashboardPageProps = {
   isWorker?: boolean
@@ -51,6 +52,7 @@ function toTableItem(summary: CostSummary): ProductProfitabilityItem {
 export function DashboardPage({
   isWorker = false,
   onNavigate,
+  onAction,
   recipeProducts,
   onSelectRecipe,
 }: DashboardPageProps) {
@@ -58,6 +60,8 @@ export function DashboardPage({
   const [periodLabel, setPeriodLabel] = useState('')
   const [trend, setTrend] = useState<CostTrendPoint[]>([])
   const [loading, setLoading] = useState(true)
+  const [isExportingPdf, setIsExportingPdf] = useState(false)
+  const contentRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -92,13 +96,31 @@ export function DashboardPage({
     return () => { cancelled = true }
   }, [])
 
+  // §대시보드 PDF 저장 : 현재 화면에 보이는 카드·표를 그대로 캡처해 A4 PDF로 내려받는다
+  const handleExportPdf = async () => {
+    if (!contentRef.current || isExportingPdf) return
+    setIsExportingPdf(true)
+    try {
+      const today = new Date()
+      const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
+      await exportElementToPdf(contentRef.current, {
+        fileName: `경영진_대시보드_${stamp}.pdf`,
+      })
+      onAction('대시보드를 PDF로 저장했습니다.')
+    } catch (error) {
+      onAction(`PDF 저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+    } finally {
+      setIsExportingPdf(false)
+    }
+  }
+
   return (
     <div className={`dashboard-app${isWorker ? ' dashboard-app--worker' : ''}`}>
       <Sidebar activeRoute="dashboard" hidden={isWorker} onNavigate={onNavigate} />
 
       <div className="main-shell">
-        <main className="dashboard-content">
-          <DashboardHeader />
+        <main className="dashboard-content" ref={contentRef}>
+          <DashboardHeader onExportPdf={() => void handleExportPdf()} isExportingPdf={isExportingPdf} />
 
           <div className="summary-grid">
             <ProductCostTrendCarousel products={recipeProducts} onOpen={onSelectRecipe} />
