@@ -28,7 +28,7 @@ export function Sidebar({ activeRoute, hidden = false, onNavigate }: SidebarProp
         type="button"
         onClick={() => onNavigate(isWorker ? 'data-entry-1' : 'dashboard')}
       >
-        햇뜰종합식품
+        해뜰종합식품
       </button>
       <nav className="sidebar__navigation">
         {items.map((item) => {
