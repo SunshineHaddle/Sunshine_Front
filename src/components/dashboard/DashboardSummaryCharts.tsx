@@ -3,20 +3,20 @@ import type { RecipeProduct } from '../../pages/product-management/productManage
 import type { ProductionCostSummary } from '../../pages/production-result/productionResultModel'
 import { CostCompositionChart } from '../../pages/production-result/CostCompositionChart'
 import { Icon } from '../common/Icon'
+import { fetchPillRates } from '../../lib/api/exchangeRates'
 
 type ExchangeCurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY'
 
+// 실시간 값이 오기 전까지 잠깐 쓰는 폴백 값
 const exchangeRates: Record<ExchangeCurrencyCode, {
   flag: string
   label: string
   value: string
-  change: string
-  changeTone: 'up' | 'down'
 }> = {
-  USD: { flag: '🇺🇸', label: 'USD/KRW', value: '1,386.40', change: '+0.18%', changeTone: 'up' },
-  JPY: { flag: '🇯🇵', label: 'JPY/KRW', value: '9.05', change: '-0.32%', changeTone: 'down' },
-  EUR: { flag: '🇪🇺', label: 'EUR/KRW', value: '1,455.00', change: '+0.42%', changeTone: 'up' },
-  CNY: { flag: '🇨🇳', label: 'CNY/KRW', value: '185.40', change: '-0.11%', changeTone: 'down' },
+  USD: { flag: '🇺🇸', label: 'USD/KRW', value: '1,386.40' },
+  JPY: { flag: '🇯🇵', label: 'JPY/KRW', value: '9.05' },
+  EUR: { flag: '🇪🇺', label: 'EUR/KRW', value: '1,455.00' },
+  CNY: { flag: '🇨🇳', label: 'CNY/KRW', value: '185.40' },
 }
 
 const exchangeCurrencyCodes = Object.keys(exchangeRates) as ExchangeCurrencyCode[]
@@ -294,12 +294,31 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
 
 export function ExchangeRatePill() {
   const [currency, setCurrency] = useState<ExchangeCurrencyCode>('USD')
-  const rate = exchangeRates[currency]
+  // 하드코딩 값을 기본으로 두고, 실시간 값이 오면 통화별로 덮어쓴다 (값만, 변동% 없음)
+  const [live, setLive] = useState<Partial<Record<ExchangeCurrencyCode, string>>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const rates = await fetchPillRates()
+      if (cancelled || rates.length === 0) return
+      const next: typeof live = {}
+      for (const { code, krw } of rates) {
+        if (!exchangeCurrencyCodes.includes(code as ExchangeCurrencyCode)) continue
+        next[code as ExchangeCurrencyCode] = krw.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      }
+      setLive(next)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  const value = live[currency] ?? exchangeRates[currency].value
+  const flag = exchangeRates[currency].flag
 
   return (
     <div className="exchange-rate-card">
       <div className="exchange-rate-card__select">
-        <span className="exchange-rate-card__flag" aria-hidden="true">{rate.flag}</span>
+        <span className="exchange-rate-card__flag" aria-hidden="true">{flag}</span>
         <select
           aria-label="환율 통화 선택"
           value={currency}
@@ -312,8 +331,7 @@ export function ExchangeRatePill() {
         <Icon name="chevron-down" size={14} />
       </div>
       <div className="exchange-rate-card__value">
-        <strong>{rate.value}<small>원</small></strong>
-        <em className={`exchange-rate-card__change is-${rate.changeTone}`}>{rate.change}</em>
+        <strong>{value}<small>원</small></strong>
       </div>
     </div>
   )

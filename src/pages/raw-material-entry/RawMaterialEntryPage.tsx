@@ -25,12 +25,14 @@ import {
   uploadExcel,
   type FileHistoryItem,
 } from '../../lib/api/files'
+import { markEntrySaved } from '../../utils/entrySaved'
 
 type RawMaterialEntryPageProps = {
   products: RecipeProduct[]
   month: string
   periodId: string | null
-  isLocked: boolean
+  /** worker 처럼 재접속 시 저장값을 화면에 불러오지 않고 빈 폼으로 시작 */
+  freshEntry?: boolean
   onMonthChange: (month: string) => void
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
@@ -50,7 +52,7 @@ export function RawMaterialEntryPage({
   products,
   month,
   periodId,
-  isLocked,
+  freshEntry = false,
   onMonthChange,
   onNavigate,
   onAction,
@@ -74,19 +76,20 @@ export function RawMaterialEntryPage({
   // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
   // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
   const reloadUsages = useCallback(async () => {
-    const rows = await (periodId
+    // worker 는 저장된 투입내역을 화면에 되불러오지 않는다
+    const rows = await (periodId && !freshEntry
       ? fetchMaterialUsages(periodId).catch((): UsageLine[] => [])
       : Promise.resolve<UsageLine[]>([]))
     setUsages(rows)
-  }, [periodId])
+  }, [periodId, freshEntry])
 
   const reloadHistory = useCallback(async () => {
-    // 버킷·테이블이 없어도 입력 작업은 막지 않는다
-    const rows = await (periodId
+    // 버킷·테이블이 없어도 입력 작업은 막지 않는다. worker 는 이력도 안 불러온다
+    const rows = await (periodId && !freshEntry
       ? fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => [])
       : Promise.resolve<FileHistoryItem[]>([]))
     setHistory(rows)
-  }, [periodId])
+  }, [periodId, freshEntry])
 
   // 린터가 함수 경계를 넘어 비동기성을 추적하지 못하므로 async IIFE 로 감싼다
   useEffect(() => { void (async () => { await reloadUsages() })() }, [reloadUsages])
@@ -97,7 +100,8 @@ export function RawMaterialEntryPage({
   useEffect(() => {
     let cancelled = false
     const build = async () => {
-      const saved = periodId ? await fetchProduction(periodId).catch(() => []) : []
+      // worker 는 저장된 생산량을 되불러오지 않고 빈 폼으로 시작한다
+      const saved = periodId && !freshEntry ? await fetchProduction(periodId).catch(() => []) : []
       if (cancelled) return
       const byId = new Map(saved.map((s) => [s.productId, s] as const))
       setRows(products.map((product) => ({
@@ -108,7 +112,7 @@ export function RawMaterialEntryPage({
     }
     void build()
     return () => { cancelled = true }
-  }, [periodId, products])
+  }, [periodId, products, freshEntry])
 
   const updateRow = (id: string, patch: Partial<Row>) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -169,6 +173,7 @@ export function RawMaterialEntryPage({
     let saved: number
     try {
       saved = await commitSubul(periodId, preview)
+      markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       await reloadUsages()
     } catch (error) {
       setBusy('')
@@ -242,6 +247,7 @@ export function RawMaterialEntryPage({
         productId: row.id,
         production: row.production,
       })))
+      markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       return true
     } catch (error) {
       onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
@@ -278,12 +284,6 @@ export function RawMaterialEntryPage({
             <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
           </label>
         </header>
-
-        {isLocked && (
-          <p className="entry-locked" role="status">
-            <Icon name="check" size={14} /> 이 달은 마감되었습니다. 값을 고치려면 3단계에서 <strong>마감 취소</strong>를 먼저 눌러주세요.
-          </p>
-        )}
 
         <div className="production-entry">
           <section className="production-upload" aria-labelledby="production-upload-title">
@@ -326,7 +326,7 @@ export function RawMaterialEntryPage({
               <button
                 className="production-upload__button"
                 type="button"
-                disabled={Boolean(busy) || isLocked}
+                disabled={Boolean(busy)}
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Icon name="upload" size={16} /> {fileName ? '다시 업로드' : '엑셀 업로드'}
@@ -406,7 +406,7 @@ export function RawMaterialEntryPage({
               <button
                 className="workflow-primary-button"
                 type="button"
-                disabled={preview.readyCount === 0 || !periodId || Boolean(busy) || isLocked}
+                disabled={preview.readyCount === 0 || !periodId || Boolean(busy)}
                 onClick={commit}
               >
                 투입내역 {preview.readyCount}행 저장 · 원본 보관 <Icon name="check" size={16} />
@@ -437,7 +437,6 @@ export function RawMaterialEntryPage({
                     <button
                       type="button"
                       aria-label={`${item.original_name} 삭제`}
-                      disabled={isLocked}
                       onClick={() => void removeFile(item)}
                     >
                       <Icon name="trash" size={14} />
@@ -464,7 +463,7 @@ export function RawMaterialEntryPage({
                     <div className="saved-usages__head">
                       <strong>{row.name}</strong>
                       <span>재료 {lines.length}개 · {won(total)}원</span>
-                      <button type="button" disabled={isLocked} onClick={() => void removeUsages(row.id, row.name)}>
+                      <button type="button" onClick={() => void removeUsages(row.id, row.name)}>
                         <Icon name="trash" size={14} /> 삭제
                       </button>
                     </div>
@@ -556,7 +555,7 @@ export function RawMaterialEntryPage({
               className="workflow-outline-button"
               type="button"
               onClick={() => void saveDraft()}
-              disabled={!hasRows || !periodId || isLocked}
+              disabled={!hasRows || !periodId}
             >
               임시 저장
             </button>

@@ -6,6 +6,7 @@ import type { IngredientCatalogItem, RecipeProduct } from './productManagementDa
 import { ProductCostSummary } from '../../components/product-management/ProductCostSummary'
 import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
 import { saveRecipeItems, uploadProductImage } from '../../lib/api/products'
+import { thumbnailUrl } from '../../utils/thumbnail'
 
 type ProductDetailPageProps = {
   product: RecipeProduct
@@ -199,7 +200,7 @@ export function ProductDetailPage({
           <div className="product-detail-header__photo-wrap">
             <span className="product-detail-header__photo">
               {product.imageUrl
-                ? <img src={product.imageUrl} alt={`${product.name} 사진`} />
+                ? <img src={thumbnailUrl(product.imageUrl, 320)} alt={`${product.name} 사진`} loading="lazy" decoding="async" width={72} height={72} />
                 : <span className="product-detail-header__photo-fallback">{product.name.slice(0, 1)}</span>}
             </span>
             {canEditImage && (

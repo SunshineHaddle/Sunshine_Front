@@ -5,6 +5,7 @@ import type {
   IngredientCatalogItem,
   RecipeProduct,
 } from '../../pages/product-management/productManagementData'
+import { shrinkImage } from '../../utils/thumbnail'
 
 /** supabase-js 는 throw 하지 않으므로 여기서 한 번 감싼다. */
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
@@ -185,12 +186,14 @@ export async function updateProduct(
 
 // ── §3-5. 제품 이미지 업로드 ────────────────────────────────
 export async function uploadProductImage(productId: string, file: File): Promise<string> {
-  const safeName = file.name.replace(/[^\w.-]/g, '_')
+  // 썸네일로만 쓰이므로 업로드 전에 최대 512px 로 줄여 용량을 낮춘다
+  const small = await shrinkImage(file, 512)
+  const safeName = small.name.replace(/[^\w.-]/g, '_')
   const path = `${productId}/${Date.now()}-${safeName}`
 
   const { error } = await supabase.storage
     .from('product-images')
-    .upload(path, file, { upsert: true })
+    .upload(path, small, { upsert: true })
   if (error) throw new Error(error.message)
 
   const { data } = supabase.storage.from('product-images').getPublicUrl(path)

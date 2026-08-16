@@ -4,6 +4,7 @@ import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
+import { fetchExchangeRates } from '../../lib/api/exchangeRates'
 
 type CurrencyCode = string
 
@@ -106,7 +107,9 @@ const loadProductRows = (products: RecipeProduct[]): ExchangeMaterialRow[] => {
 
 const formatKrw = (value: number) => Math.round(value).toLocaleString('ko-KR')
 
-const formatRateTime = (date: Date) => date.toLocaleTimeString('ko-KR', {
+const formatRateTime = (date: Date) => date.toLocaleString('ko-KR', {
+  month: 'numeric',
+  day: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
 })
@@ -132,7 +135,8 @@ export function ExchangeRateCalculatorPage({
   const [rows, setRows] = useState<ExchangeMaterialRow[]>(() => loadProductRows(products))
   const [currencies, setCurrencies] = useState<Record<CurrencyCode, CurrencySetting>>(() => loadCurrencies())
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
-  const [rateUpdatedAt, setRateUpdatedAt] = useState<string>(() => formatRateTime(new Date()))
+  const [rateUpdatedAt, setRateUpdatedAt] = useState<string>('')
+  const [isRateLoading, setIsRateLoading] = useState(true)
   const [isAddingCurrency, setIsAddingCurrency] = useState(false)
   const [newCurrency, setNewCurrency] = useState({ code: '', label: '', rate: '' })
 
@@ -141,8 +145,27 @@ export function ExchangeRateCalculatorPage({
 
   const changeCurrency = (code: CurrencyCode) => {
     setSelectedCurrency(code)
-    setRateUpdatedAt(formatRateTime(new Date()))
   }
+
+  // 실시간 환율을 받아 각 통화 rate 를 덮어쓴다. 실패하면 하드코딩 폴백을 유지한다.
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const { rates, updatedAt } = await fetchExchangeRates()
+      if (cancelled) return
+      setIsRateLoading(false)
+      if (Object.keys(rates).length === 0) return // API 실패 → 폴백 유지
+      setCurrencies((current) => {
+        const next: Record<CurrencyCode, CurrencySetting> = {}
+        for (const [code, setting] of Object.entries(current)) {
+          next[code] = rates[code] ? { ...setting, rate: rates[code] } : setting
+        }
+        return next
+      })
+      setRateUpdatedAt(formatRateTime(updatedAt ? new Date(updatedAt) : new Date()))
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => {
     const settings = Object.fromEntries(
@@ -232,7 +255,13 @@ export function ExchangeRateCalculatorPage({
                 </button>
               </div>
             </label>
-            <small className="exchange-currency-picker__time">{rateUpdatedAt} 기준 환율</small>
+            <small className="exchange-currency-picker__time">
+              {isRateLoading
+                ? '실시간 환율 불러오는 중…'
+                : rateUpdatedAt
+                  ? `${rateUpdatedAt} 실시간 환율`
+                  : '실시간 환율 연결 실패 · 기준값 사용'}
+            </small>
           </div>
         </header>
 
