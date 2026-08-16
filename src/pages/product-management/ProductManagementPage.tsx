@@ -3,6 +3,7 @@ import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from './productManagementData'
+import { thumbnailUrl } from '../../utils/thumbnail'
 
 type ProductManagementPageProps = {
   products: RecipeProduct[]
@@ -66,8 +67,12 @@ export function ProductManagementPage({
                     {product.imageUrl
                       ? (
                         <img
-                          src={product.imageUrl}
+                          src={thumbnailUrl(product.imageUrl, 320)}
                           alt=""
+                          loading="lazy"
+                          decoding="async"
+                          width={108}
+                          height={108}
                           onError={(event) => {
                             const img = event.currentTarget
                             img.style.display = 'none'

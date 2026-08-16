@@ -11,6 +11,7 @@ import {
   saveLaborCost,
 } from '../../lib/api/operating'
 import { fetchProduction } from '../../lib/api/production'
+import { markEntrySaved } from '../../utils/entrySaved'
 import {
   calculateOperatingCosts,
   distributeByProduction,
@@ -24,7 +25,8 @@ type OperatingCostEntryPageProps = {
   products?: RecipeProduct[]
   month: string
   periodId: string | null
-  isLocked: boolean
+  /** worker 처럼 재접속 시 저장값을 화면에 불러오지 않고 빈 폼으로 시작 */
+  freshEntry?: boolean
   onMonthChange: (month: string) => void
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
@@ -35,7 +37,7 @@ export function OperatingCostEntryPage({
   products = [],
   month,
   periodId,
-  isLocked,
+  freshEntry = false,
   onMonthChange,
   onNavigate,
   onAction,
@@ -68,6 +70,8 @@ export function OperatingCostEntryPage({
 
   // §7-1 해당 월 운영비를 읽어 화면 모델로 바꾼다
   useEffect(() => {
+    // worker 는 재접속마다 빈 폼으로 시작한다 (저장값을 화면에 되불러오지 않음)
+    if (freshEntry) { setCosts(initialOperatingCosts); setSavedIds(new Set()); return }
     let cancelled = false
     const load = async () => {
       if (!periodId) return
@@ -96,7 +100,7 @@ export function OperatingCostEntryPage({
     }
     void load()
     return () => { cancelled = true }
-  }, [periodId, onAction])
+  }, [periodId, onAction, freshEntry])
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -174,6 +178,7 @@ export function OperatingCostEntryPage({
         const allocation = distributeByProduction(toWonNumber(item.total), productions)
         await saveCustomCost(periodId, item.name.trim(), allocation, { sortOrder: index + 1 })
       }
+      markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       return true
     } catch (error) {
       onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
@@ -215,12 +220,6 @@ export function OperatingCostEntryPage({
           </label>
         </header>
 
-        {isLocked && (
-          <p className="entry-locked" role="status">
-            <Icon name="check" size={14} /> 이 달은 마감되었습니다. 값을 고치려면 3단계에서 <strong>마감 취소</strong>를 먼저 눌러주세요.
-          </p>
-        )}
-
         <OperatingCostForm
           products={products}
           costs={costs}
@@ -246,7 +245,7 @@ export function OperatingCostEntryPage({
             className="workflow-coral-button"
             type="button"
             onClick={() => void goToNextStep()}
-            disabled={!isLaborShareValid || busy || !periodId || isLocked}
+            disabled={!isLaborShareValid || busy || !periodId}
           >
             {hideSidebar ? '저장' : '다음 단계'} <Icon name="chevron-right" size={16} />
           </button>

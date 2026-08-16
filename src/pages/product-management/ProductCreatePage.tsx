@@ -4,6 +4,7 @@ import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import { parseNumber } from '../../utils/number'
+import { shrinkImage } from '../../utils/thumbnail'
 import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
 
@@ -42,7 +43,7 @@ export function ProductCreatePage({
 
   const imageInputRef = useRef<HTMLInputElement>(null)
 
-  const handleImageSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -54,10 +55,12 @@ export function ProductCreatePage({
       onAction('이미지 용량은 3MB 이하만 가능합니다.')
       return
     }
+    // 썸네일로만 쓰이므로 최대 512px 로 줄여 data URL 을 작게 만든다
+    const small = await shrinkImage(file, 512)
     const reader = new FileReader()
     reader.onload = () => setImageUrl(String(reader.result))
     reader.onerror = () => onAction('사진을 읽는 중 문제가 발생했습니다.')
-    reader.readAsDataURL(file)
+    reader.readAsDataURL(small)
   }
 
   return (
@@ -115,7 +118,7 @@ export function ProductCreatePage({
                     className="visually-hidden"
                     type="file"
                     accept="image/*"
-                    onChange={handleImageSelected}
+                    onChange={(event) => void handleImageSelected(event)}
                   />
                 </div>
               </div>

@@ -30,6 +30,7 @@ import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { fetchMyProfile, getSessionUserId, signOut, toLoginRole } from '../lib/api/auth'
 import { SessionProvider } from '../lib/session'
+import { isEntrySavedBeforeSession, refreshEntrySavedSnapshot } from '../utils/entrySaved'
 
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
 import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
@@ -188,6 +189,8 @@ function App() {
 
   const handleSignOut = async () => {
     await signOut()
+    // 로그아웃을 새 세션 경계로 삼아, 그동안 저장한 회차는 재로그인 후 빈 폼으로 시작하게 한다
+    refreshEntrySavedSnapshot()
     setLoginRole(null)
     setUserName('')
     setLoginId('')
@@ -226,7 +229,10 @@ function App() {
     products: recipeProducts,
     month,
     periodId: period?.id ?? null,
-    isLocked: period?.status === 'confirmed',
+    // 빈 폼으로 시작하는 조건:
+    //  - worker 는 항상 (저장은 DB 에 남지만 화면은 안 불러옴)
+    //  - admin 은 이 회차를 이미 저장 완료한 경우 (재접속 시 빈 폼, 아직이면 이전 자료)
+    freshEntry: loginRole === 'worker' || isEntrySavedBeforeSession(period?.id ?? null),
     onMonthChange: setMonth,
     onNavigate: navigate,
     onAction: announce,
