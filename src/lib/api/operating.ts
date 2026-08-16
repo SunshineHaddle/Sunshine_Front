@@ -1,4 +1,4 @@
-/** docs/api/03-cost-entry.md §7 — 운영비 */
+/** §7 — 운영비 */
 import { supabase } from '../supabase'
 import { num, type AllocationType, type CostCategory } from '../types'
 

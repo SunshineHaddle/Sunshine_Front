@@ -1,4 +1,4 @@
-/** docs/api/03-cost-entry.md §5·§6 — 생산량 / 원재료 투입 실적 */
+/** §5·§6 — 생산량 / 원재료 투입 실적 */
 import { supabase } from '../supabase'
 import { num, type MaterialUnit } from '../types'
 

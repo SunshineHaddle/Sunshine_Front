@@ -1,4 +1,4 @@
-/** docs/api/06-users.md §11 — 로그인 / 프로필 */
+/** §11 — 로그인 / 프로필 */
 import { supabase } from '../supabase'
 import type { ProfileRow, UserRole } from '../types'
 

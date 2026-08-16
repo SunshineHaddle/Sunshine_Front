@@ -1,4 +1,4 @@
-/** docs/api/03-cost-entry.md §4 — 월 회차 */
+/** §4 — 월 회차 */
 import { supabase } from '../supabase'
 import { toPeriodDate, type CostPeriodRow } from '../types'
 

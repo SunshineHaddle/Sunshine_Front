@@ -1,4 +1,4 @@
-/** docs/api/02-products.md — 원재료 · 제품 · 배합 */
+/** 원재료 · 제품 · 배합 */
 import { supabase } from '../supabase'
 import { num, type MaterialRow, type MaterialUnit, type ProductStatus } from '../types'
 import type {

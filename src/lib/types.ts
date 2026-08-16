@@ -1,5 +1,5 @@
 /**
- * DB 행 타입. docs/API.md 의 스키마와 1:1로 대응한다.
+ * DB 행 타입. supabase/schema.sql 의 스키마와 1:1로 대응한다.
  *
  * 스키마를 바꾸면 아래 명령으로 다시 생성하는 것을 권장한다.
  *   npx supabase gen types typescript --project-id <id> > src/lib/database.types.ts

@@ -1,4 +1,4 @@
-/** docs/api/04-results.md §8·§9 — 마감 / 수익성 / 추이 */
+/** §8·§9 — 마감 / 수익성 / 추이 */
 import { supabase } from '../supabase'
 import { num, type CostSource, type ProfitStatus } from '../types'
 

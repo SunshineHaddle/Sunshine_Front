@@ -1,4 +1,4 @@
-/** docs/api/05-files.md §10 — 엑셀 원본 보관 / 업로드 이력 */
+/** §10 — 엑셀 원본 보관 / 업로드 이력 */
 import { supabase } from '../supabase'
 import { num, type FileUploadRow } from '../types'
 
