@@ -105,6 +105,27 @@ export async function fetchMaterialUsages(
 }
 
 /**
+ * 제품별 투입 총량(kg). 생산량이 상식적인지 검증하는 데 쓴다.
+ *
+ * 투입 847톤에 생산량 24kg 같은 오입력을 잡을 방법이 이것뿐이다 —
+ * 예전에는 마진율이 numeric(7,2) 를 넘겨 22003 으로 터지는 게 유일한 신호였는데,
+ * 컬럼을 numeric(12,2) 로 넓히면서 그 신호마저 사라졌다.
+ */
+export async function fetchUsageTotals(
+  periodId: string,
+): Promise<{ productId: string; totalUsage: number }[]> {
+  const rows = unwrap(
+    await supabase.from('material_usages').select('product_id, usage_qty').eq('period_id', periodId),
+  ) as { product_id: string; usage_qty: number }[]
+
+  const byProduct = new Map<string, number>()
+  for (const row of rows) {
+    byProduct.set(row.product_id, (byProduct.get(row.product_id) ?? 0) + num(row.usage_qty))
+  }
+  return [...byProduct].map(([productId, totalUsage]) => ({ productId, totalUsage }))
+}
+
+/**
  * 이 달 수불자료에 등장한 제품 id 만.
  *
  * 1단계 생산량 목록을 "엑셀에 있는 제품"으로 좁히는 데 쓴다.

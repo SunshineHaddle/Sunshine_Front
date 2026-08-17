@@ -29,10 +29,11 @@
 ```bash
 npm install     # git pull 후 package.json 이 바뀌었으면 반드시
 npm run dev
-npm run lint    # 0 에러 유지
-npx tsc -b --force
-node src/lib/excel/parseQuantity.test.mjs   # 그 외 *.test.mjs 도 동일
+npm run verify  # typecheck + lint + test 한 번에. 커밋 전에 돌린다
 ```
+
+개별로는 `npm run typecheck` · `npm run lint` · `npm test`.
+같은 검사가 GitHub Actions(`.github/workflows/ci.yml`)에서 push·PR 마다 돈다.
 
 ---
 
@@ -110,7 +111,12 @@ RLS는 컬럼 단위 제한이 안 돼서, 사용자가 자기 `role` 을 `admin
 `distributeByProduction()`. 미팅의 "경비는 생산량 기준 배분"과 일치한다.
 `saveAutoCost`(재료비 비중 자동배분)도 구현돼 있으나 미사용.
 
-**⑧ 엑셀 수량 칸의 단위를 검증한다**
+**⑧ 마감 전에 생산량을 투입량과 대조한다**
+`findProductionIssues()`. 생산량이 투입 총량의 50~150% 를 벗어나면 확인 다이얼로그를 띄운다.
+예전에는 마진율이 `numeric(7,2)` 를 넘겨 `22003` 으로 터지는 게 오입력을 잡는 유일한 신호였는데,
+컬럼을 `numeric(12,2)` 로 넓히면서 그 신호가 사라졌다. 고객이 "오차 허용"을 요구했으므로 막지는 않는다.
+
+**⑨ 엑셀 수량 칸의 단위를 검증한다**
 `parseQuantity()` 가 숫자부와 단위부를 갈라 해석한다. g·톤은 kg으로 환산하고, 개·박스·L처럼 kg으로 바꿀 수 없는 단위는 **저장을 막는다**. 자세한 규칙은 [EXCEL.md](EXCEL.md).
 
 ---

@@ -1,0 +1,40 @@
+name: CI
+
+# main 에 올라가는 모든 변경과 PR 을 검사한다.
+# 예전에 .claude/worktrees 잔재 때문에 린트가 87건 파싱 에러로 통째로 죽어 있었는데
+# 아무도 모른 채 커밋이 쌓였다. 그런 일을 다시 겪지 않기 위한 장치다.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # node --test 의 glob 패턴을 쓰므로 22 이상이 필요하다
+          node-version: '22'
+          cache: npm
+
+      - name: 의존성 설치
+        run: npm ci
+
+      - name: 타입 검사
+        run: npm run typecheck
+
+      # 린트가 파싱 단계에서 죽으면 "검사 0건"인데 통과처럼 보인다.
+      # eslint 는 그 경우에도 에러를 내므로 exit code 로 충분하다.
+      - name: 린트
+        run: npm run lint
+
+      - name: 테스트
+        run: npm test
+
+      - name: 빌드
+        run: npm run build

@@ -38,6 +38,11 @@ export type RecipeProduct = {
   packageUnit?: string
   salePrice?: number
   marginRate?: number
+  /**
+   * 포장 1개의 무게(kg). 원가는 kg 단위, 판매가는 포장 단위라 환산에 쓴다.
+   * 비어 있으면 마감 계산이 1kg 으로 간주해 마진율이 과대 계상된다.
+   */
+  unitWeightKg?: number
 }
 
 export type IngredientCatalogItem = {

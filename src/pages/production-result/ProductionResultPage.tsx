@@ -4,7 +4,9 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import { confirmPeriod, fetchCostSummaries, type CostSummary } from '../../lib/api/results'
 import { reopenPeriod } from '../../lib/api/periods'
+import { fetchProduction, fetchUsageTotals } from '../../lib/api/production'
 import { describeDbError } from '../../lib/api/errors'
+import { describeIssues, findProductionIssues } from './productionSanity'
 
 type ProductionResultPageProps = {
   month: string
@@ -45,6 +47,25 @@ export function ProductionResultPage({
     if (!periodId) return
     setBusy(true)
     try {
+      // 마감은 그 달을 잠그고 되돌리려면 마감 취소가 필요하다.
+      // 실행 전에 생산량이 상식적인지 한 번 대조한다.
+      const [usageTotals, productions] = await Promise.all([
+        fetchUsageTotals(periodId).catch(() => []),
+        fetchProduction(periodId).catch(() => []),
+      ])
+      const issues = findProductionIssues(usageTotals, productions)
+
+      const proceed = issues.length > 0
+        ? window.confirm(describeIssues(issues))
+        : window.confirm(
+            `${month.replace('-', '년 ')}월 원가를 계산하고 마감합니다.\n`
+            + '마감하면 1·2단계 입력이 잠깁니다. 값을 고치려면 마감을 취소해야 합니다.\n\n계속할까요?',
+          )
+      if (!proceed) {
+        setBusy(false)
+        return
+      }
+
       const count = await confirmPeriod(periodId)
       await load()
       onPeriodChanged()

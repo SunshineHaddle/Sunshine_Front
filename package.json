@@ -8,6 +8,9 @@
     "dev:hmr": "node scripts/dev.mjs --hmr",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "node --test \"src/**/*.test.mjs\"",
+    "typecheck": "tsc -b --force",
+    "verify": "npm run typecheck && npm run lint && npm test",
     "preview": "vite preview"
   },
   "dependencies": {

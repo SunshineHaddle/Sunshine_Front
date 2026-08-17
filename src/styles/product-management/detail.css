@@ -613,3 +613,95 @@
   font-weight: 600;
 }
 
+
+/* ── 판매 정보 (마진율 계산 입력) ─────────────────────────
+   그동안 입력 화면이 없어 SQL 로만 넣을 수 있던 값들이다 */
+.sales-info-panel {
+  margin-top: 24px;
+  padding: 18px 20px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+}
+
+.sales-info-panel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sales-info-panel__head h2 {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.sales-info-panel__head p {
+  margin: 3px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.sales-info-panel__save {
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 16px;
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: var(--color-brand);
+  border: 0;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.sales-info-panel__save:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.sales-info-panel__save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sales-info-panel__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.sales-info-panel__fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.sales-info-panel__fields input {
+  height: 40px;
+  padding: 0 12px;
+  color: var(--color-text);
+  font-size: 13px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.sales-info-panel__fields input:focus {
+  border-color: var(--color-brand);
+}
+
+/* 비면 마감 계산이 1kg 으로 간주한다. 조용히 넘어가면 안 되는 값이다 */
+.sales-info-panel__warning {
+  margin: 14px 0 0;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fdf8ee;
+  border: 1px solid #f0dcb5;
+  color: #7a5a12;
+  font-size: 12px;
+  line-height: 1.55;
+}

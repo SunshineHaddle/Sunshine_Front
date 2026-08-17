@@ -5,7 +5,8 @@ import type { AppRoute } from '../../data/navigation'
 import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { ProductCostSummary } from '../../components/product-management/ProductCostSummary'
 import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
-import { saveRecipeItems, uploadProductImage } from '../../lib/api/products'
+import { NumberInput } from '../../components/common/NumberInput'
+import { saveRecipeItems, updateProduct, uploadProductImage } from '../../lib/api/products'
 import { describeDbError } from '../../lib/api/errors'
 import { thumbnailUrl } from '../../utils/thumbnail'
 
@@ -58,6 +59,38 @@ export function ProductDetailPage({
 
   // ── §3-6 배합 수정 ────────────────────────────────────────
   const [isEditingRecipe, setIsEditingRecipe] = useState(false)
+
+  /**
+   * 판매 정보. 지금까지 입력 화면이 없어 SQL 로만 넣을 수 있었다.
+   * unit_weight_kg 가 비면 마감 계산이 1kg 으로 간주해 마진율이 과대 계상된다.
+   */
+  const [sales, setSales] = useState({
+    salePrice: String(product.salePrice ?? ''),
+    unitWeightKg: String(product.unitWeightKg ?? ''),
+    specification: product.specification ?? '',
+    packageUnit: product.packageUnit ?? 'PCK',
+  })
+  const [savingSales, setSavingSales] = useState(false)
+
+  const saveSales = async () => {
+    setSavingSales(true)
+    try {
+      const weight = sales.unitWeightKg.trim()
+      await updateProduct(product.id, {
+        sale_price: Number(sales.salePrice) || 0,
+        // 빈 값은 0 이 아니라 null 로 보낸다 — 0 이면 단위원가가 0 이 된다
+        unit_weight_kg: weight === '' ? null : Number(weight) || null,
+        specification: sales.specification.trim(),
+        package_unit: sales.packageUnit.trim() || 'PCK',
+      })
+      await onRefresh?.()
+      onAction(`${product.name}의 판매 정보를 저장했습니다.`)
+    } catch (error) {
+      onAction(`판매 정보 저장 실패: ${describeDbError(error)}`)
+    } finally {
+      setSavingSales(false)
+    }
+  }
   const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
   const [savingRecipe, setSavingRecipe] = useState(false)
 
@@ -241,6 +274,67 @@ export function ProductDetailPage({
             <span>선택한 제품의 상세 원가 지표와 변동 추이를 분석합니다.</span>
           </div>
         </header>
+
+        <section className="sales-info-panel" aria-labelledby="sales-info-title">
+          <header className="sales-info-panel__head">
+            <div>
+              <h2 id="sales-info-title">판매 정보</h2>
+              <p>마진율 계산에 쓰입니다. 포장 1개를 기준으로 입력하세요.</p>
+            </div>
+            <button
+              type="button"
+              className="sales-info-panel__save"
+              onClick={() => void saveSales()}
+              disabled={savingSales}
+            >
+              {savingSales ? '저장 중…' : '저장'}
+            </button>
+          </header>
+
+          <div className="sales-info-panel__fields">
+            <label>
+              <span>판매가 (원)</span>
+              <NumberInput
+                min="0"
+                value={sales.salePrice}
+                placeholder="예: 28900"
+                onValueChange={(raw) => setSales((c) => ({ ...c, salePrice: raw }))}
+              />
+            </label>
+            <label>
+              <span>포장 1개 무게 (kg)</span>
+              <NumberInput
+                min="0"
+                value={sales.unitWeightKg}
+                placeholder="예: 5"
+                onValueChange={(raw) => setSales((c) => ({ ...c, unitWeightKg: raw }))}
+              />
+            </label>
+            <label>
+              <span>규격</span>
+              <input
+                value={sales.specification}
+                placeholder="예: 5kg"
+                onChange={(event) => setSales((c) => ({ ...c, specification: event.target.value }))}
+              />
+            </label>
+            <label>
+              <span>포장 단위</span>
+              <input
+                value={sales.packageUnit}
+                placeholder="PCK"
+                onChange={(event) => setSales((c) => ({ ...c, packageUnit: event.target.value }))}
+              />
+            </label>
+          </div>
+
+          {!sales.unitWeightKg.trim() && (
+            <p className="sales-info-panel__warning">
+              포장 무게가 비어 있습니다. 이대로 마감하면 <strong>1kg 포장</strong>으로 계산되어
+              마진율이 실제보다 크게 나옵니다.
+            </p>
+          )}
+        </section>
 
         <ProductCostSummary product={product} state={analysisState} onAction={onAction} />
 
