@@ -83,6 +83,13 @@
   margin-bottom: 48px;
 }
 
+.login-form__logo {
+  display: block;
+  width: min(100%, 260px);
+  margin: 0 auto 28px;
+  transform: translateY(-48px);
+}
+
 .login-form header p {
   margin: 0 0 10px;
   color: var(--color-brand);

@@ -1,9 +1,7 @@
 import { useRef } from 'react'
 import { Icon } from '../../components/common/Icon'
-import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { parseNumber } from '../../utils/number'
 import { shrinkImage } from '../../utils/thumbnail'
 import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
@@ -17,12 +15,6 @@ type ProductCreatePageProps = {
   catalog?: IngredientCatalogItem[]
 }
 
-const currencyFormatter = new Intl.NumberFormat('ko-KR', {
-  style: 'currency',
-  currency: 'KRW',
-  maximumFractionDigits: 4,
-})
-
 export function ProductCreatePage({
   nextProductNumber,
   onNavigate,
@@ -35,9 +27,8 @@ export function ProductCreatePage({
     productName, setProductName,
     imageUrl, setImageUrl,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
-    newIngredientUnit, setNewIngredientUnit,
-    addIngredient, addNewIngredient, updateUsage, updateUnitPrice, removeIngredient,
+    newIngredientName, setNewIngredientName,
+    addIngredient, addNewIngredient, removeIngredient,
     saveRecipe,
   } = recipe
 
@@ -74,7 +65,7 @@ export function ProductCreatePage({
 
         <header className="product-create-header">
           <h1>새 제품 레시피</h1>
-          <p>제품을 정의하고 필요한 재료와 사용량을 추가하세요.</p>
+          <p>제품을 정의하고 필요한 재료를 추가하세요.</p>
         </header>
 
         <form className="recipe-builder" onSubmit={saveRecipe}>
@@ -86,7 +77,7 @@ export function ProductCreatePage({
               </div>
               <div className="product-info-body">
                 <div className="product-info-fields">
-                  <label>제품명<input required value={productName} placeholder="예: 포기김치 5kg" onChange={(event) => setProductName(event.target.value)} /></label>
+                  <label>제품명<input required value={productName} placeholder="예: 포기김치" onChange={(event) => setProductName(event.target.value)} /></label>
                 </div>
                 <div className="product-info-photo">
                   <button
@@ -137,14 +128,7 @@ export function ProductCreatePage({
               <div className="ingredient-catalog">
                 {availableIngredients.map((ingredient) => (
                   <div key={ingredient.id} className={ingredient.isSuggestion ? 'is-suggestion' : undefined}>
-                    <span>
-                      <strong>{ingredient.name}</strong>
-                      <small>
-                        {ingredient.isSuggestion
-                          ? `기본 재료 · 단가는 나중에 입력 / ${ingredient.unit}`
-                          : `${currencyFormatter.format(ingredient.unitPrice)} / ${ingredient.unit}`}
-                      </small>
-                    </span>
+                    <strong>{ingredient.name}</strong>
                     <button
                       type="button"
                       aria-label={`${ingredient.name} 추가`}
@@ -164,7 +148,7 @@ export function ProductCreatePage({
               <div className="new-ingredient">
                 <h3>새 재료 만들기</h3>
                 <p className="new-ingredient__hint">
-                  재료명만 있으면 됩니다. 단가는 수불자료를 올리면 자동으로 채워집니다.
+                  재료명만 입력해 추가하세요.
                 </p>
                 <div className="new-ingredient__fields">
                   <label>
@@ -174,22 +158,6 @@ export function ProductCreatePage({
                       placeholder="예: 양파"
                       onChange={(event) => setNewIngredientName(event.target.value)}
                     />
-                  </label>
-                  <label>
-                    <span>단가(원) <em>선택</em></span>
-                    <NumberInput
-                      min="0"
-                      value={newIngredientPrice}
-                      placeholder="비워두면 0원"
-                      onValueChange={(raw) => setNewIngredientPrice(raw)}
-                    />
-                  </label>
-                  <label>
-                    <span>단위 <em>선택</em></span>
-                    <select value={newIngredientUnit} onChange={(event) => setNewIngredientUnit(event.target.value as 'kg' | 'g')}>
-                      <option value="kg">kg</option>
-                      <option value="g">g</option>
-                    </select>
                   </label>
                   <button
                     className="new-ingredient__add"
@@ -206,25 +174,19 @@ export function ProductCreatePage({
             <section className="recipe-builder-section recipe-cart" aria-labelledby="recipe-cart-title">
               <div className="recipe-builder-section__heading">
                 <span>03</span>
-                <div><h2 id="recipe-cart-title">추가된 재료</h2><p>수량은 kg, 단가는 원 기준이며 소수점 입력이 가능합니다.</p></div>
+                <div><h2 id="recipe-cart-title">추가된 재료</h2><p>제품에 사용할 재료명을 확인하세요.</p></div>
               </div>
               {selectedIngredients.length === 0 ? (
                 <div className="recipe-cart__empty"><Icon name="box" size={22} /><p>추가된 재료가 없습니다.</p></div>
               ) : (
                 <div className="recipe-cart__items">
                   <div className="recipe-cart__labels" aria-hidden="true">
-                    <span>품명</span>
-                    <span>수량(kg)</span>
-                    <span>단가(원)</span>
-                    <span>금액(원)</span>
+                    <span>재료명</span>
                     <span>관리</span>
                   </div>
                   {selectedIngredients.map((ingredient) => (
                     <div className="recipe-cart-item" key={ingredient.id}>
-                      <div><strong>{ingredient.name}</strong></div>
-                      <label><span>수량(kg)</span><NumberInput aria-label={`${ingredient.name} 수량(kg)`} min="0" value={ingredient.usage} onValueChange={(raw) => updateUsage(ingredient.id, parseNumber(raw))} /><em>kg</em></label>
-                      <label><span>단가(원)</span><NumberInput aria-label={`${ingredient.name} 단가(원)`} min="0" value={ingredient.unitPrice} onValueChange={(raw) => updateUnitPrice(ingredient.id, parseNumber(raw))} /><em>원</em></label>
-                      <b>{currencyFormatter.format(ingredient.unitPrice * ingredient.usage)}</b>
+                      <strong>{ingredient.name}</strong>
                       <button type="button" aria-label={`${ingredient.name} 삭제`} onClick={() => removeIngredient(ingredient.id)}><Icon name="trash" size={16} /></button>
                     </div>
                   ))}

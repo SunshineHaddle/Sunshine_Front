@@ -2,7 +2,6 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { createMaterial } from '../../lib/api/products'
 import type {
   IngredientCatalogItem,
-  IngredientUnit,
   RecipeProduct,
 } from './productManagementData'
 import { DEFAULT_KIMCHI_MATERIALS, materialKey } from './defaultMaterials'
@@ -34,8 +33,6 @@ export function useProductRecipeForm({
   const [selectedIngredients, setSelectedIngredients] = useState<SelectedIngredient[]>([])
 
   const [newIngredientName, setNewIngredientName] = useState('')
-  const [newIngredientPrice, setNewIngredientPrice] = useState('')
-  const [newIngredientUnit, setNewIngredientUnit] = useState<IngredientUnit>('kg')
 
   /**
    * DB 카탈로그 + 아직 등록되지 않은 기본 김치 재료.
@@ -73,9 +70,8 @@ export function useProductRecipeForm({
   }, [catalog, ingredientQuery, selectedIngredients])
 
   const totalMaterialCost = selectedIngredients.reduce((total, ingredient) => total + ingredient.unitPrice * ingredient.usage, 0)
-  const totalCost = totalMaterialCost
 
-  /** 담을 때의 기본 수량. 대부분 kg 단위로 세므로 1 에서 시작한다 */
+  /** 화면에서는 수량을 받지 않으므로 DB 필수값은 기존 기본값 1을 쓴다. */
   const DEFAULT_USAGE = 1
 
   /**
@@ -118,19 +114,10 @@ export function useProductRecipeForm({
     if (!name) {
       return { ok: false, message: '재료명을 입력해 주세요.' }
     }
-    // 단가·단위는 선택 입력이다. 실제 단가는 수불자료(1단계)에서 들어오므로
-    // 여기서는 비워둔 채 0원·kg 으로 등록하고 나중에 덮어쓴다.
-    const price = Number(newIngredientPrice || 0)
-    if (!Number.isFinite(price) || price < 0) {
-      return { ok: false, message: '단가는 0 이상의 숫자로 입력해 주세요.' }
-    }
-
     try {
-      const created = await createMaterial({ name, unit: newIngredientUnit, unitPrice: price })
+      const created = await createMaterial({ name, unit: 'kg', unitPrice: 0 })
       setSelectedIngredients((current) => [...current, { ...created, usage: DEFAULT_USAGE }])
       setNewIngredientName('')
-      setNewIngredientPrice('')
-      setNewIngredientUnit('kg')
       return { ok: true, message: `${name}을(를) 원재료로 등록하고 담았습니다.` }
     } catch (error) {
       return {
@@ -138,18 +125,6 @@ export function useProductRecipeForm({
         message: `재료 등록 실패: ${error instanceof Error ? error.message : String(error)}`,
       }
     }
-  }
-
-  const updateUsage = (id: string, usage: number) => {
-    setSelectedIngredients((current) => current.map((ingredient) =>
-      ingredient.id === id ? { ...ingredient, usage: Math.max(0, usage) } : ingredient,
-    ))
-  }
-
-  const updateUnitPrice = (id: string, unitPrice: number) => {
-    setSelectedIngredients((current) => current.map((ingredient) =>
-      ingredient.id === id ? { ...ingredient, unitPrice: Math.max(0, unitPrice) } : ingredient,
-    ))
   }
 
   const removeIngredient = (id: string) => {
@@ -187,10 +162,9 @@ export function useProductRecipeForm({
     productName, setProductName, description, setDescription,
     imageUrl, setImageUrl,
     ingredientQuery, setIngredientQuery, selectedIngredients, availableIngredients,
-    newIngredientName, setNewIngredientName, newIngredientPrice, setNewIngredientPrice,
-    newIngredientUnit, setNewIngredientUnit,
-    totalMaterialCost, totalCost,
-    addIngredient, addNewIngredient, updateUsage, updateUnitPrice, removeIngredient,
+    newIngredientName, setNewIngredientName,
+    totalMaterialCost,
+    addIngredient, addNewIngredient, removeIngredient,
     saveRecipe,
   }
 }

@@ -201,6 +201,11 @@
     font-size: 17px;
   }
 
+  .profitability-card__month-picker {
+    width: 100%;
+    justify-content: space-between;
+  }
+
   .profitability-card__actions {
     width: 100%;
   }

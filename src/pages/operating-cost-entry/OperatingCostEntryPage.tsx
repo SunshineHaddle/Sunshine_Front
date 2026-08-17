@@ -28,7 +28,6 @@ type OperatingCostEntryPageProps = {
   periodId: string | null
   /** worker 처럼 재접속 시 저장값을 화면에 불러오지 않고 빈 폼으로 시작 */
   freshEntry?: boolean
-  onMonthChange: (month: string) => void
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
   hideSidebar?: boolean
@@ -39,7 +38,6 @@ export function OperatingCostEntryPage({
   month,
   periodId,
   freshEntry = false,
-  onMonthChange,
   onNavigate,
   onAction,
   hideSidebar = false,
@@ -218,11 +216,6 @@ export function OperatingCostEntryPage({
             <h1>2단계: 현장 운영비</h1>
             <p>제조 공정의 인건비와 운영 항목을 입력하세요.</p>
           </div>
-          <label className="operating-month-picker">
-            <span className="visually-hidden">비용 기준 월</span>
-            <Icon name="calendar" size={17} />
-            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
-          </label>
         </header>
 
         <OperatingCostForm

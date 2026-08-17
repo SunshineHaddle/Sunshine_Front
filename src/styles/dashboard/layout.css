@@ -53,6 +53,11 @@
   letter-spacing: -0.5px;
 }
 
+.sidebar__brand-logo {
+  display: block;
+  width: 150px;
+}
+
 .navigation-item {
   display: flex;
   align-items: center;

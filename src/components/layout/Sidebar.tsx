@@ -28,7 +28,7 @@ export function Sidebar({ activeRoute, hidden = false, onNavigate }: SidebarProp
         type="button"
         onClick={() => onNavigate(isWorker ? 'data-entry-1' : 'dashboard')}
       >
-        해뜰종합식품
+        <img alt="해뜰종합식품" className="sidebar__brand-logo" src="/logo.png" />
       </button>
       <nav className="sidebar__navigation">
         {items.map((item) => {

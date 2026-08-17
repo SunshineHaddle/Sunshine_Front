@@ -530,17 +530,63 @@
   stroke: none;
 }
 
-.product-cost-slide__chart circle {
+.product-cost-slide__axis-label {
+  fill: var(--color-text-subtle);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  text-anchor: start;
+}
+
+.product-cost-slide__point {
+  outline: none;
+}
+
+.product-cost-slide__point-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: crosshair;
+}
+
+.product-cost-slide__point-dot {
   fill: var(--color-brand);
   stroke: #fff;
   stroke-width: 2;
   vector-effect: non-scaling-stroke;
+  pointer-events: none;
+}
+
+.product-cost-slide__point:hover .product-cost-slide__point-dot,
+.product-cost-slide__point:focus .product-cost-slide__point-dot {
+  stroke-width: 4;
+}
+
+.product-cost-slide__tooltip {
+  pointer-events: none;
+}
+
+.product-cost-slide__tooltip rect {
+  fill: #2e292b;
+  opacity: 0.96;
+}
+
+.product-cost-slide__tooltip text {
+  fill: rgba(255, 255, 255, 0.72);
+  font-size: 9px;
+}
+
+.product-cost-slide__tooltip .product-cost-slide__tooltip-value {
+  fill: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .product-cost-slide__chart > div {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   margin-top: -2px;
+  padding-right: 2.2%;
+  padding-left: 6.45%;
   color: var(--color-text-subtle);
   font-size: 9px;
   text-align: center;

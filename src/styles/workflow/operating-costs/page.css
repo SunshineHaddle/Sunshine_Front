@@ -29,26 +29,3 @@
   color: #8b8589;
   font-size: 12px;
 }
-
-.operating-month-picker {
-  display: inline-flex;
-  align-items: center;
-  min-width: 154px;
-  height: 38px;
-  padding: 0 13px;
-  gap: 9px;
-  color: #575154;
-  background: #fafafa;
-  border: 1px solid #e5e2e3;
-  border-radius: 6px;
-}
-
-.operating-month-picker input {
-  min-width: 0;
-  color: #373235;
-  background: transparent;
-  border: 0;
-  outline: 0;
-  font: inherit;
-  font-size: 12px;
-}

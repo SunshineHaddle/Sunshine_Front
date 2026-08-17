@@ -212,7 +212,7 @@ export function ProductDetailPage({
                 )
               }}
             >
-              <Icon name="trash" size={14} /> 제품 숨기기
+              <Icon name="trash" size={14} /> 제품 삭제
             </button>
           )}
         </div>

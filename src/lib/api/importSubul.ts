@@ -9,6 +9,7 @@
 import { supabase } from '../supabase'
 import { parseSubulWorkbook, type SubulSheet } from '../excel/parseSubul'
 import type { MaterialUnit } from '../types'
+import { createProductWithRecipe } from './products'
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message)
@@ -132,30 +133,41 @@ export async function createMissingMaterials(
 
 // ── 미매칭 제품을 한 번에 등록 ──────────────────────────────
 /**
- * 수불자료 시트명으로 제품을 만든다. 이름만 있으면 되고 나머지는 기본값이다.
- * 배합(recipe_items)은 비워 둔다 — 그 달 실적이 material_usages 로 들어오므로
- * 마감 계산에 표준배합이 필요 없다.
+ * 수불자료 시트명으로 제품과 재료 목록을 만든다.
+ * 월간 수량·단가는 표준 배합이 아니므로 recipe_items 에 복사하지 않고,
+ * 재료 연결만 0원·0kg 으로 등록한다. 실제 값은 material_usages 에 저장된다.
  *
  * 판매가·unit_weight_kg 는 0/빈 값이라 마진율이 실제와 다르게 나온다.
  * 제품 관리에서 채워야 한다는 안내를 호출부가 띄운다.
  *
  * @returns 실제로 만들어진 제품 수
  */
-export async function createMissingProducts(names: string[]): Promise<number> {
-  if (names.length === 0) return 0
-
+export async function createMissingProducts(sheets: PreviewSheet[]): Promise<number> {
+  const missing = sheets.filter((sheet) => sheet.productId === null)
+  if (missing.length === 0) return 0
   const stamp = Date.now()
-  const rows = names.map((name, i) => ({
-    sku: `PRD-${stamp}-${i}`,
-    name,
-    status: 'review' as const,
+  // ponytail: 제품별 RPC라 중간 실패 시 앞 제품은 남는다. 일괄 원자성이 필요해지면 bulk RPC로 교체한다.
+  await Promise.all(missing.map((sheet, index) => {
+    if (sheet.lines.some((line) => line.materialId === null)) {
+      throw new Error(`${sheet.productName}의 미등록 원재료를 먼저 등록해 주세요.`)
+    }
+
+    const items = [...new Map(sheet.lines.map((line) => [line.materialId as string, {
+      materialId: line.materialId as string,
+      usage: 0,
+      unit: 'kg' as MaterialUnit,
+      unitPrice: 0,
+    }])).values()]
+
+    return createProductWithRecipe({
+      sku: `PRD-${stamp}-${index}`,
+      name: sheet.productName,
+      description: `${items.length}개 재료로 엑셀에서 자동 등록된 레시피.`,
+      items,
+    })
   }))
 
-  const created = unwrap(
-    await supabase.from('products').insert(rows).select('id'),
-  ) as { id: string }[]
-
-  return created.length
+  return missing.length
 }
 
 // ── 2단계: 저장 ─────────────────────────────────────────────
@@ -171,6 +183,9 @@ export async function commitSubul(periodId: string, preview: SubulPreview): Prom
       `엑셀에서 읽지 못한 행이 ${preview.errors.length}건 있습니다. `
       + '해당 행을 수정한 뒤 다시 올려주세요.',
     )
+  }
+  if (preview.missingProducts.length > 0 || preview.missingMaterials.length > 0) {
+    throw new Error('등록되지 않은 제품 또는 원재료가 있어 저장할 수 없습니다.')
   }
 
   const rows = preview.sheets.flatMap((sheet) =>

@@ -39,6 +39,10 @@ const trendPatterns = [
   [0.93, 0.95, 0.92, 0.96, 0.94, 0.97, 0.95, 0.98, 0.96, 0.99, 0.97, 1],
 ]
 const numberFormatter = new Intl.NumberFormat('ko-KR')
+const compactWonFormatter = new Intl.NumberFormat('ko-KR', {
+  notation: 'compact',
+  maximumFractionDigits: 1,
+})
 
 function getMonthLabels() {
   const today = new Date()
@@ -58,7 +62,7 @@ function getProductCostTrend(product: RecipeProduct, productIndex: number) {
   const maximum = Math.max(...values)
   const range = Math.max(maximum - minimum, 1)
   const coordinates = values.map((value, index) => ({
-    x: 20 + (index / (values.length - 1)) * 860,
+    x: 58 + (index / (values.length - 1)) * 822,
     y: 250 - ((value - minimum) / range) * 180,
   }))
   const previousCost = values.at(-2) ?? currentCost
@@ -78,6 +82,7 @@ function getProductCostTrend(product: RecipeProduct, productIndex: number) {
     points: coordinates.map(({ x, y }) => `${x},${y}`).join(' '),
     areaPath,
     values,
+    yTicks: [maximum, Math.round((maximum + minimum) / 2), minimum],
   }
 }
 
@@ -156,6 +161,7 @@ export function ProductCostTrendCarousel({
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
+  const [hoveredPoint, setHoveredPoint] = useState<{ productId: string; index: number } | null>(null)
   // 드래그 중에는 트랙이 손가락을 그대로 따라가야 해서 transition 을 끈다.
   // dragState 는 ref 라 렌더 중 읽으면 안 되므로 같은 사실을 state 로도 들고 있는다.
   const [isDragging, setIsDragging] = useState(false)
@@ -258,6 +264,13 @@ export function ProductCostTrendCarousel({
           {products.map((product, index) => {
             const trend = getProductCostTrend(product, index)
             const changeDirection = trend.changeRate >= 0 ? '상승' : '하락'
+            const activePointIndex = hoveredPoint?.productId === product.id ? hoveredPoint.index : null
+            const activeCoordinate = activePointIndex === null ? null : trend.coordinates[activePointIndex]
+            const tooltipWidth = 150
+            const tooltipX = activeCoordinate
+              ? Math.min(Math.max(activeCoordinate.x - tooltipWidth / 2, 4), 900 - tooltipWidth - 4)
+              : 0
+            const tooltipY = activeCoordinate ? Math.max(activeCoordinate.y - 50, 8) : 0
 
             return (
               <article
@@ -293,15 +306,54 @@ export function ProductCostTrendCarousel({
                 </div>
 
                 <div className="product-cost-slide__chart">
-                  <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 6개월 총원가 추이`}>
-                    {[70, 160, 250].map((y) => <line key={y} x1="20" x2="880" y1={y} y2={y} />)}
+                  <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 12개월 총원가 추이`}>
+                    {[70, 160, 250].map((y, tickIndex) => (
+                      <g aria-hidden="true" key={y}>
+                        <line x1="58" x2="880" y1={y} y2={y} />
+                        {trend.yTicks.lastIndexOf(trend.yTicks[tickIndex]) === tickIndex && (
+                          <text className="product-cost-slide__axis-label" x="4" y={y + 4}>
+                            {compactWonFormatter.format(trend.yTicks[tickIndex])}원
+                          </text>
+                        )}
+                      </g>
+                    ))}
                     <path className="product-cost-slide__area" d={trend.areaPath} />
                     <polyline points={trend.points} />
                     {trend.values.map((value, pointIndex) => (
-                      <circle key={`${product.id}-${pointIndex}`} cx={trend.coordinates[pointIndex].x} cy={trend.coordinates[pointIndex].y} r="6">
-                        <title>{`${monthLabels[pointIndex]} ${numberFormatter.format(value)}원`}</title>
-                      </circle>
+                      <g
+                        className="product-cost-slide__point"
+                        key={`${product.id}-${pointIndex}`}
+                        role="img"
+                        aria-label={`${monthLabels[pointIndex]} ${numberFormatter.format(value)}원`}
+                        tabIndex={expandAll || index === visibleIndex ? 0 : -1}
+                        onMouseEnter={() => setHoveredPoint({ productId: product.id, index: pointIndex })}
+                        onMouseLeave={() => setHoveredPoint(null)}
+                        onFocus={() => setHoveredPoint({ productId: product.id, index: pointIndex })}
+                        onBlur={() => setHoveredPoint(null)}
+                      >
+                        <circle
+                          className="product-cost-slide__point-hit"
+                          cx={trend.coordinates[pointIndex].x}
+                          cy={trend.coordinates[pointIndex].y}
+                          r="18"
+                        />
+                        <circle
+                          className="product-cost-slide__point-dot"
+                          cx={trend.coordinates[pointIndex].x}
+                          cy={trend.coordinates[pointIndex].y}
+                          r="5"
+                        />
+                      </g>
                     ))}
+                    {activeCoordinate && activePointIndex !== null && (
+                      <g className="product-cost-slide__tooltip" aria-hidden="true">
+                        <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height="40" rx="7" />
+                        <text x={tooltipX + 10} y={tooltipY + 15}>{monthLabels[activePointIndex]}</text>
+                        <text className="product-cost-slide__tooltip-value" x={tooltipX + 10} y={tooltipY + 31}>
+                          {numberFormatter.format(trend.values[activePointIndex])}원
+                        </text>
+                      </g>
+                    )}
                   </svg>
                   <div>{monthLabels.map((month) => <span key={month}>{month}</span>)}</div>
                 </div>

@@ -5,7 +5,11 @@ import type {
 type ProductProfitabilityTableProps = {
   items: ProductProfitabilityItem[]
   /** '2026년 8월' 형태. 어느 달 스냅샷인지 표시한다 */
-  periodLabel?: string
+  periodLabel: string
+  month: string
+  loading?: boolean
+  emptyMessage?: string
+  onMonthChange: (month: string) => void
 }
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
@@ -18,16 +22,29 @@ function getQuantityUnit(specification: string) {
 export function ProductProfitabilityTable({
   items,
   periodLabel,
+  month,
+  loading = false,
+  emptyMessage = '조건에 맞는 제품이 없습니다.',
+  onMonthChange,
 }: ProductProfitabilityTableProps) {
   return (
     <section className="card profitability-card" aria-labelledby="profitability-table-title">
       <div className="profitability-card__heading">
         <div>
-          <h2 id="profitability-table-title">{periodLabel ? `${periodLabel} 수익성 현황` : '수익성 현황'}</h2>
+          <h2 id="profitability-table-title">{periodLabel} 수익성 현황</h2>
           <p>포장 1개 기준 원가와 판매 마진입니다.</p>
         </div>
-        {/* 어느 달을 보고 있는지 — 최신 확정월이 아니라 오늘이 속한 달이다 */}
-        <span className="profitability-card__asof">현재 날짜 기준</span>
+        <label className="profitability-card__month-picker">
+          <span>기준 월</span>
+          <input
+            aria-label="수익성 기준 월"
+            type="month"
+            value={month}
+            onChange={(event) => {
+              if (event.target.value) onMonthChange(event.target.value)
+            }}
+          />
+        </label>
       </div>
 
       <div className="profitability-table-scroller">
@@ -44,7 +61,11 @@ export function ProductProfitabilityTable({
             </tr>
           </thead>
           <tbody>
-            {items.length > 0 ? (
+            {loading ? (
+              <tr>
+                <td className="profitability-empty" colSpan={7}>불러오는 중…</td>
+              </tr>
+            ) : items.length > 0 ? (
               items.map((item) => {
                 return (
                   <tr key={item.id}>
@@ -80,7 +101,7 @@ export function ProductProfitabilityTable({
               })
             ) : (
               <tr>
-                <td className="profitability-empty" colSpan={7}>조건에 맞는 제품이 없습니다.</td>
+                <td className="profitability-empty" colSpan={7}>{emptyMessage}</td>
               </tr>
             )}
           </tbody>

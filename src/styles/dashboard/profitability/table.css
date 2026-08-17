@@ -13,17 +13,34 @@
   gap: 24px;
 }
 
-/* 우측 상단 작은 안내. 어느 달 기준인지 헷갈리지 않게 한다 */
-.profitability-card__asof {
+.profitability-card__month-picker {
+  display: inline-flex;
+  align-items: center;
   flex-shrink: 0;
-  align-self: flex-start;
-  padding: 3px 9px;
-  border-radius: 999px;
-  background: var(--color-surface-muted);
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: #fff;
   color: var(--color-text-subtle);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.profitability-card__month-picker input {
+  min-width: 112px;
+  padding: 0;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  outline: 0;
+  font: inherit;
+}
+
+.profitability-card__month-picker:focus-within {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(186, 0, 54, 0.08);
 }
 
 .profitability-card__heading h2 {
@@ -148,4 +165,3 @@
 .profitability-card tbody tr:hover {
   background: rgba(186, 0, 54, 0.025);
 }
-

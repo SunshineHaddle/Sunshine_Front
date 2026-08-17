@@ -114,8 +114,7 @@
   min-width: 0;
 }
 
-.product-info-fields label,
-.recipe-cart-item label {
+.product-info-fields label {
   display: grid;
   gap: 7px;
   color: var(--color-text-subtle);
@@ -124,8 +123,7 @@
 }
 
 .product-info-fields input,
-.ingredient-search-field input,
-.recipe-cart-item input {
+.ingredient-search-field input {
   height: 44px;
   padding: 0 12px;
   color: var(--color-text);
@@ -138,8 +136,7 @@
 }
 
 .product-info-fields input:focus,
-.ingredient-search-field:focus-within,
-.recipe-cart-item input:focus {
+.ingredient-search-field:focus-within {
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgb(186 0 54 / 9%);
 }
@@ -185,19 +182,9 @@
   font-size: 12px;
 }
 
-/* 선택 입력임을 라벨에 표시한다 */
-.new-ingredient__fields label em {
-  margin-left: 3px;
-  color: var(--color-text-subtle);
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 600;
-  opacity: 0.8;
-}
-
 .new-ingredient__fields {
   display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) 84px auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: end;
   gap: 10px;
 }
@@ -210,8 +197,7 @@
   font-weight: 650;
 }
 
-.new-ingredient__fields input,
-.new-ingredient__fields select {
+.new-ingredient__fields input {
   height: 44px;
   padding: 0 12px;
   color: var(--color-text);
@@ -223,12 +209,7 @@
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.new-ingredient__fields select {
-  cursor: pointer;
-}
-
-.new-ingredient__fields input:focus,
-.new-ingredient__fields select:focus {
+.new-ingredient__fields input:focus {
   border-color: var(--color-brand);
   box-shadow: 0 0 0 3px rgb(186 0 54 / 9%);
 }

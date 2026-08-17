@@ -177,14 +177,35 @@ export function RawMaterialEntryPage({
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
   }
 
+  const autoRegisterMissingProducts = async (source: SubulPreview, sourceFile: File) => {
+    let matched = source
+
+    if (matched.missingMaterials.length > 0) {
+      const priceByName: Record<string, number> = {}
+      matched.sheets.forEach((sheet) =>
+        sheet.lines.forEach((line) => {
+          if (!line.materialId) priceByName[line.materialName] = line.unitPrice
+        }),
+      )
+      await createMissingMaterials(matched.missingMaterials, priceByName)
+      matched = await previewSubul(sourceFile)
+    }
+
+    const count = await createMissingProducts(matched.sheets)
+    await onProductsChanged?.()
+    return { count, preview: await previewSubul(sourceFile) }
+  }
+
   const handleFileSelected = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const picked = event.target.files?.[0]
     event.target.value = ''
     if (!picked) return
 
+    let readComplete = false
     setBusy('수불자료를 읽는 중…')
     try {
-      const result = await previewSubul(picked)
+      let result = await previewSubul(picked)
+      readComplete = true
       setPreview(result)
       setFile(picked)
       setFileName(picked.name)
@@ -192,6 +213,19 @@ export function RawMaterialEntryPage({
       // 9월 자료를 8월에 저장하는 실수를 잡는다. 확신이 없으므로 막지는 않는다.
       const guessed = monthFromFileName(picked.name)
       setMonthMismatch(guessed && guessed !== month ? guessed : null)
+
+      if (result.errors.length === 0 && result.missingProducts.length > 0) {
+        setBusy('새 제품과 레시피를 자동 등록하는 중…')
+        const registered = await autoRegisterMissingProducts(result, picked)
+        result = registered.preview
+        setPreview(result)
+        onAction(
+          `새 제품과 레시피 ${registered.count}개를 자동 등록했습니다. `
+          + '판매가와 포장 단위는 제품 관리에서 입력해 주세요.',
+        )
+        return
+      }
+
       const missing = result.missingProducts.length + result.missingMaterials.length
       onAction(
         result.errors.length > 0
@@ -201,7 +235,7 @@ export function RawMaterialEntryPage({
             : `${result.sheets.length}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
       )
     } catch (error) {
-      onAction(`읽기 실패: ${describeDbError(error)}`)
+      onAction(`${readComplete ? '자동 등록 실패' : '읽기 실패'}: ${describeDbError(error)}`)
     } finally {
       setBusy('')
     }
@@ -236,21 +270,15 @@ export function RawMaterialEntryPage({
    * 파일을 다시 읽어 매칭 상태를 갱신하므로 사용자가 재업로드할 필요가 없다.
    */
   const registerMissingProducts = async () => {
-    if (!preview || preview.missingProducts.length === 0) return
+    if (!preview || !file || preview.missingProducts.length === 0) return
     const names = preview.missingProducts
-    setBusy('제품을 등록하는 중…')
+    setBusy('새 제품과 레시피를 자동 등록하는 중…')
     try {
-      const count = await createMissingProducts(names)
-      await onProductsChanged?.()
-
-      // 방금 만든 제품이 매칭되도록 같은 파일을 다시 읽는다
-      if (file) {
-        const result = await previewSubul(file)
-        setPreview(result)
-      }
+      const registered = await autoRegisterMissingProducts(preview, file)
+      setPreview(registered.preview)
       onAction(
-        `제품 ${count}개를 등록했습니다: ${names.join(', ')}. `
-        + '판매가와 포장 단위(unit_weight_kg)는 제품 관리에서 채워주세요.',
+        `새 제품과 레시피 ${registered.count}개를 자동 등록했습니다: ${names.join(', ')}. `
+        + '판매가와 포장 단위는 제품 관리에서 입력해 주세요.',
       )
     } catch (error) {
       onAction(`제품 등록 실패: ${describeDbError(error)}`)
@@ -527,7 +555,7 @@ export function RawMaterialEntryPage({
                 <div className="subul-preview__missing">
                   <p>
                     <strong>등록되지 않은 제품:</strong> {preview.missingProducts.join(', ')}
-                    <br />제품 관리에 추가할까요? 판매가·포장 단위는 나중에 채우면 됩니다.
+                    <br />자동 등록에 실패했습니다. 아래 버튼으로 다시 시도해 주세요.
                   </p>
                   <button
                     type="button"
@@ -535,7 +563,7 @@ export function RawMaterialEntryPage({
                     disabled={Boolean(busy)}
                     onClick={() => void registerMissingProducts()}
                   >
-                    이 제품들 등록하기
+                    새 레시피로 등록하기
                   </button>
                 </div>
               )}
@@ -557,12 +585,15 @@ export function RawMaterialEntryPage({
                 className="workflow-primary-button"
                 type="button"
                 disabled={
-                  preview.readyCount === 0 || preview.errors.length > 0 || !periodId || Boolean(busy)
+                  preview.readyCount === 0 || preview.errors.length > 0 || unmatched > 0
+                  || !periodId || Boolean(busy)
                 }
                 onClick={commit}
               >
                 {preview.errors.length > 0
                   ? '오류를 수정한 뒤 다시 올려주세요'
+                  : unmatched > 0
+                    ? '미매칭 항목을 먼저 등록해 주세요'
                   : <>투입내역 {preview.readyCount}행 저장 · 원본 보관 <Icon name="check" size={16} /></>}
               </button>
             </section>

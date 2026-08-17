@@ -55,11 +55,12 @@ export function DashboardPage({
   recipeProducts,
   onSelectRecipe,
 }: DashboardPageProps) {
-  // 수익성 현황은 "가장 최근 확정된 달"이 아니라 오늘 날짜가 속한 달을 본다.
-  // 렌더마다 new Date() 를 부르면 이펙트가 매번 다시 돈다 — 마운트 시 한 번만 고정한다.
+  // 수익성 현황은 오늘이 속한 달을 기본으로 열고, 표에서 다른 월을 선택할 수 있다.
   const [today] = useState(() => new Date())
   const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-  const currentMonthLabel = `${today.getFullYear()}년 ${today.getMonth() + 1}월`
+  const [profitabilityMonth, setProfitabilityMonth] = useState(currentMonth)
+  const [profitabilityYear, profitabilityMonthNumber] = profitabilityMonth.split('-')
+  const profitabilityMonthLabel = `${profitabilityYear}년 ${Number(profitabilityMonthNumber)}월`
 
   const [items, setItems] = useState<ProductProfitabilityItem[]>([])
   const [trend, setTrend] = useState<CostTrendPoint[]>([])
@@ -70,6 +71,8 @@ export function DashboardPage({
   useEffect(() => {
     let cancelled = false
     const load = async () => {
+      setLoading(true)
+      setItems([])
       // §9-1 : 최근 12개월 원가 추이
       const from = new Date(today)
       from.setMonth(from.getMonth() - 11)
@@ -78,8 +81,8 @@ export function DashboardPage({
         .catch(() => { if (!cancelled) setTrend([]) })
 
       try {
-        // §8-2 : 이번 달 수익성 스냅샷
-        const period = await fetchPeriodByMonth(currentMonth)
+        // §8-2 : 선택한 달 수익성 스냅샷
+        const period = await fetchPeriodByMonth(profitabilityMonth)
         if (cancelled) return
         if (!period) {
           setItems([])
@@ -96,7 +99,7 @@ export function DashboardPage({
     }
     void load()
     return () => { cancelled = true }
-  }, [currentMonth, today])
+  }, [profitabilityMonth, today])
 
   /**
    * §대시보드 PDF 저장.
@@ -143,16 +146,14 @@ export function DashboardPage({
 
           <CostTrendChart points={trend} />
 
-          {loading ? (
-            <p className="dashboard-placeholder" role="status">불러오는 중…</p>
-          ) : items.length === 0 ? (
-            <p className="dashboard-placeholder" role="status">
-              {currentMonthLabel} 원가가 아직 계산되지 않았습니다.
-              데이터 입력 3단계에서 <strong>원가 계산</strong>을 실행하면 여기에 표시됩니다.
-            </p>
-          ) : (
-            <ProductProfitabilityTable items={items} periodLabel={currentMonthLabel} />
-          )}
+          <ProductProfitabilityTable
+            items={items}
+            periodLabel={profitabilityMonthLabel}
+            month={profitabilityMonth}
+            loading={loading}
+            emptyMessage={`${profitabilityMonthLabel} 원가가 아직 계산되지 않았습니다. 데이터 입력 3단계에서 원가 계산을 실행해 주세요.`}
+            onMonthChange={setProfitabilityMonth}
+          />
         </main>
       </div>
     </div>

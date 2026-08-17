@@ -43,6 +43,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
       <section className="login-panel">
         <form className="login-form" onSubmit={(event) => void handleSubmit(event)}>
           <header>
+            <img alt="해뜰김치 로고" className="login-form__logo" src="/logo.png" />
             <p>반갑습니다</p>
             <h2>로그인</h2>
             <span>계정 정보를 입력해 주세요.</span>
