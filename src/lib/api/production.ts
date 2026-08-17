@@ -104,6 +104,21 @@ export async function fetchMaterialUsages(
   }))
 }
 
+/**
+ * 이 달 수불자료에 등장한 제품 id 만.
+ *
+ * 1단계 생산량 목록을 "엑셀에 있는 제품"으로 좁히는 데 쓴다.
+ * fetchMaterialUsages 와 달리 freshEntry(빈 폼으로 시작) 여부와 무관하게 부른다 —
+ * 어떤 제품이 그 달에 생산됐는지는 폼에 미리 채우는 값이 아니라 목록의 범위이기 때문이다.
+ */
+export async function fetchUsageProductIds(periodId: string): Promise<string[]> {
+  const rows = unwrap(
+    await supabase.from('material_usages').select('product_id').eq('period_id', periodId),
+  ) as { product_id: string }[]
+
+  return [...new Set(rows.map((row) => row.product_id))]
+}
+
 // ── §6-2. 투입 실적 저장 ────────────────────────────────────
 export async function saveMaterialUsages(
   periodId: string,

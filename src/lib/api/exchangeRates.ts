@@ -82,7 +82,8 @@ export async function fetchExchangeRates(force = false): Promise<ExchangeRatesRe
 }
 
 // ── 대시보드 환율 카드용: 값 + 전일 대비 변동률 ──────────────
-const PILL_CODES = ['USD', 'JPY', 'EUR', 'CNY'] as const
+/** 환율 산출 페이지의 기본 통화와 같은 목록을 쓴다 */
+const PILL_CODES = ['USD', 'JPY', 'EUR', 'CNY', 'SAR', 'AED'] as const
 
 export type PillRate = { code: string; krw: number }
 

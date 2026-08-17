@@ -18,6 +18,13 @@
   gap: 6px;
   padding-right: 10px;
   border-right: 1px solid var(--color-border);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+/* 화살표까지가 하나의 버튼처럼 보이게 한다 */
+.exchange-rate-card__select:hover {
+  background: var(--color-surface-muted);
 }
 
 .exchange-rate-card__select > svg {
@@ -25,26 +32,34 @@
   pointer-events: none;
 }
 
-.exchange-rate-card__flag {
-  font-size: 16px;
-  line-height: 1;
-}
-
-.exchange-rate-card__select select {
-  appearance: none;
-  padding: 0 2px 0 0;
+.exchange-rate-card__label {
   color: var(--color-text-subtle);
-  background: transparent;
-  border: 0;
   font-size: 12px;
   font-weight: 600;
+  pointer-events: none;
+}
+
+/*
+  네이티브 select 를 영역 전체에 투명하게 덮는다.
+  국기·통화명·화살표 어디를 눌러도 브라우저 기본 목록이 열린다.
+  select 를 감추고 직접 목록을 그리면 키보드·모바일 동작을 다시 만들어야 한다.
+*/
+.exchange-rate-card__native {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  border: 0;
+  appearance: none;
   cursor: pointer;
 }
 
-.exchange-rate-card__select select:focus-visible {
+.exchange-rate-card__select:focus-within {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
-  border-radius: 2px;
 }
 
 .exchange-rate-card__value {

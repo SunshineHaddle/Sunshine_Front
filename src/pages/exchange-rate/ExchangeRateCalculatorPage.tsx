@@ -5,11 +5,11 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import { fetchExchangeRates } from '../../lib/api/exchangeRates'
+import { FlagIcon } from '../../components/common/FlagIcon'
 
 type CurrencyCode = string
 
 type CurrencySetting = {
-  flag: string
   label: string
   rate: number
   symbol: string
@@ -33,12 +33,12 @@ const SETTINGS_STORAGE_KEY = 'sunshine.exchange-calculator-settings.v1'
 const CURRENCY_STORAGE_KEY = 'sunshine.exchange-calculator-currencies.v1'
 
 const defaultCurrencies: Record<CurrencyCode, CurrencySetting> = {
-  USD: { flag: '🇺🇸', label: '미국 달러', rate: 1_342.5, symbol: '$', fractionDigits: 2 },
-  JPY: { flag: '🇯🇵', label: '일본 엔', rate: 9.048, symbol: '¥', fractionDigits: 0 },
-  EUR: { flag: '🇪🇺', label: '유로', rate: 1_455, symbol: '€', fractionDigits: 2 },
-  CNY: { flag: '🇨🇳', label: '중국 위안', rate: 185.4, symbol: '¥', fractionDigits: 2 },
-  SAR: { flag: '🇸🇦', label: '사우디 리얄', rate: 357.8, symbol: 'SAR', fractionDigits: 2 },
-  AED: { flag: '🇦🇪', label: 'UAE 디르함', rate: 365.4, symbol: 'AED', fractionDigits: 2 },
+  USD: { label: '미국 달러', rate: 1_342.5, symbol: '$', fractionDigits: 2 },
+  JPY: { label: '일본 엔', rate: 9.048, symbol: '¥', fractionDigits: 0 },
+  EUR: { label: '유로', rate: 1_455, symbol: '€', fractionDigits: 2 },
+  CNY: { label: '중국 위안', rate: 185.4, symbol: '¥', fractionDigits: 2 },
+  SAR: { label: '사우디 리얄', rate: 357.8, symbol: 'SAR', fractionDigits: 2 },
+  AED: { label: 'UAE 디르함', rate: 365.4, symbol: 'AED', fractionDigits: 2 },
 }
 
 const loadCurrencies = (): Record<CurrencyCode, CurrencySetting> => {
@@ -53,7 +53,6 @@ const loadCurrencies = (): Record<CurrencyCode, CurrencySetting> => {
   Object.entries(saved).forEach(([code, value]) => {
     const base = merged[code]
     merged[code] = {
-      flag: value.flag ?? base?.flag ?? '🏳️',
       label: value.label ?? base?.label ?? code,
       rate: value.rate ?? base?.rate ?? 0,
       symbol: value.symbol ?? base?.symbol ?? code,
@@ -192,7 +191,7 @@ export function ExchangeRateCalculatorPage({
 
     setCurrencies((current) => ({
       ...current,
-      [code]: { flag: '🏳️', label, rate, symbol: code, fractionDigits: 2 },
+      [code]: { label, rate, symbol: code, fractionDigits: 2 },
     }))
     setNewCurrency({ code: '', label: '', rate: '' })
     setIsAddingCurrency(false)
@@ -225,13 +224,16 @@ export function ExchangeRateCalculatorPage({
             <label>
               <span>대상 통화</span>
               <div className="exchange-currency-picker__control">
+                {/* option 안에는 마크업이 못 들어가므로 선택된 통화의 국기만 옆에 둔다.
+                    이모지는 Windows 에서 국기로 그려지지 않아 쓰지 않는다 */}
+                <FlagIcon code={selectedCurrency} size={20} className="exchange-currency-picker__flag" />
                 <select
                   value={selectedCurrency}
                   onChange={(event) => changeCurrency(event.target.value)}
                 >
                   {currencyCodes.map((code) => (
                     <option key={code} value={code}>
-                      {currencies[code].flag} {code} · {currencies[code].label}
+                      {code} · {currencies[code].label}
                     </option>
                   ))}
                 </select>

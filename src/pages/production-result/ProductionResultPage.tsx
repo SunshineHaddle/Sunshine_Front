@@ -159,9 +159,17 @@ export function ProductionResultPage({
                       <td data-label="단위원가">{won(s.unitCost)}</td>
                       <td data-label="판매가">{won(s.salePrice)}</td>
                       <td data-label="마진율">
-                        <span className={`result-margin is-${s.status}`}>
-                          {s.marginRate.toFixed(1)}% · {STATUS_LABEL[s.status]}
-                        </span>
+                        {/* 판매가가 없으면 마진율 0 이 저장된다. '정상 0%' 로 보이면
+                            값을 모르는 것과 정상인 것이 구분되지 않는다 */}
+                        {s.salePrice > 0 ? (
+                          <span className={`result-margin is-${s.status}`}>
+                            {s.marginRate.toFixed(1)}% · {STATUS_LABEL[s.status]}
+                          </span>
+                        ) : (
+                          <span className="result-margin is-unknown" title="제품 관리에서 판매가를 입력해주세요">
+                            판매가 미입력
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))}

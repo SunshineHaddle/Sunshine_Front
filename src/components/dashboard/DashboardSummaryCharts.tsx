@@ -1,20 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import { Icon } from '../common/Icon'
+import { FlagIcon } from '../common/FlagIcon'
 import { fetchPillRates } from '../../lib/api/exchangeRates'
 
-type ExchangeCurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY'
+type ExchangeCurrencyCode = 'USD' | 'JPY' | 'EUR' | 'CNY' | 'SAR' | 'AED'
 
-// 실시간 값이 오기 전까지 잠깐 쓰는 폴백 값
+// 실시간 값이 오기 전까지 잠깐 쓰는 폴백 값.
+// 통화 구성은 환율 산출 페이지의 defaultCurrencies 와 맞춘다.
 const exchangeRates: Record<ExchangeCurrencyCode, {
-  flag: string
   label: string
   value: string
 }> = {
-  USD: { flag: '🇺🇸', label: 'USD/KRW', value: '1,386.40' },
-  JPY: { flag: '🇯🇵', label: 'JPY/KRW', value: '9.05' },
-  EUR: { flag: '🇪🇺', label: 'EUR/KRW', value: '1,455.00' },
-  CNY: { flag: '🇨🇳', label: 'CNY/KRW', value: '185.40' },
+  USD: { label: 'USD/KRW', value: '1,386.40' },
+  JPY: { label: 'JPY/KRW', value: '9.05' },
+  EUR: { label: 'EUR/KRW', value: '1,455.00' },
+  CNY: { label: 'CNY/KRW', value: '185.40' },
+  SAR: { label: 'SAR/KRW', value: '357.80' },
+  AED: { label: 'AED/KRW', value: '365.40' },
 }
 
 const exchangeCurrencyCodes = Object.keys(exchangeRates) as ExchangeCurrencyCode[]
@@ -336,7 +339,6 @@ export function ExchangeRatePill() {
 
   const liveValue = live[currency]
   const value = liveValue ?? exchangeRates[currency].value
-  const flag = exchangeRates[currency].flag
   // 실시간 값을 못 받았으면 화면의 숫자는 코드에 박힌 옛 값이다. 실시간인 척하면 안 된다.
   const caption = liveValue
     ? (updatedAt
@@ -346,9 +348,14 @@ export function ExchangeRatePill() {
 
   return (
     <div className="exchange-rate-card">
+      {/* 국기 · 통화명 · 화살표 전체가 하나의 클릭 영역이다.
+          네이티브 select 를 투명하게 덮어씌워 어디를 눌러도 목록이 열린다 */}
       <div className="exchange-rate-card__select">
-        <span className="exchange-rate-card__flag" aria-hidden="true">{flag}</span>
+        <FlagIcon code={currency} size={20} />
+        <span className="exchange-rate-card__label">{exchangeRates[currency].label}</span>
+        <Icon name="chevron-down" size={14} />
         <select
+          className="exchange-rate-card__native"
           aria-label="환율 통화 선택"
           value={currency}
           onChange={(event) => setCurrency(event.target.value as ExchangeCurrencyCode)}
@@ -357,7 +364,6 @@ export function ExchangeRatePill() {
             <option key={code} value={code}>{exchangeRates[code].label}</option>
           ))}
         </select>
-        <Icon name="chevron-down" size={14} />
       </div>
       <div className="exchange-rate-card__value">
         <strong>{value}<small>원</small></strong>

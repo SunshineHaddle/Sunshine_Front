@@ -46,6 +46,13 @@
   font-weight: 700;
 }
 
+/* 판매가 미입력 — 숫자가 아니므로 tabular-nums 폭 고정이 필요 없다 */
+.margin-pill--unknown {
+  color: #6b6366;
+  font-weight: 550;
+  white-space: nowrap;
+}
+
 .rate-cell {
   color: #3f3939;
   font-weight: 500;

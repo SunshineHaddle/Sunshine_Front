@@ -177,6 +177,12 @@
   align-items: stretch;
 }
 
+/* option 안에는 넣을 수 없어서 선택된 통화의 국기만 셀렉트 앞에 세운다 */
+.exchange-currency-picker__flag {
+  align-self: center;
+  flex-shrink: 0;
+}
+
 .exchange-currency-picker__add {
   display: inline-flex;
   align-items: center;

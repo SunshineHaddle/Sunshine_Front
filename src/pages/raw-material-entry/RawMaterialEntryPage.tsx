@@ -16,6 +16,7 @@ import {
   deleteMaterialUsages,
   fetchMaterialUsages,
   fetchProduction,
+  fetchUsageProductIds,
   saveProduction,
   type UsageLine,
 } from '../../lib/api/production'
@@ -52,6 +53,23 @@ type Row = {
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
 
+/**
+ * 파일명에서 기준 월을 추측한다. '수불자료_테스트_26.09.xlsx' → '2026-09'.
+ * 확실한 정보가 아니므로 저장을 막지는 않고, 선택한 월과 다를 때만 알린다.
+ * 엑셀 안에는 월이 적혀 있지 않아서 파일명이 유일한 단서다.
+ */
+function monthFromFileName(fileName: string): string | null {
+  // 2026-09 / 2026.09 / 2026_09
+  const full = fileName.match(/(20\d{2})[._-](0[1-9]|1[0-2])(?!\d)/)
+  if (full) return `${full[1]}-${full[2]}`
+
+  // 26.09 — 앞 두 자리가 연도로 보일 때만 (일(日)로 오해하지 않도록 구분자 필수)
+  const short = fileName.match(/(?<!\d)(\d{2})[._-](0[1-9]|1[0-2])(?!\d)/)
+  if (short) return `20${short[1]}-${short[2]}`
+
+  return null
+}
+
 export function RawMaterialEntryPage({
   products,
   month,
@@ -73,19 +91,27 @@ export function RawMaterialEntryPage({
   const [usages, setUsages] = useState<UsageLine[]>([])
   /** §10-3 이 달에 올린 원본 파일 */
   const [history, setHistory] = useState<FileHistoryItem[]>([])
+  /** 파일명이 가리키는 월이 선택한 월과 다를 때만 채워진다 */
+  const [monthMismatch, setMonthMismatch] = useState<string | null>(null)
+  /**
+   * 이 달 수불자료에 등장한 제품 id.
+   * usages 와 달리 freshEntry 여부와 무관하게 읽는다 — 폼에 채우는 값이 아니라
+   * 생산량 목록의 범위라서, 재접속했다고 사라지면 안 되는 정보다.
+   */
+  const [usageProductIds, setUsageProductIds] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   /**
    * 이 달 수불자료에 실제로 등장한 제품.
-   * 저장된 투입내역(§6-1)과 방금 읽은 미리보기 양쪽을 본다.
+   * 저장된 투입내역과 방금 읽은 미리보기 양쪽을 본다.
    */
   const excelProductIds = useMemo(() => {
-    const ids = new Set(usages.map((usage) => usage.productId))
+    const ids = new Set(usageProductIds)
     preview?.sheets.forEach((sheet) => {
       if (sheet.productId) ids.add(sheet.productId)
     })
     return ids
-  }, [usages, preview])
+  }, [usageProductIds, preview])
 
   /**
    * 수불자료가 있으면 거기 있는 제품만 생산량을 받는다.
@@ -108,7 +134,12 @@ export function RawMaterialEntryPage({
     const rows = await (periodId && !freshEntry
       ? fetchMaterialUsages(periodId).catch((): UsageLine[] => [])
       : Promise.resolve<UsageLine[]>([]))
+    // 제품 범위는 freshEntry 와 무관하게 항상 읽는다
+    const ids = await (periodId
+      ? fetchUsageProductIds(periodId).catch((): string[] => [])
+      : Promise.resolve<string[]>([]))
     setUsages(rows)
+    setUsageProductIds(ids)
   }, [periodId, freshEntry])
 
   const reloadHistory = useCallback(async () => {
@@ -157,6 +188,10 @@ export function RawMaterialEntryPage({
       setPreview(result)
       setFile(picked)
       setFileName(picked.name)
+
+      // 9월 자료를 8월에 저장하는 실수를 잡는다. 확신이 없으므로 막지는 않는다.
+      const guessed = monthFromFileName(picked.name)
+      setMonthMismatch(guessed && guessed !== month ? guessed : null)
       const missing = result.missingProducts.length + result.missingMaterials.length
       onAction(
         result.errors.length > 0
@@ -261,6 +296,7 @@ export function RawMaterialEntryPage({
 
     setPreview(null)
     setFile(null)
+    setMonthMismatch(null)
     setBusy('')
   }
 
@@ -419,6 +455,28 @@ export function RawMaterialEntryPage({
                     : unmatched ? `미매칭 ${unmatched}건` : `${preview.readyCount}행 저장 가능`}
                 </span>
               </header>
+
+              {/* 파일명의 월과 선택한 월이 다르다. 다른 달에 저장되는 사고를 막는다 */}
+              {monthMismatch && (
+                <div className="subul-preview__month-warning">
+                  <p>
+                    <strong>파일명은 {monthMismatch.replace('-', '년 ')}월 자료로 보입니다.</strong>
+                    <br />
+                    지금 선택된 기준 월은 {month.replace('-', '년 ')}월입니다. 이대로 저장하면
+                    {' '}{month.replace('-', '년 ')}월 자료로 기록됩니다.
+                  </p>
+                  <button
+                    type="button"
+                    className="workflow-outline-button"
+                    onClick={() => {
+                      onMonthChange(monthMismatch)
+                      setMonthMismatch(null)
+                    }}
+                  >
+                    {monthMismatch.replace('-', '년 ')}월로 바꾸기
+                  </button>
+                </div>
+              )}
 
               {/* 값이 있는데 해석하지 못한 행. 고치기 전에는 저장할 수 없다 */}
               {preview.errors.length > 0 && (

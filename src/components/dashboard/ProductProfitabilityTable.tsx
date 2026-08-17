@@ -26,6 +26,8 @@ export function ProductProfitabilityTable({
           <h2 id="profitability-table-title">{periodLabel ? `${periodLabel} 수익성 현황` : '수익성 현황'}</h2>
           <p>포장 1개 기준 원가와 판매 마진입니다.</p>
         </div>
+        {/* 어느 달을 보고 있는지 — 최신 확정월이 아니라 오늘이 속한 달이다 */}
+        <span className="profitability-card__asof">현재 날짜 기준</span>
       </div>
 
       <div className="profitability-table-scroller">
@@ -62,9 +64,16 @@ export function ProductProfitabilityTable({
                     <td className="money-cell">₩{numberFormatter.format(item.totalCost)}</td>
                     <td className="money-cell money-cell--sale">₩{numberFormatter.format(item.salePrice)}</td>
                     <td>
-                      <span className="margin-pill">
-                        {item.marginRate.toFixed(1)}%
-                      </span>
+                      {/* 판매가 0 은 마진율 0 으로 저장된다. 모르는 값을 정상처럼 보이면 안 된다 */}
+                      {item.salePrice > 0 ? (
+                        <span className="margin-pill">
+                          {item.marginRate.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="margin-pill margin-pill--unknown" title="제품 관리에서 판매가를 입력해주세요">
+                          판매가 미입력
+                        </span>
+                      )}
                     </td>
                   </tr>
                 )

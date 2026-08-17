@@ -31,7 +31,24 @@ export async function fetchPeriods(): Promise<CostPeriodRow[]> {
   ) as CostPeriodRow[]
 }
 
-/** 가장 최근 확정된 월. 대시보드 기본값으로 쓴다. */
+/**
+ * 해당 월 회차를 찾기만 한다. 없으면 null.
+ *
+ * ensurePeriod 와 달리 만들지 않는다 — 대시보드처럼 조회만 하는 화면에서
+ * upsert 를 쓰면 열어보기만 해도 빈 회차가 생긴다.
+ * @param month 'YYYY-MM'
+ */
+export async function fetchPeriodByMonth(month: string): Promise<CostPeriodRow | null> {
+  return unwrap(
+    await supabase
+      .from('cost_periods')
+      .select('id, period, status, submitted_by, submitted_at')
+      .eq('period', toPeriodDate(month))
+      .maybeSingle(),
+  ) as CostPeriodRow | null
+}
+
+/** 가장 최근 확정된 월. */
 export async function fetchLatestConfirmedPeriod(): Promise<CostPeriodRow | null> {
   return unwrap(
     await supabase

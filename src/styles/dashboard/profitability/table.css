@@ -13,6 +13,19 @@
   gap: 24px;
 }
 
+/* 우측 상단 작은 안내. 어느 달 기준인지 헷갈리지 않게 한다 */
+.profitability-card__asof {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .profitability-card__heading h2 {
   font-size: 18px;
   font-weight: 700;

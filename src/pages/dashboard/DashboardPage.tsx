@@ -6,14 +6,13 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { ProductProfitabilityItem } from './dashboardData'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
-import { fetchLatestConfirmedPeriod } from '../../lib/api/periods'
+import { fetchPeriodByMonth } from '../../lib/api/periods'
 import {
   fetchCostSummaries,
   fetchCostTrend,
   type CostSummary,
   type CostTrendPoint,
 } from '../../lib/api/results'
-import { toMonth } from '../../lib/types'
 import { CostTrendChart } from '../../components/dashboard/CostTrendChart'
 import { exportElementToPdf } from '../../lib/pdf/exportElementToPdf'
 
@@ -56,8 +55,13 @@ export function DashboardPage({
   recipeProducts,
   onSelectRecipe,
 }: DashboardPageProps) {
+  // 수익성 현황은 "가장 최근 확정된 달"이 아니라 오늘 날짜가 속한 달을 본다.
+  // 렌더마다 new Date() 를 부르면 이펙트가 매번 다시 돈다 — 마운트 시 한 번만 고정한다.
+  const [today] = useState(() => new Date())
+  const currentMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+  const currentMonthLabel = `${today.getFullYear()}년 ${today.getMonth() + 1}월`
+
   const [items, setItems] = useState<ProductProfitabilityItem[]>([])
-  const [periodLabel, setPeriodLabel] = useState('')
   const [trend, setTrend] = useState<CostTrendPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
@@ -67,25 +71,23 @@ export function DashboardPage({
     let cancelled = false
     const load = async () => {
       // §9-1 : 최근 12개월 원가 추이
-      const from = new Date()
+      const from = new Date(today)
       from.setMonth(from.getMonth() - 11)
       fetchCostTrend(`${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`)
         .then((rows) => { if (!cancelled) setTrend(rows) })
         .catch(() => { if (!cancelled) setTrend([]) })
 
       try {
-        // §8-2 : 최신 확정월의 수익성 스냅샷
-        const period = await fetchLatestConfirmedPeriod()
+        // §8-2 : 이번 달 수익성 스냅샷
+        const period = await fetchPeriodByMonth(currentMonth)
         if (cancelled) return
         if (!period) {
           setItems([])
-          setPeriodLabel('')
           return
         }
         const summaries = await fetchCostSummaries(period.id)
         if (cancelled) return
         setItems(summaries.map(toTableItem))
-        setPeriodLabel(toMonth(period.period).replace('-', '년 ') + '월')
       } catch {
         if (!cancelled) setItems([])
       } finally {
@@ -94,7 +96,7 @@ export function DashboardPage({
     }
     void load()
     return () => { cancelled = true }
-  }, [])
+  }, [currentMonth, today])
 
   /**
    * §대시보드 PDF 저장.
@@ -145,10 +147,11 @@ export function DashboardPage({
             <p className="dashboard-placeholder" role="status">불러오는 중…</p>
           ) : items.length === 0 ? (
             <p className="dashboard-placeholder" role="status">
-              아직 마감된 달이 없습니다. 데이터 입력 3단계에서 <strong>원가 계산</strong>을 실행하면 여기에 표시됩니다.
+              {currentMonthLabel} 원가가 아직 계산되지 않았습니다.
+              데이터 입력 3단계에서 <strong>원가 계산</strong>을 실행하면 여기에 표시됩니다.
             </p>
           ) : (
-            <ProductProfitabilityTable items={items} periodLabel={periodLabel} />
+            <ProductProfitabilityTable items={items} periodLabel={currentMonthLabel} />
           )}
         </main>
       </div>
