@@ -173,10 +173,26 @@
 }
 
 .new-ingredient h3 {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   color: var(--color-text);
   font-size: 13px;
   font-weight: 700;
+}
+
+.new-ingredient__hint {
+  margin: 0 0 12px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+/* 선택 입력임을 라벨에 표시한다 */
+.new-ingredient__fields label em {
+  margin-left: 3px;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 600;
+  opacity: 0.8;
 }
 
 .new-ingredient__fields {

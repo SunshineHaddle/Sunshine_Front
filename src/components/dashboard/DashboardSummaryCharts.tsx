@@ -1,7 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
-import type { ProductionCostSummary } from '../../pages/production-result/productionResultModel'
-import { CostCompositionChart } from '../../pages/production-result/CostCompositionChart'
 import { Icon } from '../common/Icon'
 import { fetchPillRates } from '../../lib/api/exchangeRates'
 
@@ -25,11 +23,11 @@ type ProductCostTrendCarouselProps = {
   products: RecipeProduct[]
   onOpen: (productId: string) => void
   compact?: boolean
-}
-
-type FinalCostSummaryCardProps = {
-  summary: ProductionCostSummary
-  onOpen: () => void
+  /**
+   * 캐러셀을 접고 모든 제품을 한 번에 세로로 펼친다.
+   * PDF 는 화면에 보이는 것만 캡처하므로, 내보낼 때 이걸 켜야 전 제품이 담긴다.
+   */
+  expandAll?: boolean
 }
 
 const trendPatterns = [
@@ -146,19 +144,28 @@ function ProductSelector({ products, activeIndex, interactive, onSelect }: Produ
   )
 }
 
-export function ProductCostTrendCarousel({ products, onOpen, compact = false }: ProductCostTrendCarouselProps) {
+export function ProductCostTrendCarousel({
+  products,
+  onOpen,
+  compact = false,
+  expandAll = false,
+}: ProductCostTrendCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
   const [dragOffset, setDragOffset] = useState(0)
+  // 드래그 중에는 트랙이 손가락을 그대로 따라가야 해서 transition 을 끈다.
+  // dragState 는 ref 라 렌더 중 읽으면 안 되므로 같은 사실을 state 로도 들고 있는다.
+  const [isDragging, setIsDragging] = useState(false)
   const dragState = useRef<{ startX: number; width: number } | null>(null)
   const monthLabels = getMonthLabels()
   const cardClassName = `card product-cost-carousel${compact ? ' product-cost-carousel--compact' : ''}`
+    + (expandAll ? ' product-cost-carousel--expanded' : '')
 
   useEffect(() => {
-    if (products.length < 2 || isPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    if (expandAll || products.length < 2 || isPaused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const timer = window.setInterval(() => setActiveIndex((current) => (current + 1) % products.length), 4000)
     return () => window.clearInterval(timer)
-  }, [isPaused, products.length])
+  }, [isPaused, products.length, expandAll])
 
   if (products.length === 0) {
     return (
@@ -181,6 +188,7 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
   const handleDragStart = (clientX: number, width: number) => {
     if (products.length < 2) return
     dragState.current = { startX: clientX, width }
+    setIsDragging(true)
     setIsPaused(true)
   }
 
@@ -196,6 +204,7 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
     if (dragOffset <= -threshold) goToNext()
     else if (dragOffset >= threshold) goToPrevious()
     dragState.current = null
+    setIsDragging(false)
     setDragOffset(0)
     setIsPaused(false)
   }
@@ -213,7 +222,7 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
     >
       <div className="product-cost-carousel__heading">
         <h2 id="product-cost-card-title"><Icon name="trend" size={22} />제품별 원가 변동 추이</h2>
-        {products.length > 1 && (
+        {!expandAll && products.length > 1 && (
           <div className="product-cost-carousel__nav">
             <button type="button" aria-label="이전 제품" onClick={goToPrevious}>
               <Icon name="chevron-left" size={18} />
@@ -227,36 +236,47 @@ export function ProductCostTrendCarousel({ products, onOpen, compact = false }: 
       </div>
 
       <div
-        className={`product-cost-carousel__viewport${products.length > 1 ? ' is-draggable' : ''}`}
-        onPointerDown={(event) => {
+        className={`product-cost-carousel__viewport${!expandAll && products.length > 1 ? ' is-draggable' : ''}`}
+        onPointerDown={expandAll ? undefined : (event) => {
           if (event.pointerType === 'mouse' && event.button !== 0) return
           handleDragStart(event.clientX, event.currentTarget.offsetWidth)
         }}
-        onPointerMove={(event) => handleDragMove(event.clientX)}
-        onPointerUp={handleDragEnd}
-        onPointerCancel={handleDragEnd}
-        onPointerLeave={() => dragState.current && handleDragEnd()}
+        onPointerMove={expandAll ? undefined : (event) => handleDragMove(event.clientX)}
+        onPointerUp={expandAll ? undefined : handleDragEnd}
+        onPointerCancel={expandAll ? undefined : handleDragEnd}
+        onPointerLeave={expandAll ? undefined : () => { if (dragState.current) handleDragEnd() }}
       >
         <div
           className="product-cost-carousel__track"
-          style={{ transform: trackTransform, transition: dragState.current ? 'none' : undefined }}
+          style={expandAll
+            ? undefined
+            : { transform: trackTransform, transition: isDragging ? 'none' : undefined }}
         >
           {products.map((product, index) => {
             const trend = getProductCostTrend(product, index)
             const changeDirection = trend.changeRate >= 0 ? '상승' : '하락'
 
             return (
-              <article className="product-cost-slide" aria-hidden={index !== visibleIndex} key={product.id}>
+              <article
+                className="product-cost-slide"
+                aria-hidden={expandAll ? undefined : index !== visibleIndex}
+                key={product.id}
+              >
                 <div className="product-cost-slide__product">
                   <div>
+                    {/* 펼친 상태에서는 각 슬라이드가 자기 제품명을 그대로 보여준다 */}
                     <ProductSelector
                       products={products}
-                      activeIndex={visibleIndex}
-                      interactive={index === visibleIndex}
+                      activeIndex={expandAll ? index : visibleIndex}
+                      interactive={!expandAll && index === visibleIndex}
                       onSelect={setActiveIndex}
                     />
                   </div>
-                  <button type="button" onClick={() => onOpen(product.id)} tabIndex={index === visibleIndex ? 0 : -1}>
+                  <button
+                    type="button"
+                    onClick={() => onOpen(product.id)}
+                    tabIndex={expandAll || index === visibleIndex ? 0 : -1}
+                  >
                     상세 보기 <Icon name="chevron-right" size={18} />
                   </button>
                 </div>
@@ -296,11 +316,12 @@ export function ExchangeRatePill() {
   const [currency, setCurrency] = useState<ExchangeCurrencyCode>('USD')
   // 하드코딩 값을 기본으로 두고, 실시간 값이 오면 통화별로 덮어쓴다 (값만, 변동% 없음)
   const [live, setLive] = useState<Partial<Record<ExchangeCurrencyCode, string>>>({})
+  const [updatedAt, setUpdatedAt] = useState(0)
 
   useEffect(() => {
     let cancelled = false
     void (async () => {
-      const rates = await fetchPillRates()
+      const { rates, updatedAt: at } = await fetchPillRates()
       if (cancelled || rates.length === 0) return
       const next: typeof live = {}
       for (const { code, krw } of rates) {
@@ -308,12 +329,20 @@ export function ExchangeRatePill() {
         next[code as ExchangeCurrencyCode] = krw.toLocaleString('ko-KR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
       }
       setLive(next)
+      setUpdatedAt(at)
     })()
     return () => { cancelled = true }
   }, [])
 
-  const value = live[currency] ?? exchangeRates[currency].value
+  const liveValue = live[currency]
+  const value = liveValue ?? exchangeRates[currency].value
   const flag = exchangeRates[currency].flag
+  // 실시간 값을 못 받았으면 화면의 숫자는 코드에 박힌 옛 값이다. 실시간인 척하면 안 된다.
+  const caption = liveValue
+    ? (updatedAt
+        ? `${new Date(updatedAt).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })} 기준`
+        : '실시간')
+    : '기준값 (실시간 조회 실패)'
 
   return (
     <div className="exchange-rate-card">
@@ -332,46 +361,8 @@ export function ExchangeRatePill() {
       </div>
       <div className="exchange-rate-card__value">
         <strong>{value}<small>원</small></strong>
+        <span className={`exchange-rate-card__caption${liveValue ? '' : ' is-stale'}`}>{caption}</span>
       </div>
     </div>
-  )
-}
-
-export function FinalCostSummaryCard({ summary, onOpen }: FinalCostSummaryCardProps) {
-  const hasData = summary.hasMaterialData || summary.hasOperatingData
-  const monthLabel = summary.month ? `${summary.month.replace('-', '년 ')}월 기준` : '최신 기준'
-
-  return (
-    <section className="card final-cost-summary-card" aria-labelledby="final-cost-summary-title">
-      <div className="final-cost-summary-card__heading">
-        <h2 id="final-cost-summary-title"><Icon name="calculator" size={22} />최종 원가 요약</h2>
-        <span className={hasData ? 'is-ready' : ''}>{hasData ? monthLabel : '입력 대기'}</span>
-      </div>
-
-      <div className="final-cost-summary-card__metric">
-        <span>예상 총원가</span>
-        <strong>{numberFormatter.format(summary.totalCost)}<small>원</small></strong>
-      </div>
-
-      <div className="final-cost-summary-card__visual">
-        <CostCompositionChart compact summary={summary} />
-        <div>
-          <dl className="final-cost-summary-card__costs">
-            <div><dt>원재료비</dt><dd>{numberFormatter.format(summary.materialCost)}원</dd></div>
-            <div><dt>운영비</dt><dd>{numberFormatter.format(summary.operatingCost)}원</dd></div>
-          </dl>
-
-          <div className="final-cost-summary-card__breakdown" aria-label="운영비 구성">
-            <span>인건비<strong>{numberFormatter.format(summary.laborCost)}원</strong></span>
-            <span>공과금<strong>{numberFormatter.format(summary.utilityCost)}원</strong></span>
-            <span>기타 간접비<strong>{numberFormatter.format(summary.indirectCost)}원</strong></span>
-          </div>
-        </div>
-      </div>
-
-      <button className="final-cost-summary-card__open" type="button" onClick={onOpen}>
-        3단계 결과 보기 <Icon name="chevron-right" size={14} />
-      </button>
-    </section>
   )
 }

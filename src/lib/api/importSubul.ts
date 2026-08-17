@@ -41,16 +41,20 @@ export type SubulPreview = {
   missingProducts: string[]
   missingMaterials: string[]
   warnings: string[]
+  /** 엑셀을 고쳐야 하는 문제. 비어 있지 않으면 저장을 막는다 */
+  errors: string[]
   /** 저장 가능한 행 수 */
   readyCount: number
 }
 
 // ── 1단계: 파싱 + 매칭 ──────────────────────────────────────
 export async function previewSubul(file: File): Promise<SubulPreview> {
-  const { sheets, warnings } = await parseSubulWorkbook(await file.arrayBuffer())
+  const { sheets, warnings, errors } = await parseSubulWorkbook(await file.arrayBuffer())
 
   if (sheets.length === 0) {
-    return { sheets: [], missingProducts: [], missingMaterials: [], warnings, readyCount: 0 }
+    return {
+      sheets: [], missingProducts: [], missingMaterials: [], warnings, errors, readyCount: 0,
+    }
   }
 
   // 이름 매칭은 대소문자·공백을 무시해야 해서 전체를 받아 클라이언트에서 맞춘다.
@@ -102,6 +106,7 @@ export async function previewSubul(file: File): Promise<SubulPreview> {
     missingProducts: [...missingProducts],
     missingMaterials: [...missingMaterials],
     warnings,
+    errors,
     readyCount,
   }
 }
@@ -125,12 +130,49 @@ export async function createMissingMaterials(
   )
 }
 
+// ── 미매칭 제품을 한 번에 등록 ──────────────────────────────
+/**
+ * 수불자료 시트명으로 제품을 만든다. 이름만 있으면 되고 나머지는 기본값이다.
+ * 배합(recipe_items)은 비워 둔다 — 그 달 실적이 material_usages 로 들어오므로
+ * 마감 계산에 표준배합이 필요 없다.
+ *
+ * 판매가·unit_weight_kg 는 0/빈 값이라 마진율이 실제와 다르게 나온다.
+ * 제품 관리에서 채워야 한다는 안내를 호출부가 띄운다.
+ *
+ * @returns 실제로 만들어진 제품 수
+ */
+export async function createMissingProducts(names: string[]): Promise<number> {
+  if (names.length === 0) return 0
+
+  const stamp = Date.now()
+  const rows = names.map((name, i) => ({
+    sku: `PRD-${stamp}-${i}`,
+    name,
+    status: 'review' as const,
+  }))
+
+  const created = unwrap(
+    await supabase.from('products').insert(rows).select('id'),
+  ) as { id: string }[]
+
+  return created.length
+}
+
 // ── 2단계: 저장 ─────────────────────────────────────────────
 /**
  * 매칭된 행만 material_usages 에 저장한다.
  * @returns 저장된 행 수
  */
 export async function commitSubul(periodId: string, preview: SubulPreview): Promise<number> {
+  // 읽지 못한 행이 있는 채로 저장하면 그 재료만 빠진 원가가 조용히 확정된다.
+  // 버튼도 막지만, 여기서 한 번 더 세운다.
+  if (preview.errors.length > 0) {
+    throw new Error(
+      `엑셀에서 읽지 못한 행이 ${preview.errors.length}건 있습니다. `
+      + '해당 행을 수정한 뒤 다시 올려주세요.',
+    )
+  }
+
   const rows = preview.sheets.flatMap((sheet) =>
     sheet.productId === null
       ? []

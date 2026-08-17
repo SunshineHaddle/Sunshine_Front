@@ -5,8 +5,15 @@ import type {
   IngredientUnit,
   RecipeProduct,
 } from './productManagementData'
+import { DEFAULT_KIMCHI_MATERIALS, materialKey } from './defaultMaterials'
 
 export type SelectedIngredient = IngredientCatalogItem & { usage: number }
+
+/**
+ * 화면의 재료 후보 한 줄.
+ * isSuggestion 이면 아직 DB 에 없는 기본 재료라, 고르는 순간 등록부터 한다.
+ */
+export type IngredientOption = IngredientCatalogItem & { isSuggestion?: boolean }
 
 type UseProductRecipeFormOptions = {
   nextProductNumber: number
@@ -30,20 +37,76 @@ export function useProductRecipeForm({
   const [newIngredientPrice, setNewIngredientPrice] = useState('')
   const [newIngredientUnit, setNewIngredientUnit] = useState<IngredientUnit>('kg')
 
-  const availableIngredients = useMemo(() => {
+  /**
+   * DB 카탈로그 + 아직 등록되지 않은 기본 김치 재료.
+   * materials 가 비어 있어도 바로 고를 수 있어야 한다는 요구가 있어 후자를 덧붙인다.
+   */
+  const availableIngredients = useMemo<IngredientOption[]>(() => {
     const query = ingredientQuery.trim().toLocaleLowerCase('ko-KR')
-    return catalog.filter((ingredient) =>
+    const takenKeys = new Set(selectedIngredients.map((s) => materialKey(s.name)))
+    const catalogKeys = new Set(catalog.map((c) => materialKey(c.name)))
+
+    const matches = (name: string) =>
+      !query || name.toLocaleLowerCase('ko-KR').includes(query)
+
+    const fromCatalog: IngredientOption[] = catalog.filter((ingredient) =>
       !selectedIngredients.some((selected) => selected.id === ingredient.id)
-      && (!query || ingredient.name.toLocaleLowerCase('ko-KR').includes(query)),
+      && matches(ingredient.name),
     )
+
+    const suggestions: IngredientOption[] = DEFAULT_KIMCHI_MATERIALS
+      .filter((item) =>
+        !catalogKeys.has(materialKey(item.name))
+        && !takenKeys.has(materialKey(item.name))
+        && matches(item.name),
+      )
+      .map((item) => ({
+        // 아직 DB 행이 없으므로 임시 키. 담을 때 실제 uuid 로 교체된다
+        id: `suggestion:${item.name}`,
+        name: item.name,
+        unit: item.unit,
+        unitPrice: 0,
+        isSuggestion: true,
+      }))
+
+    return [...fromCatalog, ...suggestions]
   }, [catalog, ingredientQuery, selectedIngredients])
 
   const totalMaterialCost = selectedIngredients.reduce((total, ingredient) => total + ingredient.unitPrice * ingredient.usage, 0)
   const totalCost = totalMaterialCost
 
-  const addIngredient = (ingredient: IngredientCatalogItem) => {
-    setSelectedIngredients((current) => [...current, { ...ingredient, usage: 0.1 }])
-    setIngredientQuery('')
+  /** 담을 때의 기본 수량. 대부분 kg 단위로 세므로 1 에서 시작한다 */
+  const DEFAULT_USAGE = 1
+
+  /**
+   * 후보를 장바구니에 담는다.
+   * 기본 재료 제안은 DB 행이 없으므로 먼저 materials 에 등록하고 uuid 를 받아온다 —
+   * 가짜 id 로 담으면 제품 저장 시 material_id 캐스팅이 실패한다(22P02).
+   */
+  const addIngredient = async (
+    ingredient: IngredientOption,
+  ): Promise<{ ok: boolean; message: string }> => {
+    if (!ingredient.isSuggestion) {
+      setSelectedIngredients((current) => [...current, { ...ingredient, usage: DEFAULT_USAGE }])
+      setIngredientQuery('')
+      return { ok: true, message: '' }
+    }
+
+    try {
+      const created = await createMaterial({
+        name: ingredient.name,
+        unit: ingredient.unit,
+        unitPrice: 0,
+      })
+      setSelectedIngredients((current) => [...current, { ...created, usage: DEFAULT_USAGE }])
+      setIngredientQuery('')
+      return { ok: true, message: `${ingredient.name}을(를) 원재료로 등록하고 담았습니다.` }
+    } catch (error) {
+      return {
+        ok: false,
+        message: `재료 등록 실패: ${error instanceof Error ? error.message : String(error)}`,
+      }
+    }
   }
 
   /**
@@ -52,14 +115,19 @@ export function useProductRecipeForm({
    */
   const addNewIngredient = async (): Promise<{ ok: boolean; message: string }> => {
     const name = newIngredientName.trim()
-    const price = Number(newIngredientPrice)
-    if (!name || !Number.isFinite(price) || price < 0) {
-      return { ok: false, message: '재료명과 단가를 확인해 주세요.' }
+    if (!name) {
+      return { ok: false, message: '재료명을 입력해 주세요.' }
+    }
+    // 단가·단위는 선택 입력이다. 실제 단가는 수불자료(1단계)에서 들어오므로
+    // 여기서는 비워둔 채 0원·kg 으로 등록하고 나중에 덮어쓴다.
+    const price = Number(newIngredientPrice || 0)
+    if (!Number.isFinite(price) || price < 0) {
+      return { ok: false, message: '단가는 0 이상의 숫자로 입력해 주세요.' }
     }
 
     try {
       const created = await createMaterial({ name, unit: newIngredientUnit, unitPrice: price })
-      setSelectedIngredients((current) => [...current, { ...created, usage: 0.1 }])
+      setSelectedIngredients((current) => [...current, { ...created, usage: DEFAULT_USAGE }])
       setNewIngredientName('')
       setNewIngredientPrice('')
       setNewIngredientUnit('kg')

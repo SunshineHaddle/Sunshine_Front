@@ -96,17 +96,26 @@ export function DashboardPage({
     return () => { cancelled = true }
   }, [])
 
-  // §대시보드 PDF 저장 : 현재 화면에 보이는 카드·표를 그대로 캡처해 A4 PDF로 내려받는다
+  /**
+   * §대시보드 PDF 저장.
+   * 캐러셀은 평소 제품 하나만 보여주므로, 내보내는 동안에는 전 제품을 펼친다.
+   * html2canvas 는 그 시점의 DOM 만 그리기 때문에 레이아웃이 반영될 때까지 두 프레임 기다린다.
+   */
   const handleExportPdf = async () => {
     if (!contentRef.current || isExportingPdf) return
     setIsExportingPdf(true)
     try {
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+      if (!contentRef.current) return
+
       const today = new Date()
       const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
       await exportElementToPdf(contentRef.current, {
         fileName: `경영진_대시보드_${stamp}.pdf`,
       })
-      onAction('대시보드를 PDF로 저장했습니다.')
+      onAction(`대시보드를 PDF로 저장했습니다. 제품 ${recipeProducts.length}개 그래프 포함.`)
     } catch (error) {
       onAction(`PDF 저장 실패: ${error instanceof Error ? error.message : String(error)}`)
     } finally {
@@ -123,7 +132,11 @@ export function DashboardPage({
           <DashboardHeader onExportPdf={() => void handleExportPdf()} isExportingPdf={isExportingPdf} />
 
           <div className="summary-grid">
-            <ProductCostTrendCarousel products={recipeProducts} onOpen={onSelectRecipe} />
+            <ProductCostTrendCarousel
+              products={recipeProducts}
+              onOpen={onSelectRecipe}
+              expandAll={isExportingPdf}
+            />
           </div>
 
           <CostTrendChart points={trend} />

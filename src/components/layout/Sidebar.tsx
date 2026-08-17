@@ -1,6 +1,6 @@
 import { dataEntrySteps, navigationItems, type AppRoute } from '../../data/navigation'
 import { Icon } from '../common/Icon'
-import { useSession } from '../../lib/session'
+import { useSession } from '../../lib/sessionContext'
 
 type SidebarProps = {
   activeRoute: AppRoute

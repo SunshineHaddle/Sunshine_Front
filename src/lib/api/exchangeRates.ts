@@ -88,9 +88,13 @@ export type PillRate = { code: string; krw: number }
 
 /**
  * 대시보드 카드용 환율(1 외화 = ? 원). 값만 실시간, 변동%는 쓰지 않는다.
- * fetchExchangeRates 의 캐시를 그대로 재사용한다. 실패 시 빈 배열 (호출부가 폴백 유지).
+ * fetchExchangeRates 의 캐시를 그대로 재사용한다.
+ * 실패 시 rates 는 빈 배열이고 updatedAt 은 0 — 호출부가 폴백임을 표시해야 한다.
  */
-export async function fetchPillRates(): Promise<PillRate[]> {
-  const { rates } = await fetchExchangeRates()
-  return PILL_CODES.flatMap((code) => (rates[code] ? [{ code, krw: rates[code] }] : []))
+export async function fetchPillRates(): Promise<{ rates: PillRate[]; updatedAt: number }> {
+  const { rates, updatedAt } = await fetchExchangeRates()
+  return {
+    rates: PILL_CODES.flatMap((code) => (rates[code] ? [{ code, krw: rates[code] }] : [])),
+    updatedAt,
+  }
 }

@@ -92,6 +92,40 @@
   color: var(--color-brand);
 }
 
+/* 읽지 못한 행이 있는 상태. 저장이 막혀 있음을 색으로 먼저 알린다 */
+.subul-preview__badge.is-error {
+  background: #fdecea;
+  color: #b42318;
+}
+
+.subul-preview__errors {
+  padding: 12px 14px;
+  border: 1px solid #f3c9c4;
+  border-radius: var(--radius-control);
+  background: #fdf3f2;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.subul-preview__errors p {
+  margin: 0;
+  color: #7a271a;
+}
+
+.subul-preview__errors ul {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  /* 행이 많을 수 있다. 카드 안에서만 스크롤시킨다 */
+  max-height: 180px;
+  overflow-y: auto;
+  color: #b42318;
+  font-size: 12.5px;
+}
+
+.subul-preview__errors li + li {
+  margin-top: 4px;
+}
+
 .subul-preview__sheets {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

@@ -2,13 +2,9 @@ import { useCallback, useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import {
-  formatCompletionTime,
-  loadCompletionHistory,
-  revertToCompletion,
-  type DataEntryCompletion,
-} from '../../utils/dataEntryLog'
 import { fetchProfiles, setProfileActive, setProfileRole } from '../../lib/api/auth'
+import { fetchFileHistory, type FileHistoryItem } from '../../lib/api/files'
+import { describeDbError } from '../../lib/api/errors'
 import type { ProfileRow, UserRole } from '../../lib/types'
 
 type UserManagementPageProps = {
@@ -16,7 +12,8 @@ type UserManagementPageProps = {
   onAction: (message: string) => void
 }
 
-const WORKER_ACCOUNT = 'worker1234'
+/** 이력에 보여줄 최대 건수. 그 이상은 화면이 길어지기만 한다 */
+const HISTORY_LIMIT = 20
 
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: '시스템 관리자',
@@ -37,12 +34,19 @@ function formatLastActive(iso: string | null) {
   })
 }
 
+/** 'YYYY-MM-01' → '2026년 8월'. period 가 없는 업로드도 있어 null 을 받는다 */
+function formatPeriod(period: string | null) {
+  if (!period) return '월 미지정'
+  return `${period.slice(0, 4)}년 ${Number(period.slice(5, 7))}월`
+}
+
 export function UserManagementPage({
   onNavigate,
   onAction,
 }: UserManagementPageProps) {
   const [users, setUsers] = useState<ProfileRow[]>([])
-  const [history, setHistory] = useState<DataEntryCompletion[]>(() => loadCompletionHistory(WORKER_ACCOUNT))
+  const [history, setHistory] = useState<FileHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(true)
 
   // §11-4 : setState 는 await 뒤에서만 (이펙트 본문 동기 setState 금지)
   const reload = useCallback(async () => {
@@ -51,6 +55,19 @@ export function UserManagementPage({
   }, [])
 
   useEffect(() => { void (async () => { await reload() })() }, [reload])
+
+  // §10-3 : 데이터 입력 이력 = 수불자료 업로드 이력 (file_uploads)
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const rows = await fetchFileHistory({ limit: HISTORY_LIMIT })
+        .catch((): FileHistoryItem[] => [])
+      if (cancelled) return
+      setHistory(rows)
+      setHistoryLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   // §11-5 : 관리자가 아니면 RLS 가 조용히 0행 처리하므로 반환값으로 확인한다
   const toggleUser = async (user: ProfileRow) => {
@@ -63,7 +80,7 @@ export function UserManagementPage({
       await reload()
       onAction(`${user.name} 계정을 ${next ? '활성화' : '비활성화'}했습니다.`)
     } catch (error) {
-      onAction(`변경 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`변경 실패: ${describeDbError(error)}`)
     }
   }
 
@@ -77,15 +94,8 @@ export function UserManagementPage({
       await reload()
       onAction(`${user.name}의 역할을 ${ROLE_LABEL[role]}(으)로 변경했습니다.`)
     } catch (error) {
-      onAction(`변경 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`변경 실패: ${describeDbError(error)}`)
     }
-  }
-
-  const handleRevert = (completion: DataEntryCompletion) => {
-    revertToCompletion(completion.id)
-    const next = loadCompletionHistory(WORKER_ACCOUNT)
-    setHistory(next)
-    onAction(`${formatCompletionTime(completion.completedAt)} 시점으로 데이터 입력 히스토리를 되돌렸습니다.`)
   }
 
   return (
@@ -160,34 +170,39 @@ export function UserManagementPage({
             <header className="entry-history__heading">
               <div>
                 <h2 id="entry-history-title">데이터 입력 히스토리</h2>
-                <p>실무자(worker1234)의 데이터 입력 완료 이력입니다. 특정 시점으로 되돌릴 수 있습니다.</p>
+                <p>수불자료 업로드 이력입니다. 값을 고치려면 데이터 입력 3단계에서 마감을 취소하세요.</p>
               </div>
               <span className="entry-history__count">{history.length}건</span>
             </header>
 
-            {history.length === 0 ? (
-              <p className="entry-history__empty">아직 기록된 데이터 입력 이력이 없습니다.</p>
+            {historyLoading ? (
+              <p className="entry-history__empty" role="status">불러오는 중…</p>
+            ) : history.length === 0 ? (
+              <p className="entry-history__empty">
+                아직 업로드된 수불자료가 없습니다. 데이터 입력 1단계에서 엑셀을 올리면 여기에 쌓입니다.
+              </p>
             ) : (
               <ol className="entry-history__list">
-                {history.map((completion, index) => (
-                  <li className="entry-history__item" key={completion.id}>
+                {history.map((item, index) => (
+                  <li className="entry-history__item" key={item.id}>
                     <div className="entry-history__info">
                       <span className="entry-history__badge" aria-hidden="true">
                         <Icon name="check" size={13} />
                       </span>
                       <div>
-                        <strong>{formatCompletionTime(completion.completedAt)} 데이터 입력 완료</strong>
-                        <small>{index === 0 ? '최신 입력' : `${index}번째 이전 입력`}</small>
+                        <strong>
+                          {formatLastActive(item.uploaded_at)} · {formatPeriod(item.period)} 수불자료 업로드
+                        </strong>
+                        <small>
+                          {item.uploaderName
+                            ? `${item.uploaderName}(${item.uploaderLoginId})`
+                            : '업로더 미상'}
+                          {' · '}{item.original_name}
+                          {item.row_count !== null && ` · ${item.row_count}행`}
+                          {index === 0 && ' · 최신'}
+                        </small>
                       </div>
                     </div>
-                    <button
-                      className="entry-history__revert"
-                      type="button"
-                      disabled={index === 0}
-                      onClick={() => handleRevert(completion)}
-                    >
-                      <Icon name="chevron-left" size={14} /> 이 시점으로 되돌리기
-                    </button>
                   </li>
                 ))}
               </ol>

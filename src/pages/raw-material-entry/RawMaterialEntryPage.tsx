@@ -8,6 +8,7 @@ import { downloadProductionTemplate } from './productionEntryData'
 import {
   commitSubul,
   createMissingMaterials,
+  createMissingProducts,
   previewSubul,
   type SubulPreview,
 } from '../../lib/api/importSubul'
@@ -26,6 +27,7 @@ import {
   type FileHistoryItem,
 } from '../../lib/api/files'
 import { markEntrySaved } from '../../utils/entrySaved'
+import { describeDbError } from '../../lib/api/errors'
 
 type RawMaterialEntryPageProps = {
   products: RecipeProduct[]
@@ -36,6 +38,8 @@ type RawMaterialEntryPageProps = {
   onMonthChange: (month: string) => void
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
+  /** 제품을 새로 만든 뒤 App 의 제품 목록을 다시 읽게 한다 */
+  onProductsChanged?: () => void | Promise<void>
   hideSidebar?: boolean
 }
 
@@ -56,6 +60,7 @@ export function RawMaterialEntryPage({
   onMonthChange,
   onNavigate,
   onAction,
+  onProductsChanged,
   hideSidebar = false,
 }: RawMaterialEntryPageProps) {
   const [rows, setRows] = useState<Row[]>([])
@@ -70,8 +75,31 @@ export function RawMaterialEntryPage({
   const [history, setHistory] = useState<FileHistoryItem[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const hasRows = rows.length > 0
-  const filledCount = rows.filter((row) => row.production.trim() !== '').length
+  /**
+   * 이 달 수불자료에 실제로 등장한 제품.
+   * 저장된 투입내역(§6-1)과 방금 읽은 미리보기 양쪽을 본다.
+   */
+  const excelProductIds = useMemo(() => {
+    const ids = new Set(usages.map((usage) => usage.productId))
+    preview?.sheets.forEach((sheet) => {
+      if (sheet.productId) ids.add(sheet.productId)
+    })
+    return ids
+  }, [usages, preview])
+
+  /**
+   * 수불자료가 있으면 거기 있는 제품만 생산량을 받는다.
+   * 엑셀에 없는 제품까지 칸을 열어두면 그 달에 만들지도 않은 제품에 값을 넣게 된다.
+   * 아직 아무것도 올리지 않았다면 전체 제품을 보여준다.
+   */
+  const visibleRows = useMemo(
+    () => (excelProductIds.size > 0 ? rows.filter((row) => excelProductIds.has(row.id)) : rows),
+    [rows, excelProductIds],
+  )
+  const isFilteredByExcel = excelProductIds.size > 0 && visibleRows.length < rows.length
+
+  const hasRows = visibleRows.length > 0
+  const filledCount = visibleRows.filter((row) => row.production.trim() !== '').length
 
   // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
   // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
@@ -131,12 +159,14 @@ export function RawMaterialEntryPage({
       setFileName(picked.name)
       const missing = result.missingProducts.length + result.missingMaterials.length
       onAction(
-        missing > 0
-          ? `${result.sheets.length}개 제품을 읽었습니다. 매칭되지 않은 항목이 있어 확인이 필요합니다.`
-          : `${result.sheets.length}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
+        result.errors.length > 0
+          ? `읽지 못한 행이 ${result.errors.length}건 있습니다. 수량·단가 칸을 확인해주세요.`
+          : missing > 0
+            ? `${result.sheets.length}개 제품을 읽었습니다. 매칭되지 않은 항목이 있어 확인이 필요합니다.`
+            : `${result.sheets.length}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
       )
     } catch (error) {
-      onAction(`읽기 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`읽기 실패: ${describeDbError(error)}`)
     } finally {
       setBusy('')
     }
@@ -153,13 +183,42 @@ export function RawMaterialEntryPage({
           if (!line.materialId) priceByName[line.materialName] = line.unitPrice
         }),
       )
+      const count = preview.missingMaterials.length
       await createMissingMaterials(preview.missingMaterials, priceByName)
-      onAction(`원재료 ${preview.missingMaterials.length}개를 등록했습니다. 파일을 다시 올려주세요.`)
-      setPreview(null)
-      setFile(null)
-      setFileName('')
+
+      // 방금 만든 재료가 매칭되도록 같은 파일을 다시 읽는다
+      if (file) setPreview(await previewSubul(file))
+      onAction(`원재료 ${count}개를 등록했습니다.`)
     } catch (error) {
-      onAction(`등록 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`등록 실패: ${describeDbError(error)}`)
+    } finally {
+      setBusy('')
+    }
+  }
+
+  /**
+   * 수불자료 시트명으로 제품을 만든다.
+   * 파일을 다시 읽어 매칭 상태를 갱신하므로 사용자가 재업로드할 필요가 없다.
+   */
+  const registerMissingProducts = async () => {
+    if (!preview || preview.missingProducts.length === 0) return
+    const names = preview.missingProducts
+    setBusy('제품을 등록하는 중…')
+    try {
+      const count = await createMissingProducts(names)
+      await onProductsChanged?.()
+
+      // 방금 만든 제품이 매칭되도록 같은 파일을 다시 읽는다
+      if (file) {
+        const result = await previewSubul(file)
+        setPreview(result)
+      }
+      onAction(
+        `제품 ${count}개를 등록했습니다: ${names.join(', ')}. `
+        + '판매가와 포장 단위(unit_weight_kg)는 제품 관리에서 채워주세요.',
+      )
+    } catch (error) {
+      onAction(`제품 등록 실패: ${describeDbError(error)}`)
     } finally {
       setBusy('')
     }
@@ -177,7 +236,7 @@ export function RawMaterialEntryPage({
       await reloadUsages()
     } catch (error) {
       setBusy('')
-      onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`저장 실패: ${describeDbError(error)}`)
       return
     }
 
@@ -210,7 +269,7 @@ export function RawMaterialEntryPage({
     try {
       window.open(await createDownloadUrl(item.storage_path, 60), '_blank')
     } catch (error) {
-      onAction(`다운로드 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`다운로드 실패: ${describeDbError(error)}`)
     }
   }
 
@@ -222,7 +281,7 @@ export function RawMaterialEntryPage({
       await reloadHistory()
       onAction('원본 파일을 삭제했습니다.')
     } catch (error) {
-      onAction(`삭제 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`삭제 실패: ${describeDbError(error)}`)
     }
   }
 
@@ -235,7 +294,7 @@ export function RawMaterialEntryPage({
       await reloadUsages()
       onAction(`${productName} 투입내역을 삭제했습니다.`)
     } catch (error) {
-      onAction(`삭제 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`삭제 실패: ${describeDbError(error)}`)
     }
   }
 
@@ -243,14 +302,16 @@ export function RawMaterialEntryPage({
   const persistProduction = async () => {
     if (!periodId) return false
     try {
-      await saveProduction(periodId, rows.map((row) => ({
+      // 화면에 보이는 제품만 저장한다. 숨겨진 제품까지 0 으로 덮어쓰면
+      // 다른 경로로 들어간 생산량이 지워진다.
+      await saveProduction(periodId, visibleRows.map((row) => ({
         productId: row.id,
         production: row.production,
       })))
       markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       return true
     } catch (error) {
-      onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`저장 실패: ${describeDbError(error)}`)
       return false
     }
   }
@@ -348,10 +409,31 @@ export function RawMaterialEntryPage({
             <section className="subul-preview" aria-labelledby="subul-preview-title">
               <header className="subul-preview__head">
                 <h2 id="subul-preview-title">읽은 내용 확인</h2>
-                <span className={`subul-preview__badge${unmatched ? ' is-warn' : ' is-ok'}`}>
-                  {unmatched ? `미매칭 ${unmatched}건` : `${preview.readyCount}행 저장 가능`}
+                <span
+                  className={`subul-preview__badge${
+                    preview.errors.length ? ' is-error' : unmatched ? ' is-warn' : ' is-ok'
+                  }`}
+                >
+                  {preview.errors.length
+                    ? `오류 ${preview.errors.length}건`
+                    : unmatched ? `미매칭 ${unmatched}건` : `${preview.readyCount}행 저장 가능`}
                 </span>
               </header>
+
+              {/* 값이 있는데 해석하지 못한 행. 고치기 전에는 저장할 수 없다 */}
+              {preview.errors.length > 0 && (
+                <div className="subul-preview__errors">
+                  <p>
+                    <strong>엑셀에서 읽지 못한 행이 {preview.errors.length}건 있습니다.</strong>
+                    <br />
+                    수량 칸에는 숫자만 넣어주세요. 단위는 kg 기준이며, g·톤은 자동 환산됩니다.
+                    개·박스처럼 개수를 세는 단위는 kg 으로 바꿀 수 없어 저장할 수 없습니다.
+                  </p>
+                  <ul>
+                    {preview.errors.map((message) => <li key={message}>{message}</li>)}
+                  </ul>
+                </div>
+              )}
 
               <div className="subul-preview__sheets">
                 {preview.sheets.map((sheet) => {
@@ -384,10 +466,20 @@ export function RawMaterialEntryPage({
               </div>
 
               {preview.missingProducts.length > 0 && (
-                <p className="subul-preview__missing">
-                  <strong>등록되지 않은 제품:</strong> {preview.missingProducts.join(', ')}
-                  <br />제품 관리에서 같은 이름으로 먼저 등록해주세요.
-                </p>
+                <div className="subul-preview__missing">
+                  <p>
+                    <strong>등록되지 않은 제품:</strong> {preview.missingProducts.join(', ')}
+                    <br />제품 관리에 추가할까요? 판매가·포장 단위는 나중에 채우면 됩니다.
+                  </p>
+                  <button
+                    type="button"
+                    className="workflow-outline-button"
+                    disabled={Boolean(busy)}
+                    onClick={() => void registerMissingProducts()}
+                  >
+                    이 제품들 등록하기
+                  </button>
+                </div>
               )}
 
               {preview.missingMaterials.length > 0 && (
@@ -406,10 +498,14 @@ export function RawMaterialEntryPage({
               <button
                 className="workflow-primary-button"
                 type="button"
-                disabled={preview.readyCount === 0 || !periodId || Boolean(busy)}
+                disabled={
+                  preview.readyCount === 0 || preview.errors.length > 0 || !periodId || Boolean(busy)
+                }
                 onClick={commit}
               >
-                투입내역 {preview.readyCount}행 저장 · 원본 보관 <Icon name="check" size={16} />
+                {preview.errors.length > 0
+                  ? '오류를 수정한 뒤 다시 올려주세요'
+                  : <>투입내역 {preview.readyCount}행 저장 · 원본 보관 <Icon name="check" size={16} /></>}
               </button>
             </section>
           )}
@@ -488,12 +584,15 @@ export function RawMaterialEntryPage({
               <header className="production-list__heading">
                 <div className="production-list__title">
                   <h2 id="production-list-title">제품별 생산량</h2>
-                  <span className="production-list__count">{rows.length}개 제품</span>
+                  <span className="production-list__count">{visibleRows.length}개 제품</span>
                 </div>
                 <div className="production-list__meta">
-                  <p>수불자료에는 생산량이 없습니다. 생산 일지를 보고 직접 입력하세요.</p>
+                  <p>
+                    수불자료에는 생산량이 없습니다. 생산 일지를 보고 직접 입력하세요.
+                    {isFilteredByExcel && ' 이 달 수불자료에 있는 제품만 표시합니다.'}
+                  </p>
                   <span className="production-list__progress">
-                    입력 완료 <strong>{filledCount}</strong> / {rows.length}
+                    입력 완료 <strong>{filledCount}</strong> / {visibleRows.length}
                   </span>
                 </div>
               </header>
@@ -504,7 +603,7 @@ export function RawMaterialEntryPage({
               </div>
 
               <div className="production-list__rows">
-                {rows.map((row) => {
+                {visibleRows.map((row) => {
                   const isFilled = row.production.trim() !== ''
                   return (
                     <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
@@ -543,8 +642,17 @@ export function RawMaterialEntryPage({
               <span className="production-empty__icon">
                 <Icon name="factory" size={30} />
               </span>
-              <p>등록된 제품이 없습니다</p>
-              <span>제품 관리에서 제품을 먼저 등록해주세요.</span>
+              {rows.length === 0 ? (
+                <>
+                  <p>등록된 제품이 없습니다</p>
+                  <span>수불자료를 올리면 제품을 바로 등록할 수 있습니다.</span>
+                </>
+              ) : (
+                <>
+                  <p>이 달 수불자료에 매칭된 제품이 없습니다</p>
+                  <span>엑셀을 올리고 미매칭 제품을 등록하면 생산량 입력칸이 나타납니다.</span>
+                </>
+              )}
             </section>
           )}
         </div>

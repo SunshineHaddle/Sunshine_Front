@@ -51,6 +51,7 @@
   display: flex;
   align-items: baseline;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .exchange-rate-card__value strong {
@@ -66,10 +67,16 @@
   font-weight: 600;
 }
 
-.exchange-rate-card__change {
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 700;
+/* 실시간 조회 성공/실패를 구분해 보여준다. 실패 시 숫자는 코드에 박힌 기준값이다 */
+.exchange-rate-card__caption {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-subtle);
+  white-space: nowrap;
+}
+
+.exchange-rate-card__caption.is-stale {
+  color: #b0771f;
 }
 
 .exchange-rate-card__change.is-up {
@@ -275,6 +282,32 @@
   flex: 0 0 100%;
   min-width: 0;
   padding-top: 18px;
+}
+
+/* ── PDF 내보내기용 전개 모드 ─────────────────────────────
+   가로 캐러셀을 세로 스택으로 바꿔 모든 제품이 한 화면에 담기게 한다.
+   html2canvas 는 보이는 것만 그리므로 overflow 도 풀어야 한다. */
+.product-cost-carousel--expanded .product-cost-carousel__viewport {
+  overflow: visible;
+}
+
+.product-cost-carousel--expanded .product-cost-carousel__track {
+  display: block;
+  transform: none !important;
+  transition: none;
+}
+
+.product-cost-carousel--expanded .product-cost-slide {
+  flex: none;
+  width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.product-cost-carousel--expanded .product-cost-slide + .product-cost-slide {
+  margin-top: 26px;
+  padding-top: 26px;
+  border-top: 1px solid var(--color-border);
 }
 
 .product-cost-slide__product {

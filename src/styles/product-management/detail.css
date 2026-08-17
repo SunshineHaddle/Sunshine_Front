@@ -85,9 +85,10 @@
   top: calc(100% + 10px);
   left: 0;
   display: grid;
-  width: 260px;
-  padding: 12px;
-  gap: 10px;
+  /* 사진 업로드 · 제거만 남아서 예전 260px 는 과했다 */
+  width: 156px;
+  padding: 8px;
+  gap: 6px;
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 12px;
@@ -98,10 +99,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 38px;
+  gap: 5px;
+  min-height: 32px;
   color: #fff;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
   background: var(--color-brand);
   border: 0;
@@ -113,46 +114,12 @@
   filter: brightness(0.95);
 }
 
-.photo-menu__url {
-  display: flex;
-  gap: 6px;
-}
-
-.photo-menu__url input {
-  flex: 1 1 auto;
-  min-width: 0;
-  padding: 0 10px;
-  height: 36px;
-  color: #302b2e;
-  font-size: 11px;
-  background: #fff;
-  border: 1px solid #dcd7d9;
-  border-radius: 8px;
-  outline: none;
-}
-
-.photo-menu__url input:focus {
-  border-color: var(--color-brand);
-}
-
-.photo-menu__url button {
-  flex: 0 0 auto;
-  padding: 0 12px;
-  color: #514b4e;
-  font-size: 11px;
-  font-weight: 600;
-  background: #f3f1f2;
-  border: 1px solid #e0dbdd;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
 .photo-menu__remove {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 34px;
+  gap: 5px;
+  min-height: 30px;
   color: #b42318;
   font-size: 11px;
   font-weight: 600;

@@ -135,10 +135,27 @@ export function ProductCreatePage({
                 <input value={ingredientQuery} placeholder="재료명 검색" onChange={(event) => setIngredientQuery(event.target.value)} />
               </label>
               <div className="ingredient-catalog">
-                {availableIngredients.slice(0, 5).map((ingredient) => (
-                  <div key={ingredient.id}>
-                    <span><strong>{ingredient.name}</strong><small>{currencyFormatter.format(ingredient.unitPrice)} / {ingredient.unit}</small></span>
-                    <button type="button" aria-label={`${ingredient.name} 추가`} onClick={() => addIngredient(ingredient)}><Icon name="add" size={16} /></button>
+                {availableIngredients.map((ingredient) => (
+                  <div key={ingredient.id} className={ingredient.isSuggestion ? 'is-suggestion' : undefined}>
+                    <span>
+                      <strong>{ingredient.name}</strong>
+                      <small>
+                        {ingredient.isSuggestion
+                          ? `기본 재료 · 단가는 나중에 입력 / ${ingredient.unit}`
+                          : `${currencyFormatter.format(ingredient.unitPrice)} / ${ingredient.unit}`}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      aria-label={`${ingredient.name} 추가`}
+                      onClick={() => {
+                        void addIngredient(ingredient).then((result) => {
+                          if (result.message) onAction(result.message)
+                        })
+                      }}
+                    >
+                      <Icon name="add" size={16} />
+                    </button>
                   </div>
                 ))}
                 {availableIngredients.length === 0 && <p>추가할 수 있는 재료가 없습니다.</p>}
@@ -146,6 +163,9 @@ export function ProductCreatePage({
 
               <div className="new-ingredient">
                 <h3>새 재료 만들기</h3>
+                <p className="new-ingredient__hint">
+                  재료명만 있으면 됩니다. 단가는 수불자료를 올리면 자동으로 채워집니다.
+                </p>
                 <div className="new-ingredient__fields">
                   <label>
                     <span>재료명</span>
@@ -156,16 +176,16 @@ export function ProductCreatePage({
                     />
                   </label>
                   <label>
-                    <span>단가(원)</span>
+                    <span>단가(원) <em>선택</em></span>
                     <NumberInput
                       min="0"
                       value={newIngredientPrice}
-                      placeholder="0"
+                      placeholder="비워두면 0원"
                       onValueChange={(raw) => setNewIngredientPrice(raw)}
                     />
                   </label>
                   <label>
-                    <span>단위</span>
+                    <span>단위 <em>선택</em></span>
                     <select value={newIngredientUnit} onChange={(event) => setNewIngredientUnit(event.target.value as 'kg' | 'g')}>
                       <option value="kg">kg</option>
                       <option value="g">g</option>
@@ -174,6 +194,7 @@ export function ProductCreatePage({
                   <button
                     className="new-ingredient__add"
                     type="button"
+                    disabled={!newIngredientName.trim()}
                     onClick={() => { void addNewIngredient().then((result) => onAction(result.message)) }}
                   >
                     <Icon name="add" size={16} /> 추가

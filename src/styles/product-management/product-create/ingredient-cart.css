@@ -3,6 +3,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 12px;
   gap: 8px;
+  /* 기본 재료 14종까지 들어오므로 목록이 길어진다. 카드 안에서만 스크롤시킨다 */
+  max-height: 296px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+/* 아직 DB 에 없는 기본 재료 제안. 누르면 등록되면서 담긴다 */
+.ingredient-catalog > div.is-suggestion {
+  background: transparent;
+  border-style: dashed;
 }
 
 .ingredient-catalog > div {

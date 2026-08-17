@@ -7,8 +7,6 @@ export type AppRoute =
   | 'data-entry-3'
   | 'exchange-rate-detail'
   | 'user-management'
-  | 'cost-trend-detail'
-  | 'defect-status-detail'
   | 'product-management'
   | 'product-create'
   | 'product-detail'
@@ -50,10 +48,10 @@ export function routeFromHash(hash: string): AppRoute {
       return 'exchange-rate-detail'
     case 'users':
       return 'user-management'
+    // 예전 인사이트 카드가 쓰던 해시. 북마크가 남아 있을 수 있어 대시보드로 보낸다
     case 'dashboard/cost-trend':
-      return 'dashboard'
     case 'dashboard/defect-status':
-      return 'defect-status-detail'
+      return 'dashboard'
     case 'products':
       return 'product-management'
     case 'products/new':
@@ -77,10 +75,6 @@ export function hashForRoute(route: AppRoute) {
       return '#dashboard/exchange-rate'
     case 'user-management':
       return '#users'
-    case 'cost-trend-detail':
-      return '#dashboard'
-    case 'defect-status-detail':
-      return '#dashboard/defect-status'
     case 'product-management':
       return '#products'
     case 'product-create':

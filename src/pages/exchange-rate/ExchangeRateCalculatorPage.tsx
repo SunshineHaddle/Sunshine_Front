@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
 import { Sidebar } from '../../components/layout/Sidebar'
@@ -75,34 +75,19 @@ const productTotalCost = (product: RecipeProduct) => {
   return product.materialCost + product.laborCost + indirect
 }
 
-type SavedRow = { name?: string; cost?: number; marginRate?: number }
+type SavedRow = { cost?: number; marginRate?: number }
 
-const loadProductRows = (products: RecipeProduct[]): ExchangeMaterialRow[] => {
-  let saved: Record<string, SavedRow> = {}
+/**
+ * 사용자가 표에서 직접 고친 값만 저장한다.
+ * 행 자체는 제품 관리 목록에서 파생되므로 여기에 담지 않는다 —
+ * 담아두면 제품이 비동기로 도착할 때 표가 빈 채로 굳는다.
+ */
+const loadOverrides = (): Record<string, SavedRow> => {
   try {
-    saved = JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}') as typeof saved
+    return JSON.parse(window.localStorage.getItem(SETTINGS_STORAGE_KEY) ?? '{}') as Record<string, SavedRow>
   } catch {
-    saved = {}
+    return {}
   }
-
-  const productRows = products.map((product, index) => ({
-    id: product.id,
-    name: saved[product.id]?.name ?? product.name,
-    cost: saved[product.id]?.cost ?? productTotalCost(product),
-    marginRate: saved[product.id]?.marginRate ?? defaultMargins[index % defaultMargins.length],
-  }))
-
-  const productIds = new Set(products.map((product) => product.id))
-  const extraRows = Object.entries(saved)
-    .filter(([id]) => !productIds.has(id))
-    .map(([id, value]) => ({
-      id,
-      name: value.name ?? '새 제품',
-      cost: value.cost ?? 0,
-      marginRate: value.marginRate ?? 20,
-    }))
-
-  return [...productRows, ...extraRows]
 }
 
 const formatKrw = (value: number) => Math.round(value).toLocaleString('ko-KR')
@@ -132,7 +117,22 @@ export function ExchangeRateCalculatorPage({
   onNavigate,
   onAction,
 }: ExchangeRateCalculatorPageProps) {
-  const [rows, setRows] = useState<ExchangeMaterialRow[]>(() => loadProductRows(products))
+  const [overrides, setOverrides] = useState<Record<string, SavedRow>>(loadOverrides)
+
+  /**
+   * 표의 행 = 제품 관리에 등록된 제품 전부, 그리고 그것뿐.
+   * 제품 목록이 비동기로 도착해도 여기서 다시 계산되므로 동기화가 필요 없다.
+   */
+  const rows = useMemo<ExchangeMaterialRow[]>(
+    () => products.map((product, index) => ({
+      id: product.id,
+      name: product.name,
+      cost: overrides[product.id]?.cost ?? productTotalCost(product),
+      marginRate: overrides[product.id]?.marginRate
+        ?? defaultMargins[index % defaultMargins.length],
+    })),
+    [products, overrides],
+  )
   const [currencies, setCurrencies] = useState<Record<CurrencyCode, CurrencySetting>>(() => loadCurrencies())
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
   const [rateUpdatedAt, setRateUpdatedAt] = useState<string>('')
@@ -167,12 +167,10 @@ export function ExchangeRateCalculatorPage({
     return () => { cancelled = true }
   }, [])
 
+  // 사용자가 고친 값만 남긴다. 안 고친 제품은 제품 관리 값을 계속 따라간다.
   useEffect(() => {
-    const settings = Object.fromEntries(
-      rows.map((row) => [row.id, { name: row.name, cost: row.cost, marginRate: row.marginRate }]),
-    )
-    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings))
-  }, [rows])
+    window.localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(overrides))
+  }, [overrides])
 
   useEffect(() => {
     window.localStorage.setItem(CURRENCY_STORAGE_KEY, JSON.stringify(currencies))
@@ -203,21 +201,14 @@ export function ExchangeRateCalculatorPage({
   }
 
   const updateRow = (id: string, values: Partial<ExchangeMaterialRow>) => {
-    setRows((current) => current.map((row) => (
-      row.id === id ? { ...row, ...values } : row
-    )))
-  }
-
-  const addMaterial = () => {
-    setRows((current) => [
+    setOverrides((current) => ({
       ...current,
-      {
-        id: crypto.randomUUID(),
-        name: `새 제품 ${current.length + 1}`,
-        cost: 0,
-        marginRate: 20,
+      [id]: {
+        ...current[id],
+        ...(values.cost !== undefined && { cost: values.cost }),
+        ...(values.marginRate !== undefined && { marginRate: values.marginRate }),
       },
-    ])
+    }))
   }
 
   return (
@@ -322,17 +313,17 @@ export function ExchangeRateCalculatorPage({
                 </tr>
               </thead>
               <tbody>
+                {rows.length === 0 && (
+                  <tr>
+                    <td className="exchange-table__empty" colSpan={5}>
+                      제품 관리에 등록된 제품이 없습니다. 제품을 먼저 등록해주세요.
+                    </td>
+                  </tr>
+                )}
                 {rows.map((row) => (
                   <tr key={row.id}>
                     <td data-label="제품명">
-                      <input
-                        className="exchange-name-input"
-                        type="text"
-                        aria-label="제품명"
-                        value={row.name}
-                        placeholder="제품명"
-                        onChange={(event) => updateRow(row.id, { name: event.target.value })}
-                      />
+                      <strong className="exchange-name">{row.name}</strong>
                       <span>제품 1개 기준</span>
                     </td>
                     <td data-label="계산 원가">
@@ -372,9 +363,6 @@ export function ExchangeRateCalculatorPage({
               </tbody>
             </table>
           </div>
-          <button className="exchange-add-material" type="button" onClick={addMaterial}>
-            <Icon name="add" size={18} /> 새 제품 추가
-          </button>
         </section>
       </main>
     </div>

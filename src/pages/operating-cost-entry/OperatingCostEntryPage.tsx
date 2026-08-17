@@ -12,6 +12,7 @@ import {
 } from '../../lib/api/operating'
 import { fetchProduction } from '../../lib/api/production'
 import { markEntrySaved } from '../../utils/entrySaved'
+import { describeDbError } from '../../lib/api/errors'
 import {
   calculateOperatingCosts,
   distributeByProduction,
@@ -70,10 +71,14 @@ export function OperatingCostEntryPage({
 
   // §7-1 해당 월 운영비를 읽어 화면 모델로 바꾼다
   useEffect(() => {
-    // worker 는 재접속마다 빈 폼으로 시작한다 (저장값을 화면에 되불러오지 않음)
-    if (freshEntry) { setCosts(initialOperatingCosts); setSavedIds(new Set()); return }
     let cancelled = false
     const load = async () => {
+      // worker 는 재접속마다 빈 폼으로 시작한다 (저장값을 화면에 되불러오지 않음)
+      if (freshEntry) {
+        setCosts(initialOperatingCosts)
+        setSavedIds(new Set())
+        return
+      }
       if (!periodId) return
       try {
         const rows = await fetchOperatingCosts(periodId)
@@ -95,7 +100,7 @@ export function OperatingCostEntryPage({
         })
         setSavedIds(new Set(custom.map((row) => row.id)))
       } catch (error) {
-        onAction(`조회 실패: ${error instanceof Error ? error.message : String(error)}`)
+        onAction(`조회 실패: ${describeDbError(error)}`)
       }
     }
     void load()
@@ -158,7 +163,7 @@ export function OperatingCostEntryPage({
     }))
     if (savedIds.has(id)) {
       void deleteOperatingCost(id).catch((error: unknown) =>
-        onAction(`삭제 실패: ${error instanceof Error ? error.message : String(error)}`),
+        onAction(`삭제 실패: ${describeDbError(error)}`),
       )
     }
   }
@@ -181,7 +186,7 @@ export function OperatingCostEntryPage({
       markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       return true
     } catch (error) {
-      onAction(`저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`저장 실패: ${describeDbError(error)}`)
       return false
     } finally {
       setBusy(false)

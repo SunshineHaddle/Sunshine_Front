@@ -4,6 +4,7 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import { confirmPeriod, fetchCostSummaries, type CostSummary } from '../../lib/api/results'
 import { reopenPeriod } from '../../lib/api/periods'
+import { describeDbError } from '../../lib/api/errors'
 
 type ProductionResultPageProps = {
   month: string
@@ -34,7 +35,7 @@ export function ProductionResultPage({
     try {
       setSummaries(await fetchCostSummaries(periodId))
     } catch (error) {
-      onAction(`조회 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`조회 실패: ${describeDbError(error)}`)
     }
   }, [periodId, onAction])
 
@@ -53,7 +54,7 @@ export function ProductionResultPage({
           : '계산할 데이터가 없습니다. 1단계에서 생산량을 먼저 입력해주세요.',
       )
     } catch (error) {
-      onAction(`계산 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`계산 실패: ${describeDbError(error)}`)
     } finally {
       setBusy(false)
     }
@@ -67,7 +68,7 @@ export function ProductionResultPage({
       onPeriodChanged()
       onAction('마감을 취소했습니다. 1·2단계에서 값을 고친 뒤 다시 계산하세요.')
     } catch (error) {
-      onAction(`마감 취소 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`마감 취소 실패: ${describeDbError(error)}`)
     } finally {
       setBusy(false)
     }

@@ -6,6 +6,7 @@ import type { IngredientCatalogItem, RecipeProduct } from './productManagementDa
 import { ProductCostSummary } from '../../components/product-management/ProductCostSummary'
 import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
 import { saveRecipeItems, uploadProductImage } from '../../lib/api/products'
+import { describeDbError } from '../../lib/api/errors'
 import { thumbnailUrl } from '../../utils/thumbnail'
 
 type ProductDetailPageProps = {
@@ -106,7 +107,7 @@ export function ProductDetailPage({
       setIsEditingRecipe(false)
       onAction('배합을 저장했습니다.')
     } catch (error) {
-      onAction(`배합 저장 실패: ${error instanceof Error ? error.message : String(error)}`)
+      onAction(`배합 저장 실패: ${describeDbError(error)}`)
     } finally {
       setSavingRecipe(false)
     }
@@ -119,7 +120,6 @@ export function ProductDetailPage({
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isEditingImage, setIsEditingImage] = useState(false)
-  const [imageUrlInput, setImageUrlInput] = useState('')
 
   const canEditImage = Boolean(onUpdateImage)
 
@@ -152,18 +152,6 @@ export function ProductDetailPage({
     }
   }
 
-  const applyImageUrl = () => {
-    const url = imageUrlInput.trim()
-    if (!url) {
-      onAction('이미지 주소를 입력해 주세요.')
-      return
-    }
-    onUpdateImage?.(url)
-    setIsEditingImage(false)
-    setImageUrlInput('')
-    onAction(`${product.name} 사진을 변경했습니다.`)
-  }
-
   const removeImage = () => {
     onUpdateImage?.('')
     setIsEditingImage(false)
@@ -187,7 +175,7 @@ export function ProductDetailPage({
               onClick={() => {
                 if (!window.confirm(`${product.name}을(를) 목록에서 숨길까요?\n과거 원가 기록은 그대로 남습니다.`)) return
                 void onDeactivate().catch((error: unknown) =>
-                  onAction(`처리 실패: ${error instanceof Error ? error.message : String(error)}`),
+                  onAction(`처리 실패: ${describeDbError(error)}`),
                 )
               }}
             >
@@ -209,10 +197,7 @@ export function ProductDetailPage({
                 className="product-detail-header__photo-edit"
                 aria-label="제품 사진 변경"
                 aria-expanded={isEditingImage}
-                onClick={() => {
-                  setImageUrlInput(product.imageUrl ?? '')
-                  setIsEditingImage((current) => !current)
-                }}
+                onClick={() => setIsEditingImage((current) => !current)}
               >
                 <Icon name="edit" size={13} />
               </button>
@@ -225,21 +210,8 @@ export function ProductDetailPage({
                   className="photo-menu__upload"
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  <Icon name="upload" size={15} /> 사진 업로드
+                  <Icon name="upload" size={14} /> 사진 업로드
                 </button>
-                <div className="photo-menu__url">
-                  <input
-                    type="url"
-                    value={imageUrlInput}
-                    placeholder="이미지 주소(URL) 붙여넣기"
-                    onChange={(event) => setImageUrlInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter') applyImageUrl()
-                      if (event.key === 'Escape') setIsEditingImage(false)
-                    }}
-                  />
-                  <button type="button" onClick={applyImageUrl}>적용</button>
-                </div>
                 {product.imageUrl && (
                   <button type="button" className="photo-menu__remove" onClick={removeImage}>
                     <Icon name="trash" size={14} /> 사진 제거

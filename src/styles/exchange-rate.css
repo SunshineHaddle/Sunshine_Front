@@ -452,27 +452,6 @@
   font-size: 10px;
 }
 
-.exchange-add-material {
-  display: flex;
-  width: 100%;
-  min-height: 58px;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  color: #665f61;
-  background: #fff;
-  border: 0;
-  border-top: 1px solid #e7e4e2;
-  cursor: pointer;
-  font-size: 11.5px;
-  font-weight: 700;
-}
-
-.exchange-add-material:hover {
-  color: var(--color-brand);
-  background: #fff;
-}
-
 .exchange-status-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -664,27 +643,20 @@
   }
 }
 
-.exchange-name-input {
+/* 제품명은 제품 관리를 따라가므로 여기서 고치지 않는다 */
+.exchange-name {
   display: block;
-  width: 100%;
-  padding: 6px 8px;
+  padding: 6px 8px 6px 0;
   color: #242020;
   font-size: 13px;
   font-weight: 650;
-  background: transparent;
-  border: 1px solid transparent;
-  outline: 0;
-  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
-.exchange-name-input:hover {
-  background: #f6f5f5;
-  border-color: #ececec;
-}
-
-.exchange-name-input:focus {
-  background: #f6f5f5;
-  border-color: #d9d4d5;
+.exchange-table__empty {
+  padding: 28px 12px;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  text-align: center;
 }
 
 .exchange-cost-field {

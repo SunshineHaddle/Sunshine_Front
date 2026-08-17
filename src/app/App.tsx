@@ -236,6 +236,8 @@ function App() {
     onMonthChange: setMonth,
     onNavigate: navigate,
     onAction: announce,
+    // 1단계에서 수불자료 시트명으로 제품을 만들면 목록을 다시 읽어야 한다
+    onProductsChanged: reloadProducts,
   }
 
   let page: ReactNode

@@ -132,6 +132,7 @@ export type FileUploadRow = {
   file_type: string | null
   size: number | null
   row_count: number | null
+  uploaded_by: string | null
   uploaded_at: string
 }
 

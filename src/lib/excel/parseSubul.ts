@@ -12,6 +12,8 @@
  * 금액 열은 읽기만 하고 쓰지 않는다. DB 의 amount 는 generated 컬럼이라
  * 수량 × 단가로 다시 계산된다 (장부의 반올림 오차는 여기서 흡수된다).
  */
+import { parsePrice, parseQuantity, unitFromHeader } from './parseQuantity'
+
 export type SubulLine = {
   /** 엑셀의 행 번호 (1-based). 오류 메시지에 쓴다 */
   row: number
@@ -31,7 +33,10 @@ export type SubulSheet = {
 
 export type SubulParseResult = {
   sheets: SubulSheet[]
+  /** 넘어가도 되는 문제 (빈 행, 단위 환산 알림) */
   warnings: string[]
+  /** 사람이 엑셀을 고쳐야 하는 문제. 있으면 저장을 막는다 */
+  errors: string[]
 }
 
 /** 템플릿·안내용 시트는 데이터가 아니다 */
@@ -51,6 +56,10 @@ function toNumber(v: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/** 셀이 채워져 있는가. '비어서 건너뜀' 과 '값이 잘못됨' 을 가른다 */
+const isFilled = (v: unknown) =>
+  v !== null && v !== undefined && String(v).trim() !== ''
+
 /** 헤더 행을 찾아 열 인덱스를 돌려준다. 못 찾으면 null */
 function findHeader(rows: unknown[][]) {
   for (let r = 0; r < Math.min(rows.length, 15); r += 1) {
@@ -65,7 +74,10 @@ function findHeader(rows: unknown[][]) {
       else if (b === '금액') idx.amount = c
     })
 
-    if (idx.name >= 0 && idx.qty >= 0 && idx.price >= 0) return { headerRow: r, idx }
+    if (idx.name >= 0 && idx.qty >= 0 && idx.price >= 0) {
+      // '수량(g)' 처럼 헤더가 단위를 선언하면 그 시트 전체의 기본 단위가 된다
+      return { headerRow: r, idx, qtyUnit: unitFromHeader(cells[idx.qty]) }
+    }
   }
   return null
 }
@@ -76,6 +88,7 @@ export async function parseSubulWorkbook(buffer: ArrayBuffer): Promise<SubulPars
   const book = XLSX.read(buffer)
   const sheets: SubulSheet[] = []
   const warnings: string[] = []
+  const errors: string[] = []
 
   for (const sheetName of book.SheetNames) {
     if (SKIP_SHEET.test(sheetName)) continue
@@ -92,9 +105,15 @@ export async function parseSubulWorkbook(buffer: ArrayBuffer): Promise<SubulPars
       continue
     }
 
-    const { headerRow, idx } = header
+    const { headerRow, idx, qtyUnit } = header
     const lines: SubulLine[] = []
     let statedTotal: number | null = null
+
+    if (qtyUnit !== 'kg') {
+      warnings.push(
+        `'${sheetName}' 시트의 수량 단위가 ${qtyUnit} 로 적혀 있어 kg 으로 환산했습니다.`,
+      )
+    }
 
     for (let r = headerRow + 1; r < rows.length; r += 1) {
       const cells = rows[r] ?? []
@@ -108,21 +127,41 @@ export async function parseSubulWorkbook(buffer: ArrayBuffer): Promise<SubulPars
       // 템플릿의 빈 자리
       if (!rawName || rawName === '품명작성') continue
 
-      const qty = toNumber(cells[idx.qty])
-      const unitPrice = toNumber(cells[idx.price])
+      const qtyCell = cells[idx.qty]
+      const priceCell = cells[idx.price]
 
-      // 수량·단가가 둘 다 비어 있으면 미사용 재료로 보고 건너뛴다
-      if (qty === null && unitPrice === null) continue
-      if (qty === null || unitPrice === null) {
-        warnings.push(`'${sheetName}' ${r + 1}행 '${rawName}': 수량 또는 단가가 비어 있어 건너뛰었습니다.`)
+      // 수량·단가가 둘 다 비어 있으면 그 달에 안 쓴 재료다. 조용히 건너뛴다
+      if (!isFilled(qtyCell) && !isFilled(priceCell)) continue
+
+      const where = `'${sheetName}' ${r + 1}행 '${rawName}'`
+      const qty = parseQuantity(qtyCell, qtyUnit)
+      const unitPrice = parsePrice(priceCell)
+
+      // 한쪽만 비었으면 입력이 덜 된 것 — 넘어가되 알린다
+      if (!isFilled(qtyCell) || !isFilled(priceCell)) {
+        warnings.push(`${where}: 수량 또는 단가가 비어 있어 건너뛰었습니다.`)
         continue
+      }
+
+      // 값이 있는데 해석이 안 되면 사람이 엑셀을 고쳐야 한다.
+      // 예전엔 이 경우도 '비어 있음' 으로 묶여 조용히 빠졌다.
+      if (!qty.ok) {
+        errors.push(`${where}: 수량을 읽을 수 없습니다 — ${qty.reason}`)
+        continue
+      }
+      if (!unitPrice.ok) {
+        errors.push(`${where}: 단가를 읽을 수 없습니다 — ${unitPrice.reason}`)
+        continue
+      }
+      if (qty.convertedFrom) {
+        warnings.push(`${where}: ${qty.convertedFrom} 로 적혀 있어 ${qty.qty} kg 으로 환산했습니다.`)
       }
 
       lines.push({
         row: r + 1,
         materialName: String(cells[idx.name]).trim(),
-        qty,
-        unitPrice,
+        qty: qty.qty,
+        unitPrice: unitPrice.qty,
         statedAmount: idx.amount >= 0 ? toNumber(cells[idx.amount]) : null,
       })
     }
@@ -135,7 +174,7 @@ export async function parseSubulWorkbook(buffer: ArrayBuffer): Promise<SubulPars
     sheets.push({ productName: sheetName.trim(), lines, statedTotal })
   }
 
-  return { sheets, warnings }
+  return { sheets, warnings, errors }
 }
 
 /**
