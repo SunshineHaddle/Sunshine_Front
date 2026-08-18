@@ -67,8 +67,6 @@ export function ProductDetailPage({
   const [sales, setSales] = useState({
     salePrice: String(product.salePrice ?? ''),
     unitWeightKg: String(product.unitWeightKg ?? ''),
-    specification: product.specification ?? '',
-    packageUnit: product.packageUnit ?? 'PCK',
   })
   const [savingSales, setSavingSales] = useState(false)
 
@@ -80,8 +78,6 @@ export function ProductDetailPage({
         sale_price: Number(sales.salePrice) || 0,
         // 빈 값은 0 이 아니라 null 로 보낸다 — 0 이면 단위원가가 0 이 된다
         unit_weight_kg: weight === '' ? null : Number(weight) || null,
-        specification: sales.specification.trim(),
-        package_unit: sales.packageUnit.trim() || 'PCK',
       })
       await onRefresh?.()
       onAction(`${product.name}의 판매 정보를 저장했습니다.`)
@@ -308,22 +304,6 @@ export function ProductDetailPage({
                 value={sales.unitWeightKg}
                 placeholder="예: 5"
                 onValueChange={(raw) => setSales((c) => ({ ...c, unitWeightKg: raw }))}
-              />
-            </label>
-            <label>
-              <span>규격</span>
-              <input
-                value={sales.specification}
-                placeholder="예: 5kg"
-                onChange={(event) => setSales((c) => ({ ...c, specification: event.target.value }))}
-              />
-            </label>
-            <label>
-              <span>포장 단위</span>
-              <input
-                value={sales.packageUnit}
-                placeholder="PCK"
-                onChange={(event) => setSales((c) => ({ ...c, packageUnit: event.target.value }))}
               />
             </label>
           </div>
