@@ -384,6 +384,16 @@ export function RawMaterialEntryPage({
     if (await persistProduction()) onAction('제품 생산량을 임시 저장했습니다.')
   }
 
+  const resetEntry = () => {
+    if (!window.confirm('입력한 생산량과 업로드 내용을 화면에서 지울까요?\n이미 저장된 데이터는 그대로 남습니다.')) return
+    setRows((current) => current.map((row) => ({ ...row, production: '' })))
+    setPreview(null)
+    setFile(null)
+    setFileName('')
+    setMonthMismatch(null)
+    onAction('입력 내용을 초기화했습니다.')
+  }
+
   const goToNextStep = async () => {
     if (await persistProduction()) onNavigate('data-entry-2')
   }
@@ -403,11 +413,21 @@ export function RawMaterialEntryPage({
             <h1>데이터 입력 1단계: 제품 생산량</h1>
             <p>수불자료(.xlsx)를 올리면 제품별 투입 재료가 등록됩니다. 생산량은 아래에서 직접 입력하세요.</p>
           </div>
-          <label className="entry-month-picker">
-            <span className="visually-hidden">기준 월</span>
-            <Icon name="calendar" size={17} />
-            <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
-          </label>
+          <div className="entry-heading__actions">
+            <button
+              className="workflow-outline-button"
+              type="button"
+              onClick={resetEntry}
+              disabled={!hasRows && !preview}
+            >
+              <Icon name="trash" size={16} /> 초기화
+            </button>
+            <label className="entry-month-picker">
+              <span className="visually-hidden">기준 월</span>
+              <Icon name="calendar" size={17} />
+              <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
+            </label>
+          </div>
         </header>
 
         <div className="production-entry">

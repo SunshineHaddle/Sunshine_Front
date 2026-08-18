@@ -9,6 +9,12 @@
   flex-wrap: wrap;
 }
 
+.entry-heading__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .entry-month-picker,
 .operating-month-badge {
   display: inline-flex;
@@ -892,48 +898,6 @@
 .cost-trend__x-label { fill: var(--color-text-subtle); font-size: 11px; }
 .cost-trend__bar.is-manufacturing { fill: var(--color-navy); }
 .cost-trend__bar.is-total { fill: var(--color-brand); }
-
-/* ── 막대 hover 툴팁 ──────────────────────────────────────
-   막대가 얇아 직접 겨냥하기 어렵다. 월 단위 열 전체를 감지 영역으로 쓴다 */
-.cost-trend__hit {
-  fill: transparent;
-  cursor: pointer;
-}
-
-.cost-trend__hit:focus {
-  outline: none;
-}
-
-.cost-trend__hit:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
-}
-
-.cost-trend__column-highlight {
-  fill: var(--color-brand);
-  opacity: 0.06;
-  pointer-events: none;
-}
-
-.cost-trend__tooltip {
-  pointer-events: none;
-}
-
-.cost-trend__tooltip rect {
-  fill: #2e292b;
-  opacity: 0.96;
-}
-
-.cost-trend__tooltip text {
-  fill: rgba(255, 255, 255, 0.72);
-  font-size: 11px;
-}
-
-.cost-trend__tooltip .cost-trend__tooltip-value {
-  fill: #fff;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
 
 .cost-trend-card__empty {
   margin: 12px 0 0;

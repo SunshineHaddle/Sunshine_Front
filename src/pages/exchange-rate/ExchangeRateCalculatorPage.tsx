@@ -5,6 +5,8 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import { fetchExchangeRates } from '../../lib/api/exchangeRates'
+import { fetchPeriodByMonth } from '../../lib/api/periods'
+import { fetchCostSummaries } from '../../lib/api/results'
 import { FlagIcon } from '../../components/common/FlagIcon'
 
 type CurrencyCode = string
@@ -21,6 +23,7 @@ type ExchangeMaterialRow = {
   name: string
   cost: number
   marginRate: number
+  quantityKg: number
 }
 
 type ExchangeRateCalculatorPageProps = {
@@ -69,12 +72,12 @@ const parseNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const productTotalCost = (product: RecipeProduct) => {
-  const indirect = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
-  return product.materialCost + product.laborCost + indirect
+const currentMonth = () => {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-type SavedRow = { cost?: number; marginRate?: number }
+type SavedRow = { cost?: number; marginRate?: number; quantityKg?: number }
 
 /**
  * 사용자가 표에서 직접 고친 값만 저장한다.
@@ -98,8 +101,8 @@ const formatRateTime = (date: Date) => date.toLocaleString('ko-KR', {
   minute: '2-digit',
 })
 
-const calculateCost = (row: ExchangeMaterialRow) => row.cost
-const calculateSalePrice = (row: ExchangeMaterialRow) => calculateCost(row) * (1 + row.marginRate / 100)
+const calculateUnitSalePrice = (row: ExchangeMaterialRow) => row.cost * (1 + row.marginRate / 100)
+const calculateSalePrice = (row: ExchangeMaterialRow) => calculateUnitSalePrice(row) * row.quantityKg
 const calculateLocalPrice = (row: ExchangeMaterialRow, setting: CurrencySetting) => (
   setting.rate > 0 ? calculateSalePrice(row) / setting.rate : 0
 )
@@ -117,6 +120,23 @@ export function ExchangeRateCalculatorPage({
   onAction,
 }: ExchangeRateCalculatorPageProps) {
   const [overrides, setOverrides] = useState<Record<string, SavedRow>>(loadOverrides)
+  const [unitCostById, setUnitCostById] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      try {
+        const period = await fetchPeriodByMonth(currentMonth())
+        if (cancelled || !period) return
+        const summaries = await fetchCostSummaries(period.id)
+        if (cancelled) return
+        setUnitCostById(Object.fromEntries(summaries.map((s) => [s.productId, s.unitCost])))
+      } catch {
+        if (!cancelled) setUnitCostById({})
+      }
+    })()
+    return () => { cancelled = true }
+  }, [])
 
   /**
    * 표의 행 = 제품 관리에 등록된 제품 전부, 그리고 그것뿐.
@@ -126,11 +146,12 @@ export function ExchangeRateCalculatorPage({
     () => products.map((product, index) => ({
       id: product.id,
       name: product.name,
-      cost: overrides[product.id]?.cost ?? productTotalCost(product),
+      cost: overrides[product.id]?.cost ?? unitCostById[product.id] ?? product.materialCost,
       marginRate: overrides[product.id]?.marginRate
         ?? defaultMargins[index % defaultMargins.length],
+      quantityKg: overrides[product.id]?.quantityKg ?? 1,
     })),
-    [products, overrides],
+    [products, overrides, unitCostById],
   )
   const [currencies, setCurrencies] = useState<Record<CurrencyCode, CurrencySetting>>(() => loadCurrencies())
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
@@ -206,6 +227,7 @@ export function ExchangeRateCalculatorPage({
         ...current[id],
         ...(values.cost !== undefined && { cost: values.cost }),
         ...(values.marginRate !== undefined && { marginRate: values.marginRate }),
+        ...(values.quantityKg !== undefined && { quantityKg: values.quantityKg }),
       },
     }))
   }
@@ -311,13 +333,14 @@ export function ExchangeRateCalculatorPage({
                   <th scope="col">계산 원가<br />(KRW)</th>
                   <th scope="col">마진율 (%)</th>
                   <th scope="col">판매가 (KRW)</th>
+                  <th scope="col">수량 (kg)</th>
                   <th scope="col">현지 판매가</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 && (
                   <tr>
-                    <td className="exchange-table__empty" colSpan={5}>
+                    <td className="exchange-table__empty" colSpan={6}>
                       제품 관리에 등록된 제품이 없습니다. 제품을 먼저 등록해주세요.
                     </td>
                   </tr>
@@ -356,6 +379,17 @@ export function ExchangeRateCalculatorPage({
                     </td>
                     <td data-label="판매가">
                       <strong className="exchange-sale-price">{formatKrw(calculateSalePrice(row))}</strong>
+                    </td>
+                    <td data-label="수량">
+                      <label className="exchange-quantity-field">
+                        <span className="visually-hidden">{row.name} 수량(kg)</span>
+                        <NumberInput
+                          min="0"
+                          value={row.quantityKg}
+                          onValueChange={(raw) => updateRow(row.id, { quantityKg: Math.max(0, parseNumber(raw)) })}
+                        />
+                        <em>kg</em>
+                      </label>
                     </td>
                     <td data-label="현지 판매가">
                       <strong className="exchange-local-price">{formatLocalPrice(row, selectedSetting)}</strong>
