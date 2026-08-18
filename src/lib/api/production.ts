@@ -140,6 +140,49 @@ export async function fetchUsageProductIds(periodId: string): Promise<string[]> 
   return [...new Set(rows.map((row) => row.product_id))]
 }
 
+/**
+ * 한 제품이 특정 달에 실제로 투입한 재료. 제품 상세의 원재료비 상세가 쓴다.
+ *
+ * periodId 대신 'YYYY-MM' 을 받아 cost_periods 를 조인한다 —
+ * 화면에서 회차 id 를 따로 조회하지 않아도 되게 하기 위해서다.
+ */
+export async function fetchProductUsagesByMonth(
+  productId: string,
+  month: string,
+): Promise<UsageLine[]> {
+  const rows = unwrap(
+    await supabase
+      .from('material_usages')
+      // !inner 가 없으면 기간 필터가 적용되지 않는다
+      .select('product_id, usage_qty, unit, unit_price, amount, source,'
+        + ' materials(code, name), cost_periods!inner(period)')
+      .eq('product_id', productId)
+      .eq('cost_periods.period', `${month}-01`),
+  ) as unknown as {
+    product_id: string
+    usage_qty: number
+    unit: MaterialUnit
+    unit_price: number
+    amount: number
+    source: string
+    materials: { code: string; name: string } | null
+  }[]
+
+  return rows
+    .map((row) => ({
+      productId: row.product_id,
+      materialCode: row.materials?.code ?? '',
+      materialName: row.materials?.name ?? '',
+      usage: num(row.usage_qty),
+      unit: row.unit,
+      unitPrice: num(row.unit_price),
+      amount: num(row.amount),
+      source: row.source,
+    }))
+    // 금액이 큰 재료가 위로 오면 어디에 돈이 쓰였는지 바로 보인다
+    .sort((a, b) => b.amount - a.amount)
+}
+
 // ── §6-2. 투입 실적 저장 ────────────────────────────────────
 export async function saveMaterialUsages(
   periodId: string,

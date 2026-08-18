@@ -18,10 +18,14 @@ import type {
   RecipeProduct,
 } from '../pages/product-management/productManagementData'
 import {
+  countProductReferences,
   createProductWithRecipe,
-  deactivateProduct,
+  findLockedPeriods,
+  deleteProduct,
+  fetchHiddenProducts,
   fetchMaterials,
   fetchProducts,
+  restoreProduct,
   updateProduct,
 } from '../lib/api/products'
 import { ensurePeriod } from '../lib/api/periods'
@@ -29,6 +33,7 @@ import { fetchRecipeCostSummary, type RecipeCostSummary } from '../lib/api/resul
 import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
 import { fetchMyProfile, getSessionUserId, signOut, toLoginRole } from '../lib/api/auth'
+import { describeDbError } from '../lib/api/errors'
 import { SessionProvider } from '../lib/session'
 import { isEntrySavedBeforeSession, refreshEntrySavedSnapshot } from '../utils/entrySaved'
 
@@ -59,6 +64,8 @@ function App() {
   const [message, setMessage] = useState('')
   const [recipeProducts, setRecipeProducts] = useState<RecipeProduct[]>([])
   const [materials, setMaterials] = useState<IngredientCatalogItem[]>([])
+  /** §3-7 : 숨긴 제품. 되돌리기 목록에 쓴다 */
+  const [hiddenProducts, setHiddenProducts] = useState<{ id: string; sku: string; name: string }[]>([])
   const [loadError, setLoadError] = useState('')
   const [selectedProductId, setSelectedProductId] = useState(() =>
     typeof window === 'undefined'
@@ -76,12 +83,14 @@ function App() {
   /** §3-1 제품 목록을 다시 읽는다. 생성·수정 후에 호출한다. */
   const reloadProducts = useCallback(async () => {
     try {
-      const [products, recipeCosts] = await Promise.all([
+      const [products, recipeCosts, hidden] = await Promise.all([
         fetchProducts(),
         // §9-3 : 재료비는 DB 집계값을 신뢰한다. 클라이언트 합산과 어긋나면 이쪽이 맞다.
         // 실패해도 제품 목록은 살려야 하므로 빈 배열로 흘린다 (타입은 명시해야 유니온이 안 생긴다)
         fetchRecipeCostSummary().catch((): RecipeCostSummary[] => []),
+        fetchHiddenProducts().catch((): { id: string; sku: string; name: string }[] => []),
       ])
+      setHiddenProducts(hidden)
       const costById = new Map(recipeCosts.map((row) => [row.productId, row] as const))
       setRecipeProducts(
         products.map((product) => {
@@ -95,6 +104,56 @@ function App() {
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : String(error))
     }
+  }, [])
+
+  /**
+   * §3-7 제품을 완전히 삭제한다. 남아 있는 자료를 먼저 알리고 확인받는다.
+   * 상세 페이지와 숨긴 제품 목록 양쪽에서 쓴다.
+   * @returns 실제로 지웠으면 true
+   */
+  const confirmAndDeleteProduct = useCallback(async (target: { id: string; name: string }) => {
+    // 마감된 달의 자료는 지울 수 없다. 확인창을 띄우기 전에 먼저 걸러낸다 —
+    // 눌러본 뒤에야 막힌 걸 알게 하지 않는다
+    const locked = await findLockedPeriods(target.id)
+    if (locked.length > 0) {
+      const months = locked
+        .map((p) => `${p.slice(0, 4)}년 ${Number(p.slice(5, 7))}월`)
+        .join(', ')
+      window.alert(
+        [
+          `${target.name}은(는) 마감된 달의 자료를 가지고 있어 삭제할 수 없습니다.`,
+          months,
+          '',
+          '데이터 입력 3단계에서 해당 월의 마감을 취소한 뒤 다시 시도해주세요.',
+        ].join('\n'),
+      )
+      return false
+    }
+
+    const refs = await countProductReferences(target.id)
+
+    const detail = [
+      refs.usages && `투입내역 ${refs.usages}건`,
+      refs.production && `생산량 ${refs.production}건`,
+      refs.summaries && `원가 결과 ${refs.summaries}건`,
+      refs.allocations && `운영비 배분 ${refs.allocations}건`,
+    ].filter(Boolean).join(' · ')
+
+    const ok = window.confirm(
+      refs.total === 0
+        ? `${target.name}을(를) 완전히 삭제할까요?\n되돌릴 수 없습니다.`
+        : [
+            `${target.name}에는 과거 자료가 남아 있습니다.`,
+            detail,
+            '',
+            '삭제하면 그 달 원가 결과도 함께 사라지며 되돌릴 수 없습니다.',
+            '계속할까요?',
+          ].join('\n'),
+    )
+    if (!ok) return false
+
+    await deleteProduct(target.id)
+    return true
   }, [])
 
   /** §4-1 해당 월 회차를 확보한다. 마감·마감취소 후에도 호출한다. */
@@ -268,6 +327,29 @@ function App() {
     page = (
       <ProductManagementPage
         products={recipeProducts}
+        hiddenProducts={hiddenProducts}
+        onDeleteProduct={async (productId) => {
+          const target = hiddenProducts.find((p) => p.id === productId)
+          if (!target) return
+          try {
+            if (await confirmAndDeleteProduct(target)) {
+              await reloadProducts()
+              announce(`${target.name}을(를) 완전히 삭제했습니다.`)
+            }
+          } catch (error) {
+            announce(`삭제 실패: ${describeDbError(error)}`)
+          }
+        }}
+        onRestoreProduct={async (productId) => {
+          const target = hiddenProducts.find((p) => p.id === productId)
+          try {
+            await restoreProduct(productId)
+            await reloadProducts()
+            announce(`${target?.name ?? '제품'}을(를) 목록에 되돌렸습니다.`)
+          } catch (error) {
+            announce(`되돌리기 실패: ${error instanceof Error ? error.message : String(error)}`)
+          }
+        }}
         onNavigate={navigate}
         onSelectProduct={(productId) => {
           setSelectedProductId(productId)
@@ -284,8 +366,9 @@ function App() {
         onAction={announce}
         onCreate={(product) => {
           // §3-3 : 제품과 배합을 한 트랜잭션으로 저장한다
+          // sku 는 API 가 DB 최대 번호를 보고 정한다.
+          // 화면의 제품 개수로 만들면 숨긴 제품과 번호가 겹친다
           void createProductWithRecipe({
-            sku: `SKU-${new Date().getFullYear()}-${String(recipeProducts.length + 1).padStart(3, '0')}`,
             name: product.name,
             description: product.description,
             items: product.ingredients.flatMap((ingredient) =>
@@ -322,11 +405,12 @@ function App() {
         onAction={announce}
         onRefresh={reloadProducts}
         onDeactivate={async () => {
-          // §3-7 : 삭제하지 않고 비활성화한다
-          await deactivateProduct(selectedProduct.id)
-          await reloadProducts()
-          announce(`${selectedProduct.name}을(를) 목록에서 숨겼습니다.`)
-          navigate('product-management')
+          // §3-7 : 숨기지 않고 바로 지운다. 무엇이 함께 사라지는지 확인창에서 알린다
+          if (await confirmAndDeleteProduct(selectedProduct)) {
+            await reloadProducts()
+            announce(`${selectedProduct.name}을(를) 삭제했습니다.`)
+            navigate('product-management')
+          }
         }}
         onUpdateImage={(imageUrl) => {
           setRecipeProducts((current) =>

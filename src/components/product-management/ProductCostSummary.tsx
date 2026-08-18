@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Icon } from '../common/Icon'
-import { NumberInput } from '../common/NumberInput'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import type { ProductCostAnalysisState } from './useProductCostAnalysis'
-import { MonthlyUnitPriceTrend } from './MonthlyUnitPriceTrend'
-import { fetchUnitCostTrend } from '../../lib/api/results'
+import { ProductCostTrendChart } from './ProductCostTrendChart'
 
 type ProductCostSummaryProps = {
   product: RecipeProduct
@@ -15,93 +11,54 @@ type ProductCostSummaryProps = {
 const currencyFormatter = new Intl.NumberFormat('ko-KR', {
   style: 'currency',
   currency: 'KRW',
-  maximumFractionDigits: 4,
+  maximumFractionDigits: 0,
 })
 
-const unitPriceFormatter = new Intl.NumberFormat('ko-KR', {
-  style: 'currency',
-  currency: 'KRW',
-  maximumFractionDigits: 1,
-})
+const qtyFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
 
-function buildMonthOptions(selected: string) {
+/** 분석 월 후보. 자료가 있는 달을 위로 올려 고르기 쉽게 한다 */
+function buildMonthOptions(months: { period: string }[], selected: string) {
+  const withData = new Set(months.map((m) => m.period.slice(0, 7)))
   const now = new Date()
-  const options: { value: string; label: string }[] = []
+  const options: { value: string; label: string; hasData: boolean }[] = []
+
   for (let i = 0; i < 24; i += 1) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const year = date.getFullYear()
-    const month = date.getMonth() + 1
+    const value = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
     options.push({
-      value: `${year}-${String(month).padStart(2, '0')}`,
-      label: `${year}년 ${month}월`,
+      value,
+      label: `${date.getFullYear()}년 ${date.getMonth() + 1}월`,
+      hasData: withData.has(value),
     })
   }
-  if (selected && !options.some((option) => option.value === selected)) {
-    const [year, month] = selected.split('-')
-    options.unshift({ value: selected, label: `${year}년 ${Number(month)}월` })
+  for (const month of withData) {
+    if (!options.some((o) => o.value === month)) {
+      options.push({
+        value: month,
+        label: `${month.slice(0, 4)}년 ${Number(month.slice(5, 7))}월`,
+        hasData: true,
+      })
+    }
   }
-  return options
+  if (selected && !options.some((o) => o.value === selected)) {
+    options.unshift({
+      value: selected,
+      label: `${selected.slice(0, 4)}년 ${Number(selected.slice(5, 7))}월`,
+      hasData: false,
+    })
+  }
+  return options.sort((a, b) => b.value.localeCompare(a.value))
 }
 
 export function ProductCostSummary({ product, state, onAction }: ProductCostSummaryProps) {
-  const { draftMonth, setDraftMonth, activeMonth, setActiveMonth, monthLabel } = state
-
-  const indirectCost = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
-  const subMaterialCost = product.laborCost + indirectCost
-  const totalCost = product.materialCost + subMaterialCost
-
-  const [isEditingYield, setIsEditingYield] = useState(false)
-  const [yieldInput, setYieldInput] = useState('')
-  const [yieldKg, setYieldKg] = useState<number | null>(null)
-
-  const [selectedMetric, setSelectedMetric] = useState<'material' | 'sub' | 'total'>('total')
-
-  // §9-2 : 확정된 달의 실제 단가 추이. 없으면 빈 배열이라 예시 곡선으로 대체된다
-  const [unitCostSeries, setUnitCostSeries] = useState<
-    { period: string; label: string; unitCost: number }[]
-  >([])
-
-  useEffect(() => {
-    let cancelled = false
-    const from = new Date()
-    from.setMonth(from.getMonth() - 11)
-    const fromPeriod = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`
-
-    fetchUnitCostTrend(product.id, fromPeriod)
-      .then((rows) => { if (!cancelled) setUnitCostSeries(rows) })
-      .catch(() => { if (!cancelled) setUnitCostSeries([]) })
-    return () => { cancelled = true }
-  }, [product.id])
-
-  const unitPrice = yieldKg && yieldKg > 0 ? totalCost / yieldKg : null
-
-  const trend = {
-    material: { value: product.materialCost, label: '재료비', formatValue: (v: number) => currencyFormatter.format(v) },
-    sub: { value: subMaterialCost, label: '부자재비', formatValue: (v: number) => currencyFormatter.format(v) },
-    total: unitPrice != null
-      ? { value: unitPrice, label: 'kg당 단가', formatValue: (v: number) => unitPriceFormatter.format(v) }
-      : { value: totalCost, label: '총 금액', formatValue: (v: number) => currencyFormatter.format(v) },
-  }[selectedMetric]
+  const {
+    draftMonth, setDraftMonth, activeMonth, setActiveMonth, monthLabel,
+    months, loading, current, hasData,
+  } = state
 
   const applyFilters = () => {
     setActiveMonth(draftMonth)
     onAction(`${draftMonth.replace('-', '년 ')}월 원가 분석을 조회했습니다.`)
-  }
-
-  const applyYield = () => {
-    const parsed = Number(yieldInput)
-    if (!Number.isFinite(parsed) || parsed <= 0) {
-      onAction('생산량은 0보다 큰 숫자로 입력해 주세요.')
-      return
-    }
-    setYieldKg(parsed)
-    setIsEditingYield(false)
-    onAction(`생산량 ${parsed.toLocaleString('ko-KR')}kg 기준 kg당 단가를 계산했습니다.`)
-  }
-
-  const openYieldEditor = () => {
-    setYieldInput(yieldKg != null ? String(yieldKg) : '')
-    setIsEditingYield(true)
   }
 
   return (
@@ -109,13 +66,10 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
       <div className="cost-analysis-filter cost-analysis-filter--product" aria-label="원가 분석 조회 조건">
         <label>
           <span>분석 월</span>
-          <select
-            value={draftMonth}
-            onChange={(event) => setDraftMonth(event.target.value)}
-          >
-            {buildMonthOptions(draftMonth).map((option) => (
+          <select value={draftMonth} onChange={(event) => setDraftMonth(event.target.value)}>
+            {buildMonthOptions(months, draftMonth).map((option) => (
               <option key={option.value} value={option.value}>
-                {option.label}
+                {option.label}{option.hasData ? '' : ' (자료 없음)'}
               </option>
             ))}
           </select>
@@ -126,115 +80,35 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
         <p>{monthLabel} · {product.name} 원가 기준</p>
       </div>
 
+      {!loading && !hasData && (
+        <p className="product-cost-summary__notice" role="status">
+          {monthLabel}에는 확정된 원가가 없습니다. 데이터 입력 3단계에서 원가 계산을 실행했는지 확인해주세요.
+        </p>
+      )}
+
       <div className="product-cost-overview product-cost-overview--embedded">
-        <section
-          className={`product-cost-overview__item${selectedMetric === 'material' ? ' is-selected' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-pressed={selectedMetric === 'material'}
-          onClick={() => setSelectedMetric('material')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              setSelectedMetric('material')
-            }
-          }}
-        >
-          <span>재료비</span><strong>{currencyFormatter.format(product.materialCost)}</strong><small>{product.ingredients.length}개 재료</small>
+        <section className="product-cost-overview__item is-material">
+          <span>재료비</span>
+          <strong>{currencyFormatter.format(current.materialCost)}</strong>
+          <small>수불자료 투입 실적</small>
         </section>
-        <section
-          className={`product-cost-overview__item${selectedMetric === 'sub' ? ' is-selected' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-pressed={selectedMetric === 'sub'}
-          onClick={() => setSelectedMetric('sub')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              setSelectedMetric('sub')
-            }
-          }}
-        >
-          <span>부자재비</span><strong>{currencyFormatter.format(subMaterialCost)}</strong><small>인건비·간접비 포함</small>
+        <section className="product-cost-overview__item is-sub">
+          <span>부자재비</span>
+          <strong>{currencyFormatter.format(current.subMaterialCost)}</strong>
+          <small>노무비 {currencyFormatter.format(current.laborCost)} · 경비 {currencyFormatter.format(current.utilityCost)}</small>
         </section>
-        <section
-          className={`product-cost-overview__total product-cost-overview__item${selectedMetric === 'total' ? ' is-selected' : ''}`}
-          role="button"
-          tabIndex={0}
-          aria-pressed={selectedMetric === 'total'}
-          onClick={() => setSelectedMetric('total')}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault()
-              setSelectedMetric('total')
-            }
-          }}
-        >
-          <span className="product-cost-overview__total-label">
-            {unitPrice != null ? 'kg당 단가' : '총 금액'}
-            <button
-              type="button"
-              className="product-cost-overview__yield-edit"
-              aria-label="생산량 입력하여 kg당 단가 계산"
-              aria-expanded={isEditingYield}
-              onClick={(event) => {
-                event.stopPropagation()
-                setSelectedMetric('total')
-                if (isEditingYield) setIsEditingYield(false)
-                else openYieldEditor()
-              }}
-            >
-              <Icon name="edit" size={13} />
-            </button>
-          </span>
-          <strong>
-            {unitPrice != null
-              ? unitPriceFormatter.format(unitPrice)
-              : currencyFormatter.format(totalCost)}
-          </strong>
-          {isEditingYield ? (
-            <div className="product-cost-overview__yield-editor" onClick={(event) => event.stopPropagation()}>
-              <div className="product-cost-overview__yield-field">
-                <NumberInput
-                  min="0"
-                  autoFocus
-                  value={yieldInput}
-                  placeholder="생산량"
-                  onValueChange={(raw) => setYieldInput(raw)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') applyYield()
-                    if (event.key === 'Escape') setIsEditingYield(false)
-                  }}
-                />
-                <span className="product-cost-overview__yield-unit">kg</span>
-              </div>
-              <button
-                type="button"
-                className="product-cost-overview__yield-apply"
-                onClick={applyYield}
-              >
-                계산
-              </button>
-            </div>
-          ) : unitPrice != null ? (
-            <small className="product-cost-overview__unit-price">
-              총 금액 {currencyFormatter.format(totalCost)} · 생산량 {yieldKg!.toLocaleString('ko-KR')}kg
-            </small>
-          ) : (
-            <small>재료비 + 부자재비</small>
-          )}
+        <section className="product-cost-overview__total product-cost-overview__item is-total">
+          <span className="product-cost-overview__total-label">총 금액</span>
+          <strong>{currencyFormatter.format(current.totalCost)}</strong>
+          <small className="product-cost-overview__unit-price">
+            {current.productionQty > 0
+              ? `생산량 ${qtyFormatter.format(current.productionQty)}kg · 포장당 ${currencyFormatter.format(current.unitCost)}`
+              : '재료비 + 부자재비'}
+          </small>
         </section>
       </div>
 
-      <MonthlyUnitPriceTrend
-        currentValue={trend.value}
-        label={trend.label}
-        productId={`${product.id}-${selectedMetric}`}
-        anchorMonth={activeMonth}
-        formatValue={trend.formatValue}
-        // 단가 지표일 때만 실제 스냅샷을 쓴다. 재료비·부자재비는 월별 스냅샷이 따로 없다
-        series={selectedMetric === 'total' ? unitCostSeries : undefined}
-      />
+      <ProductCostTrendChart series={months} activeMonth={activeMonth} />
     </div>
   )
 }

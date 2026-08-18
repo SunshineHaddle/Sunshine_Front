@@ -179,6 +179,72 @@ export async function fetchUnitCostTrendAll(
   return byProduct
 }
 
+/**
+ * 한 제품의 월별 원가 내역. 제품 상세의 분석 그래프가 쓴다.
+ *
+ * 재료비는 1단계 수불자료에서, 노무비·경비는 2단계 운영비에서 온 값이
+ * 마감 때 이 제품 몫으로 배분되어 저장된 것이다.
+ * 화면의 '부자재비' 는 노무비 + 경비를 뜻한다 (제품 단위 부자재 구분이 스키마에 없다).
+ */
+export type ProductMonthlyCost = {
+  period: string
+  /** '8월' 형태의 축 라벨 */
+  label: string
+  materialCost: number
+  laborCost: number
+  utilityCost: number
+  /** 노무비 + 경비. 화면에서 부자재비로 부른다 */
+  subMaterialCost: number
+  totalCost: number
+  unitCost: number
+  productionQty: number
+}
+
+export async function fetchProductCostBreakdown(
+  productId: string,
+  fromPeriod: string,
+): Promise<ProductMonthlyCost[]> {
+  const rows = unwrap(
+    await supabase
+      .from('product_cost_summaries')
+      // !inner 가 없으면 기간 필터가 적용되지 않는다
+      .select(
+        'material_cost, labor_cost, utility_cost, total_cost, unit_cost,'
+        + ' production_qty, cost_periods!inner(period)',
+      )
+      .eq('product_id', productId)
+      .gte('cost_periods.period', fromPeriod),
+  ) as unknown as {
+    material_cost: number
+    labor_cost: number
+    utility_cost: number
+    total_cost: number
+    unit_cost: number
+    production_qty: number
+    cost_periods: { period: string } | { period: string }[] | null
+  }[]
+
+  return rows
+    .flatMap((row) => {
+      const joined = Array.isArray(row.cost_periods) ? row.cost_periods[0] : row.cost_periods
+      if (!joined) return []
+      const labor = num(row.labor_cost)
+      const utility = num(row.utility_cost)
+      return [{
+        period: joined.period,
+        label: `${Number(joined.period.slice(5, 7))}월`,
+        materialCost: num(row.material_cost),
+        laborCost: labor,
+        utilityCost: utility,
+        subMaterialCost: labor + utility,
+        totalCost: num(row.total_cost),
+        unitCost: num(row.unit_cost),
+        productionQty: num(row.production_qty),
+      }]
+    })
+    .sort((a, b) => a.period.localeCompare(b.period))
+}
+
 // ── §9-3. 제품별 표준 재료비 집계 ───────────────────────────
 export type RecipeCostSummary = {
   productId: string

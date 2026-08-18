@@ -537,79 +537,108 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 100px 120px;
   align-items: center;
-  min-height: 49px;
+  min-height: 44px;
   border-top: 1px solid #ededed;
-  font-size: 10.5px;
+  font-size: 12.5px;
 }
 
 .material-cost-list--with-price > div {
-  grid-template-columns: minmax(0, 1fr) 90px 110px 130px;
+  /* 헤더와 본문이 같은 규칙을 써야 열이 어긋나지 않는다.
+     네 열을 균등하게 나눠 폭이 어떻게 변해도 비율이 유지된다 */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: 12px;
 }
 
-.material-cost-list--with-price .material-cost-list__head span:not(:first-child),
-.material-cost-list--with-price > div > span,
-.material-cost-list--with-price > div > b {
+/*
+  정렬은 열 위치로만 정한다.
+  예전에는 `> div > span` 이 헤더의 '품명' 까지 잡아 네 열이 모두 오른쪽에 몰렸다.
+*/
+.material-cost-list > div > *:first-child {
+  text-align: left;
+}
+
+.material-cost-list > div > *:not(:first-child) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
 .material-cost-list__head {
-  min-height: 34px !important;
-  color: #999;
-  font-size: 9px !important;
+  min-height: 32px !important;
+  color: #8f8a8c;
+  font-size: 11px !important;
+  font-weight: 600;
 }
 
 .material-cost-list strong {
+  overflow: hidden;
   color: #333;
-  font-size: 10.5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .material-cost-list span {
-  color: #777;
+  color: #6f696b;
 }
 
 .material-cost-list b {
   color: #333;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-align: right;
+  font-weight: 700;
 }
 
 .indirect-cost-panel dl {
   display: grid;
-  margin: 22px 0 0;
-  gap: 15px;
+  margin: 20px 0 0;
+  /* 글자가 커진 만큼 줄 간격도 함께 넓힌다 */
+  gap: 20px;
 }
 
 .indirect-cost-panel dl div {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .indirect-cost-panel dt,
 .indirect-cost-panel dd {
   margin: 0;
-  font-size: 10.5px;
+  font-size: 18.5px;
 }
 
-.indirect-cost-panel dt { color: #777; }
-.indirect-cost-panel dd { color: #333; font-weight: 600; font-variant-numeric: tabular-nums; }
+.indirect-cost-panel dt {
+  color: #6f696b;
+  font-weight: 500;
+}
+
+.indirect-cost-panel dd {
+  color: #333;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
 
 .indirect-cost-panel dl .indirect-cost-panel__total {
-  margin-top: 5px;
-  padding-top: 16px;
+  margin-top: 4px;
+  padding-top: 14px;
   border-top: 1px solid #e7e7e7;
 }
 
+.indirect-cost-panel__total dt {
+  color: #333;
+  font-weight: 700;
+}
+
 .indirect-cost-panel__total dd {
-  font-size: 13px;
+  font-size: 21px;
+  font-weight: 700;
 }
 
 .indirect-cost-panel__share {
-  margin-left: 6px;
+  margin-left: 8px;
   color: var(--color-brand);
-  font-size: 9.5px;
+  font-size: 16.5px;
   font-weight: 600;
 }
 
@@ -666,13 +695,17 @@
 
 .sales-info-panel__fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   margin-top: 16px;
-  gap: 12px;
+  gap: 12px 16px;
+  /* 안내 문구 길이가 달라도 입력칸 윗선이 어긋나지 않게 한다 */
+  align-items: start;
 }
 
 .sales-info-panel__fields label {
+  /* 라벨 · 입력칸 · 안내 세 줄을 같은 높이로 고정해 두 칸이 나란히 선다 */
   display: grid;
+  grid-template-rows: auto auto auto;
   gap: 6px;
   color: var(--color-text-subtle);
   font-size: 11px;
@@ -706,9 +739,162 @@
   line-height: 1.55;
 }
 
-/* 포장 무게가 규격 라벨까지 만든다는 안내 */
+/* 포장 무게가 규격 라벨까지 만든다는 안내. 두 칸 모두에 두어 높이를 맞춘다 */
 .sales-info-panel__hint {
+  align-self: start;
+  min-height: 14px;
   color: var(--color-text-subtle);
   font-size: 10.5px;
   font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ── 제품 월별 원가 추이 (재료비 · 부자재비 · 총 금액) ────────
+   세 계열을 한 그래프에 겹쳐 그린다. 색으로만 구분되므로 범례를 항상 둔다 */
+.product-cost-trend {
+  padding: 18px 22px 14px;
+  background: #fff;
+  border-top: 1px solid var(--color-border);
+}
+
+.product-cost-trend svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.product-cost-trend__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.product-cost-trend__legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.product-cost-trend__legend i {
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+/* 계열 색. 범례 · 선 · 점이 같은 값을 쓴다 */
+.product-cost-trend__legend i.is-material,
+.product-cost-trend__line.is-material { stroke: var(--color-navy); background: var(--color-navy); }
+.product-cost-trend__legend i.is-sub,
+.product-cost-trend__line.is-sub { stroke: #d99441; background: #d99441; }
+.product-cost-trend__legend i.is-total,
+.product-cost-trend__line.is-total { stroke: var(--color-brand); background: var(--color-brand); }
+
+.product-cost-trend__line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.product-cost-trend__grid {
+  stroke: #efecec;
+  stroke-width: 1;
+}
+
+.product-cost-trend__active-month {
+  stroke: rgba(186, 0, 54, 0.3);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.product-cost-trend__y-label,
+.product-cost-trend__x-label {
+  fill: #a9a3a6;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 점이 작아 겨냥하기 어렵다. 투명한 넓은 원으로 잡는다 */
+.product-cost-trend__hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+.product-cost-trend__point:focus {
+  outline: none;
+}
+
+.product-cost-trend__point:focus-visible .product-cost-trend__dot {
+  stroke: #2e292b;
+  stroke-width: 2;
+}
+
+.product-cost-trend__dot {
+  stroke: #fff;
+  stroke-width: 1.5;
+  transition: r 100ms ease;
+}
+
+.product-cost-trend__dot.is-material { fill: var(--color-navy); }
+.product-cost-trend__dot.is-sub { fill: #d99441; }
+.product-cost-trend__dot.is-total { fill: var(--color-brand); }
+
+.product-cost-trend__tooltip {
+  pointer-events: none;
+}
+
+.product-cost-trend__tooltip rect {
+  fill: #2e292b;
+  opacity: 0.96;
+}
+
+.product-cost-trend__tooltip text {
+  fill: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+}
+
+.product-cost-trend__tooltip .product-cost-trend__tooltip-value {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.product-cost-trend__empty,
+.product-cost-summary__notice {
+  margin: 0;
+  padding: 20px 22px;
+  color: var(--color-text-subtle);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.product-cost-summary__notice {
+  background: #fdf8ee;
+  border-top: 1px solid #f0dcb5;
+  color: #7a5a12;
+}
+
+/* 세 지표 카드 — 이제 선택 버튼이 아니라 읽기 전용 요약이다 */
+.product-cost-overview__item.is-material strong { color: var(--color-navy); }
+.product-cost-overview__item.is-sub strong { color: #b8792c; }
+
+.indirect-cost-panel__empty {
+  margin: 12px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.material-cost-list__empty {
+  padding: 20px 4px;
+  color: var(--color-text-subtle);
+  font-size: 12.5px;
+  line-height: 1.6;
 }

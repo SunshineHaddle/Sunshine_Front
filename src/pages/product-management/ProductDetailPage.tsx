@@ -1,4 +1,4 @@
-import { useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
@@ -7,6 +7,7 @@ import { ProductCostSummary } from '../../components/product-management/ProductC
 import { useProductCostAnalysis } from '../../components/product-management/useProductCostAnalysis'
 import { NumberInput } from '../../components/common/NumberInput'
 import { saveRecipeItems, updateProduct, uploadProductImage } from '../../lib/api/products'
+import { fetchProductUsagesByMonth, type UsageLine } from '../../lib/api/production'
 import { describeDbError } from '../../lib/api/errors'
 import { thumbnailUrl } from '../../utils/thumbnail'
 
@@ -33,10 +34,12 @@ type RecipeRow = {
 
 const MAX_IMAGE_BYTES = 3 * 1024 * 1024
 
+// 원 단위 금액에 전(錢)까지 보일 이유가 없다. 소수점이 붙으면 자릿수가 들쭉날쭉해
+// 오른쪽 정렬한 열이 어긋나 보인다
 const currencyFormatter = new Intl.NumberFormat('ko-KR', {
   style: 'currency',
   currency: 'KRW',
-  maximumFractionDigits: 4,
+  maximumFractionDigits: 0,
 })
 
 const numberFormatter = new Intl.NumberFormat('ko-KR')
@@ -146,10 +149,34 @@ export function ProductDetailPage({
     }
   }
 
-  const indirectCost = product.indirectCosts.reduce((sum, item) => sum + item.amount, 0)
-  const totalCost = product.materialCost + product.laborCost + indirectCost
+  /**
+   * §6-1 : 선택한 달에 실제로 투입한 재료.
+   * 레시피(recipe_items)는 1단위 표준 배합이라 월별 실적과 다르다.
+   * 원재료비 상세는 수불자료로 들어온 실적을 보여준다.
+   */
+  const [usages, setUsages] = useState<UsageLine[]>([])
+  const [usagesLoading, setUsagesLoading] = useState(true)
 
-  const sharePercent = (amount: number) => (totalCost > 0 ? (amount / totalCost) * 100 : 0)
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const rows = await fetchProductUsagesByMonth(product.id, analysisState.activeMonth)
+        .catch((error: unknown) => {
+          console.error('[원재료비 상세] 조회 실패', error)
+          return [] as UsageLine[]
+        })
+      if (cancelled) return
+      setUsages(rows)
+      setUsagesLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [product.id, analysisState.activeMonth])
+
+  const usageTotal = usages.reduce((sum, line) => sum + line.amount, 0)
+
+  /** 기타비용 박스는 레시피가 아니라 확정 스냅샷 총원가를 분모로 쓴다 */
+  const snapshotShare = (amount: number) =>
+    analysisState.current.totalCost > 0 ? (amount / analysisState.current.totalCost) * 100 : 0
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isEditingImage, setIsEditingImage] = useState(false)
@@ -206,9 +233,9 @@ export function ProductDetailPage({
               className="product-deactivate"
               type="button"
               onClick={() => {
-                if (!window.confirm(`${product.name}을(를) 목록에서 숨길까요?\n과거 원가 기록은 그대로 남습니다.`)) return
+                // 과거 자료가 있는지에 따라 안내가 달라져서 확인은 onDeactivate 안에서 한다
                 void onDeactivate().catch((error: unknown) =>
-                  onAction(`처리 실패: ${describeDbError(error)}`),
+                  onAction(`삭제 실패: ${describeDbError(error)}`),
                 )
               }}
             >
@@ -300,6 +327,7 @@ export function ProductDetailPage({
                 placeholder="예: 28900"
                 onValueChange={(raw) => setSales((c) => ({ ...c, salePrice: raw }))}
               />
+              <small className="sales-info-panel__hint">포장 1개의 판매 가격입니다</small>
             </label>
             <label>
               <span>포장 1개 무게 (kg)</span>
@@ -330,7 +358,10 @@ export function ProductDetailPage({
         <div className="product-detail-grid">
           <section className="product-cost-panel" aria-labelledby="material-cost-title">
             <header>
-              <div><h2 id="material-cost-title">원재료비 상세</h2><p>레시피 사용량 기준 재료별 비용입니다.</p></div>
+              <div>
+                <h2 id="material-cost-title">원재료비 상세</h2>
+                <p>{analysisState.monthLabel} 수불자료로 입력된 실제 투입량입니다.</p>
+              </div>
               {isEditingRecipe ? (
                 <div className="recipe-edit-actions">
                   <button type="button" onClick={() => setIsEditingRecipe(false)} disabled={savingRecipe}>취소</button>
@@ -340,8 +371,14 @@ export function ProductDetailPage({
                 </div>
               ) : (
                 <div className="recipe-edit-actions">
-                  <button type="button" onClick={startEditRecipe}>배합 수정</button>
-                  <strong>{currencyFormatter.format(product.materialCost)}</strong>
+                  <button
+                    type="button"
+                    onClick={startEditRecipe}
+                    title="수불자료가 없는 달에 표준원가로 계산할 때 쓰는 1단위 배합입니다"
+                  >
+                    표준 배합 수정
+                  </button>
+                  <strong>{currencyFormatter.format(usageTotal)}</strong>
                 </div>
               )}
             </header>
@@ -390,44 +427,62 @@ export function ProductDetailPage({
 
             <div className="material-cost-list material-cost-list--with-price" hidden={isEditingRecipe}>
               <div className="material-cost-list__head"><span>품명</span><span>수량(kg)</span><span>단가(원)</span><span>금액(원)</span></div>
-              {product.ingredients.map((ingredient) => (
-                <div key={ingredient.name}>
-                  <strong>{ingredient.name}</strong>
-                  <span>{ingredient.usage.toLocaleString('ko-KR')} kg</span>
-                  <span>{ingredient.unitPrice != null ? numberFormatter.format(ingredient.unitPrice) : '-'}</span>
-                  <b>{currencyFormatter.format(ingredient.cost)}</b>
+              {usages.map((line) => (
+                <div key={line.materialCode || line.materialName}>
+                  <strong>{line.materialName}</strong>
+                  <span>{numberFormatter.format(line.usage)} kg</span>
+                  <span>{numberFormatter.format(line.unitPrice)}</span>
+                  <b>{currencyFormatter.format(line.amount)}</b>
                 </div>
               ))}
+              {!usagesLoading && usages.length === 0 && (
+                <p className="material-cost-list__empty">
+                  {analysisState.monthLabel}에 입력된 투입내역이 없습니다.
+                  데이터 입력 1단계에서 수불자료를 올리면 표시됩니다.
+                </p>
+              )}
             </div>
           </section>
 
+          {/*
+            기타비용 = 부자재비(노무비 + 경비). 제품 단위에는 이 값이 없다 —
+            2단계에서 월 단위로 입력받아 마감 때 제품별로 배분된 값을 읽는다.
+          */}
           <aside className="product-cost-panel indirect-cost-panel" aria-labelledby="indirect-cost-title">
-            <header><div><h2 id="indirect-cost-title">기타비용</h2><p>전체 총원가에서 차지하는 비중입니다.</p></div></header>
+            <header>
+              <div>
+                <h2 id="indirect-cost-title">기타비용</h2>
+                <p>{analysisState.monthLabel} 총원가에서 차지하는 비중입니다.</p>
+              </div>
+            </header>
             <dl>
               <div>
                 <dt>인건비</dt>
                 <dd>
-                  {currencyFormatter.format(product.laborCost)}
-                  <span className="indirect-cost-panel__share">({percentFormatter.format(sharePercent(product.laborCost))}%)</span>
+                  {currencyFormatter.format(analysisState.current.laborCost)}
+                  <span className="indirect-cost-panel__share">({percentFormatter.format(snapshotShare(analysisState.current.laborCost))}%)</span>
                 </dd>
               </div>
-              {product.indirectCosts.map((cost) => (
-                <div key={cost.name}>
-                  <dt>{cost.name}</dt>
-                  <dd>
-                    {currencyFormatter.format(cost.amount)}
-                    <span className="indirect-cost-panel__share">({percentFormatter.format(sharePercent(cost.amount))}%)</span>
-                  </dd>
-                </div>
-              ))}
-              <div className="indirect-cost-panel__total">
-                <dt>기타비용 합계</dt>
+              <div>
+                <dt>경비</dt>
                 <dd>
-                  {currencyFormatter.format(product.laborCost + indirectCost)}
-                  <span className="indirect-cost-panel__share">({percentFormatter.format(sharePercent(product.laborCost + indirectCost))}%)</span>
+                  {currencyFormatter.format(analysisState.current.utilityCost)}
+                  <span className="indirect-cost-panel__share">({percentFormatter.format(snapshotShare(analysisState.current.utilityCost))}%)</span>
+                </dd>
+              </div>
+              <div className="indirect-cost-panel__total">
+                <dt>부자재비 합계</dt>
+                <dd>
+                  {currencyFormatter.format(analysisState.current.subMaterialCost)}
+                  <span className="indirect-cost-panel__share">({percentFormatter.format(snapshotShare(analysisState.current.subMaterialCost))}%)</span>
                 </dd>
               </div>
             </dl>
+            {!analysisState.loading && !analysisState.hasData && (
+              <p className="indirect-cost-panel__empty">
+                {analysisState.monthLabel} 확정 자료가 없습니다. 2단계에서 운영비를 넣고 3단계에서 계산하면 표시됩니다.
+              </p>
+            )}
           </aside>
         </div>
       </main>

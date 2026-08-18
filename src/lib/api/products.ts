@@ -143,30 +143,72 @@ export async function fetchProduct(productId: string): Promise<RecipeProduct | n
   return row ? toRecipeProduct(row) : null
 }
 
+/**
+ * 다음 제품 SKU.
+ *
+ * 예전에는 화면의 활성 제품 개수 + 1 로 만들었는데, 제품을 비활성화하면
+ * 개수가 줄어 이미 쓴 번호로 되돌아가 23505(중복 키)가 났다.
+ * 비활성 제품도 SKU 를 그대로 들고 있으므로 전체에서 최대값을 찾는다.
+ */
+export async function nextProductSku(): Promise<string> {
+  const prefix = `SKU-${new Date().getFullYear()}-`
+  const rows = unwrap(
+    // is_active 로 거르지 않는다 — 숨긴 제품의 번호도 피해야 한다
+    await supabase.from('products').select('sku').like('sku', `${prefix}%`),
+  ) as { sku: string }[]
+
+  const max = rows.reduce((highest, row) => {
+    const n = Number(row.sku.slice(prefix.length))
+    return Number.isFinite(n) && n > highest ? n : highest
+  }, 0)
+
+  return `${prefix}${String(max + 1).padStart(3, '0')}`
+}
+
 // ── §3-3. 제품 생성 (배합 포함) ─────────────────────────────
 export async function createProductWithRecipe(input: {
-  sku: string
+  /** 비우면 DB 의 최대 번호 다음으로 자동 부여한다 */
+  sku?: string
   name: string
   description?: string
   items: { materialId: string; usage: number; unit: MaterialUnit; unitPrice: number }[]
 }): Promise<string> {
-  return unwrap(
-    await supabase.rpc('create_product_with_recipe', {
+  const p_items = input.items.map((item, index) => ({
+    material_id: item.materialId,
+    usage_qty: item.usage,
+    unit: item.unit,
+    unit_price: item.unitPrice,
+    sort_order: index,
+  }))
+
+  // 번호를 읽고 쓰는 사이에 다른 사람이 같은 번호를 가져갈 수 있다.
+  // 흔한 일은 아니라 잠그는 대신 몇 번 다시 시도한다.
+  const attempts = input.sku ? 1 : 4
+  let lastError: unknown
+
+  for (let i = 0; i < attempts; i += 1) {
+    const sku = input.sku ?? await nextProductSku()
+    const res = await supabase.rpc('create_product_with_recipe', {
       p_product: {
-        sku: input.sku,
+        sku,
         name: input.name,
         description: input.description ?? null,
         status: 'review',
       },
-      p_items: input.items.map((item, index) => ({
-        material_id: item.materialId,
-        usage_qty: item.usage,
-        unit: item.unit,
-        unit_price: item.unitPrice,
-        sort_order: index,
-      })),
-    }),
-  ) as string
+      p_items,
+    })
+
+    if (!res.error) return res.data as string
+    // 23505 = unique 위반. sku 가 겹쳤다면 다음 번호로 다시 시도한다
+    if (res.error.code !== '23505') throw new Error(res.error.message)
+    lastError = res.error
+  }
+
+  throw new Error(
+    `제품 코드가 계속 중복됩니다. 잠시 후 다시 시도해주세요. (${
+      lastError instanceof Error ? lastError.message : String(lastError)
+    })`,
+  )
 }
 
 // ── §3-4. 제품 수정 ─────────────────────────────────────────
@@ -231,6 +273,125 @@ export async function saveRecipeItems(
   const query = supabase.from('recipe_items').delete().eq('product_id', productId)
   // kept 가 비면 in.() 문법 오류가 나므로 전체 삭제로 분기한다.
   unwrap(await (kept.length ? query.not('material_id', 'in', `(${kept.join(',')})`) : query))
+}
+
+/**
+ * 이 제품을 붙잡고 있는 자료 수.
+ *
+ * products 를 참조하는 5개 중 recipe_items 만 on delete cascade 다.
+ * 나머지는 남아 있으면 삭제가 23503 으로 막힌다.
+ */
+export type ProductReferences = {
+  usages: number
+  production: number
+  summaries: number
+  allocations: number
+  total: number
+}
+
+export async function countProductReferences(productId: string): Promise<ProductReferences> {
+  const count = async (table: string) => {
+    const res = await supabase
+      .from(table)
+      .select('id', { count: 'exact', head: true })
+      .eq('product_id', productId)
+    if (res.error) throw new Error(res.error.message)
+    return res.count ?? 0
+  }
+
+  const [usages, production, summaries, allocations] = await Promise.all([
+    count('material_usages'),
+    count('production_records'),
+    count('product_cost_summaries'),
+    count('operating_cost_allocations'),
+  ])
+
+  return {
+    usages,
+    production,
+    summaries,
+    allocations,
+    total: usages + production + summaries + allocations,
+  }
+}
+
+/**
+ * 이 제품의 자료를 붙잡고 있는 마감된 달.
+ *
+ * DELETE 는 RLS 에 막혀도 에러를 내지 않는다 — USING 이 필터로 작동해
+ * 조건에 안 맞는 행을 조용히 건너뛴다. 그래서 먼저 확인하지 않으면
+ * draft 달 자료만 지워지고 제품은 남는 반쪽 상태가 된다.
+ */
+export async function findLockedPeriods(productId: string): Promise<string[]> {
+  const locked = async (table: string) => {
+    const res = await supabase
+      .from(table)
+      // !inner 가 없으면 기간 필터가 적용되지 않는다
+      .select('cost_periods!inner(period, status)')
+      .eq('product_id', productId)
+      .eq('cost_periods.status', 'confirmed')
+    if (res.error) throw new Error(res.error.message)
+
+    return (res.data as unknown as { cost_periods: { period: string } }[])
+      .map((row) => row.cost_periods.period)
+  }
+
+  const [usages, production] = await Promise.all([
+    locked('material_usages'),
+    locked('production_records'),
+  ])
+
+  return [...new Set([...usages, ...production])].sort()
+}
+
+/**
+ * §3-7 제품을 실제로 지운다.
+ *
+ * recipe_items 만 on delete cascade 라 나머지 4개는 직접 지운다.
+ * 마감된 달의 자료가 하나라도 있으면 **아무것도 건드리지 않고** 중단한다 —
+ * 중간까지 지우고 실패하면 되돌릴 수 없기 때문이다.
+ */
+export async function deleteProduct(productId: string) {
+  const lockedPeriods = await findLockedPeriods(productId)
+  if (lockedPeriods.length > 0) {
+    const months = lockedPeriods
+      .map((p) => `${p.slice(0, 4)}년 ${Number(p.slice(5, 7))}월`)
+      .join(', ')
+    throw new Error(
+      `마감된 달의 자료가 있어 삭제할 수 없습니다: ${months}\n`
+      + '데이터 입력 3단계에서 해당 월의 마감을 먼저 취소해주세요.',
+    )
+  }
+
+  const wipe = async (table: string) => {
+    const res = await supabase.from(table).delete().eq('product_id', productId)
+    if (res.error) throw new Error(res.error.message)
+  }
+
+  await wipe('operating_cost_allocations')
+  await wipe('product_cost_summaries')
+  await wipe('material_usages')
+  await wipe('production_records')
+
+  // recipe_items 는 여기서 cascade 로 함께 사라진다.
+  // 남은 참조가 있으면 여기서 23503 이 나므로 조용히 반쪽 삭제되지 않는다
+  unwrap(await supabase.from('products').delete().eq('id', productId).select())
+}
+
+/** 숨긴 제품(is_active = false). 되돌리기 목록에 쓴다 */
+export async function fetchHiddenProducts(): Promise<{ id: string; sku: string; name: string }[]> {
+  return unwrap(
+    await supabase
+      .from('products')
+      .select('id, sku, name')
+      .eq('is_active', false)
+      .order('sku'),
+  ) as { id: string; sku: string; name: string }[]
+}
+
+/** 숨긴 제품을 다시 목록에 올린다 */
+export async function restoreProduct(productId: string) {
+  unwrap(await supabase.from('products').update({ is_active: true }).eq('id', productId).select())
 }
 
 // ── §3-7. 제품 비활성화 ────────────────────────────────────

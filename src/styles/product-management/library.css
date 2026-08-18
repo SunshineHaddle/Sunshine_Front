@@ -265,3 +265,117 @@
   color: #888;
   font-size: 12px;
 }
+
+/* ── 숨긴 제품 되돌리기 ───────────────────────────────────
+   과거 원가가 참조 중이라 지우지 못하고 숨긴 제품들이다 */
+.hidden-products {
+  margin-top: 28px;
+  padding: 20px 22px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card, 12px);
+}
+
+.hidden-products header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.hidden-products h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.hidden-products header p {
+  margin: 4px 0 0;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.hidden-products__count {
+  flex-shrink: 0;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text-subtle);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.hidden-products ul {
+  display: grid;
+  margin: 14px 0 0;
+  padding: 0;
+  gap: 8px;
+  list-style: none;
+}
+
+.hidden-products li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control, 8px);
+}
+
+.hidden-products li strong {
+  display: block;
+  color: var(--color-text);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.hidden-products li small {
+  color: var(--color-text-subtle);
+  font-size: 11px;
+}
+
+.hidden-products button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-height: 32px;
+  padding: 0 12px;
+  color: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.hidden-products button:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  color: var(--color-brand);
+}
+
+.hidden-products button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.hidden-products__actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+/* 되돌릴 수 없는 동작이라 색으로 구분한다 */
+.hidden-products__delete {
+  color: #b42318 !important;
+  border-color: #f0d9d6 !important;
+}
+
+.hidden-products__delete:hover:not(:disabled) {
+  color: #b42318 !important;
+  border-color: #b42318 !important;
+  background: #fdf3f2;
+}
