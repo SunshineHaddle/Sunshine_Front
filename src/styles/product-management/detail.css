@@ -705,3 +705,10 @@
   font-size: 12px;
   line-height: 1.55;
 }
+
+/* 포장 무게가 규격 라벨까지 만든다는 안내 */
+.sales-info-panel__hint {
+  color: var(--color-text-subtle);
+  font-size: 10.5px;
+  font-weight: 500;
+}

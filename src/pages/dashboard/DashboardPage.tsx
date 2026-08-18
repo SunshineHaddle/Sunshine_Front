@@ -10,8 +10,10 @@ import { fetchPeriodByMonth } from '../../lib/api/periods'
 import {
   fetchCostSummaries,
   fetchCostTrend,
+  fetchUnitCostTrendAll,
   type CostSummary,
   type CostTrendPoint,
+  type UnitCostPoint,
 } from '../../lib/api/results'
 import { CostTrendChart } from '../../components/dashboard/CostTrendChart'
 import { exportElementToPdf } from '../../lib/pdf/exportElementToPdf'
@@ -64,6 +66,8 @@ export function DashboardPage({
 
   const [items, setItems] = useState<ProductProfitabilityItem[]>([])
   const [trend, setTrend] = useState<CostTrendPoint[]>([])
+  /** §9-2 : 제품별 확정 단가 추이. 캐러셀 그래프가 실제 값을 그리는 데 쓴다 */
+  const [costTrends, setCostTrends] = useState<Record<string, UnitCostPoint[]>>({})
   const [loading, setLoading] = useState(true)
   const [isExportingPdf, setIsExportingPdf] = useState(false)
   const contentRef = useRef<HTMLElement>(null)
@@ -76,9 +80,19 @@ export function DashboardPage({
       // §9-1 : 최근 12개월 원가 추이
       const from = new Date(today)
       from.setMonth(from.getMonth() - 11)
-      fetchCostTrend(`${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`)
+      const fromPeriod = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`
+      fetchCostTrend(fromPeriod)
         .then((rows) => { if (!cancelled) setTrend(rows) })
         .catch(() => { if (!cancelled) setTrend([]) })
+
+      // §9-2 : 제품별 단가 추이. 실패해도 캐러셀은 참고용 곡선으로 계속 그려진다
+      fetchUnitCostTrendAll(fromPeriod)
+        .then((rows) => { if (!cancelled) setCostTrends(rows) })
+        .catch((error: unknown) => {
+          // 조용히 삼키면 그래프가 폴백(0)으로 그려지는데 원인을 알 수 없다
+          console.error('[대시보드] 제품 단가 추이 조회 실패', error)
+          if (!cancelled) setCostTrends({})
+        })
 
       try {
         // §8-2 : 선택한 달 수익성 스냅샷
@@ -141,6 +155,7 @@ export function DashboardPage({
               products={recipeProducts}
               onOpen={onSelectRecipe}
               expandAll={isExportingPdf}
+              costTrends={costTrends}
             />
           </div>
 

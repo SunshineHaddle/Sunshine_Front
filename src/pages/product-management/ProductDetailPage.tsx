@@ -74,10 +74,14 @@ export function ProductDetailPage({
     setSavingSales(true)
     try {
       const weight = sales.unitWeightKg.trim()
+      // 빈 값은 0 이 아니라 null 로 보낸다 — 0 이면 단위원가가 0 이 된다
+      const weightKg = weight === '' ? null : Number(weight) || null
       await updateProduct(product.id, {
         sale_price: Number(sales.salePrice) || 0,
-        // 빈 값은 0 이 아니라 null 로 보낸다 — 0 이면 단위원가가 0 이 된다
-        unit_weight_kg: weight === '' ? null : Number(weight) || null,
+        unit_weight_kg: weightKg,
+        // 규격은 표시용 라벨이라 무게에서 만들어 쓴다.
+        // 따로 입력받으면 '5kg' 인데 무게는 3 처럼 둘이 어긋날 수 있다.
+        specification: weightKg === null ? '' : `${weightKg}kg`,
       })
       await onRefresh?.()
       onAction(`${product.name}의 판매 정보를 저장했습니다.`)
@@ -305,6 +309,11 @@ export function ProductDetailPage({
                 placeholder="예: 5"
                 onValueChange={(raw) => setSales((c) => ({ ...c, unitWeightKg: raw }))}
               />
+              <small className="sales-info-panel__hint">
+                {sales.unitWeightKg.trim()
+                  ? `규격은 ${Number(sales.unitWeightKg) || 0}kg 으로 저장됩니다`
+                  : '수익성 표의 규격도 이 값으로 표시됩니다'}
+              </small>
             </label>
           </div>
 

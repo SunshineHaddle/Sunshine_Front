@@ -142,6 +142,43 @@ export async function fetchUnitCostTrend(
   }))
 }
 
+/**
+ * 전 제품의 단가 추이를 한 번에. 대시보드 캐러셀이 쓴다.
+ * 제품마다 fetchUnitCostTrend 를 부르면 요청이 제품 수만큼 늘어난다.
+ */
+export type UnitCostPoint = { period: string; unitCost: number }
+
+export async function fetchUnitCostTrendAll(
+  fromPeriod: string,
+): Promise<Record<string, UnitCostPoint[]>> {
+  // 정렬은 걸지 않는다. 조인 테이블 컬럼 정렬은 문법이 까다롭고,
+  // 어차피 화면에서 월별 자리를 찾아 꽂으므로 순서가 필요 없다.
+  const rows = unwrap(
+    await supabase
+      .from('product_cost_summaries')
+      // !inner 가 없으면 기간 필터가 적용되지 않는다
+      .select('product_id, unit_cost, cost_periods!inner(period)')
+      .gte('cost_periods.period', fromPeriod),
+  ) as unknown as {
+    product_id: string
+    unit_cost: number
+    // 다대일 임베드는 객체로 오지만, 배열로 오는 경우도 방어한다
+    cost_periods: { period: string } | { period: string }[] | null
+  }[]
+
+  const byProduct: Record<string, UnitCostPoint[]> = {}
+  for (const row of rows) {
+    const joined = Array.isArray(row.cost_periods) ? row.cost_periods[0] : row.cost_periods
+    if (!joined) continue
+    const list = byProduct[row.product_id] ?? (byProduct[row.product_id] = [])
+    list.push({ period: joined.period, unitCost: num(row.unit_cost) })
+  }
+  for (const list of Object.values(byProduct)) {
+    list.sort((a, b) => a.period.localeCompare(b.period))
+  }
+  return byProduct
+}
+
 // ── §9-3. 제품별 표준 재료비 집계 ───────────────────────────
 export type RecipeCostSummary = {
   productId: string

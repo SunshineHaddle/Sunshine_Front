@@ -31,6 +31,11 @@ type ProductCostTrendCarouselProps = {
    * PDF 는 화면에 보이는 것만 캡처하므로, 내보낼 때 이걸 켜야 전 제품이 담긴다.
    */
   expandAll?: boolean
+  /**
+   * 제품별 확정 단가 추이(§9-2). productId → 'YYYY-MM-01' 별 포장 단가.
+   * 비어 있으면 예전처럼 현재 원가에 패턴을 곱한 참고용 곡선을 그린다.
+   */
+  costTrends?: Record<string, { period: string; unitCost: number }[]>
 }
 
 const trendPatterns = [
@@ -38,50 +43,140 @@ const trendPatterns = [
   [1.12, 1.10, 1.11, 1.08, 1.09, 1.06, 1.05, 1.04, 1.03, 1.02, 1.01, 1],
   [0.93, 0.95, 0.92, 0.96, 0.94, 0.97, 0.95, 0.98, 0.96, 0.99, 0.97, 1],
 ]
-const numberFormatter = new Intl.NumberFormat('ko-KR')
+// 원 단위 금액이라 소수점을 쓰지 않는다. unit_cost 는 numeric(16,2) 라
+// 그대로 두면 '6,761.71원' 처럼 나온다
+const numberFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
 const compactWonFormatter = new Intl.NumberFormat('ko-KR', {
   notation: 'compact',
   maximumFractionDigits: 1,
 })
 
-function getMonthLabels() {
-  const today = new Date()
-  return Array.from({ length: 12 }, (_, index) => {
-    const date = new Date(today.getFullYear(), today.getMonth() - 11 + index, 1)
-    return `${date.getMonth() + 1}월`
-  })
+/** 'YYYY-MM' 한 달 뒤로 이동 */
+function shiftMonth(month: string, delta: number) {
+  const [year, m] = month.split('-').map(Number)
+  const date = new Date(year, m - 1 + delta, 1)
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
 }
 
-function getProductCostTrend(product: RecipeProduct, productIndex: number) {
-  const currentCost = product.materialCost
+const MAX_MONTHS = 12
+
+/**
+ * 가로축을 만든다.
+ *
+ * 확정 데이터가 있으면 **그 데이터가 걸친 범위**만 축으로 쓴다.
+ * 항상 12칸으로 벌리면, 두 달치 데이터가 오른쪽 끝 9% 안에 뭉쳐
+ * 선이 거의 보이지 않는다. 데이터가 쌓일수록 축이 자연히 넓어진다.
+ *
+ * 데이터가 없으면 이번 달로 끝나는 12개월을 그린다 (참고용 곡선을 위한 축).
+ */
+function buildAxis(costTrends?: Record<string, { period: string; unitCost: number }[]>) {
+  const months = new Set<string>()
+  for (const series of Object.values(costTrends ?? {})) {
+    for (const point of series) months.add(point.period.slice(0, 7))
+  }
+
+  const today = new Date()
+  const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+  let last: string
+  let count: number
+
+  if (months.size === 0) {
+    last = thisMonth
+    count = MAX_MONTHS
+  } else {
+    const sorted = [...months].sort()
+    const first = sorted[0]
+    last = sorted[sorted.length - 1]
+
+    // first..last 사이의 개월 수. 중간에 빈 달이 있어도 자리를 남겨 간격을 유지한다
+    const [fy, fm] = first.split('-').map(Number)
+    const [ly, lm] = last.split('-').map(Number)
+    count = Math.min((ly - fy) * 12 + (lm - fm) + 1, MAX_MONTHS)
+  }
+
+  const keys: string[] = []
+  const labels: string[] = []
+  for (let back = count - 1; back >= 0; back -= 1) {
+    const month = shiftMonth(last, -back)
+    keys.push(month)
+    labels.push(`${Number(month.slice(5, 7))}월`)
+  }
+  return { keys, labels }
+}
+
+/** 그래프에 찍히는 점 하나. monthIndex 는 가로축(12개월)에서의 자리 */
+type TrendPoint = { monthIndex: number; value: number; x: number; y: number }
+
+/** 축 칸 수에 맞춘 x 좌표. 칸이 하나뿐이면 가운데 */
+const xForMonth = (monthIndex: number, count: number) =>
+  count <= 1 ? 469 : 58 + (monthIndex / (count - 1)) * 822
+
+/**
+ * 제품 원가 추이.
+ *
+ * 확정된 달의 실제 단가(product_cost_summaries.unit_cost)가 있으면 그걸 그린다.
+ * 아직 한 달도 마감하지 않았으면 예전처럼 현재 원가에 패턴을 곱한 참고용 곡선을 그린다 —
+ * 화면이 비어 보이지 않게 하기 위한 폴백이고, 실제 값이 아니다.
+ */
+function getProductCostTrend(
+  product: RecipeProduct,
+  productIndex: number,
+  monthKeys: string[],
+  realSeries?: { period: string; unitCost: number }[],
+) {
+  const fallbackCost = product.materialCost
     + product.laborCost
     + product.indirectCosts.reduce((sum, cost) => sum + cost.amount, 0)
-  const pattern = trendPatterns[productIndex % trendPatterns.length]
-  const values = pattern.map((ratio) => Math.round(currentCost * ratio))
+
+  // 'YYYY-MM-01' → 가로축 자리
+  const byMonth = new Map<number, number>()
+  for (const point of realSeries ?? []) {
+    const index = monthKeys.indexOf(point.period.slice(0, 7))
+    if (index >= 0) byMonth.set(index, point.unitCost)
+  }
+
+  const isReal = byMonth.size > 0
+  const raw: { monthIndex: number; value: number }[] = isReal
+    ? [...byMonth.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([monthIndex, value]) => ({ monthIndex, value }))
+    : trendPatterns[productIndex % trendPatterns.length]
+        .slice(-monthKeys.length)
+        .map((ratio, monthIndex) => ({
+          monthIndex,
+          value: Math.round(fallbackCost * ratio),
+        }))
+
+  const values = raw.map((point) => point.value)
   const minimum = Math.min(...values)
   const maximum = Math.max(...values)
   const range = Math.max(maximum - minimum, 1)
-  const coordinates = values.map((value, index) => ({
-    x: 58 + (index / (values.length - 1)) * 822,
-    y: 250 - ((value - minimum) / range) * 180,
+
+  // 점이 하나뿐이면 세로로 흔들릴 곳이 없다. 가운데 높이에 놓는다
+  const series: TrendPoint[] = raw.map(({ monthIndex, value }) => ({
+    monthIndex,
+    value,
+    x: xForMonth(monthIndex, monthKeys.length),
+    y: raw.length === 1 ? 160 : 250 - ((value - minimum) / range) * 180,
   }))
+
+  const currentCost = values.at(-1) ?? 0
   const previousCost = values.at(-2) ?? currentCost
   const changeRate = ((currentCost - previousCost) / Math.max(previousCost, 1)) * 100
 
   const baseline = 290
-  const firstX = coordinates[0].x
-  const lastX = coordinates.at(-1)!.x
-  const areaPath = `M ${firstX},${baseline} `
-    + coordinates.map(({ x, y }) => `L ${x},${y}`).join(' ')
-    + ` L ${lastX},${baseline} Z`
+  const areaPath = `M ${series[0].x},${baseline} `
+    + series.map(({ x, y }) => `L ${x},${y}`).join(' ')
+    + ` L ${series.at(-1)!.x},${baseline} Z`
 
   return {
+    isReal,
     changeRate,
-    coordinates,
     currentCost,
-    points: coordinates.map(({ x, y }) => `${x},${y}`).join(' '),
+    series,
+    points: series.map(({ x, y }) => `${x},${y}`).join(' '),
     areaPath,
-    values,
     yTicks: [maximum, Math.round((maximum + minimum) / 2), minimum],
   }
 }
@@ -157,6 +252,7 @@ export function ProductCostTrendCarousel({
   onOpen,
   compact = false,
   expandAll = false,
+  costTrends,
 }: ProductCostTrendCarouselProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const [isPaused, setIsPaused] = useState(false)
@@ -166,7 +262,11 @@ export function ProductCostTrendCarousel({
   // dragState 는 ref 라 렌더 중 읽으면 안 되므로 같은 사실을 state 로도 들고 있는다.
   const [isDragging, setIsDragging] = useState(false)
   const dragState = useRef<{ startX: number; width: number } | null>(null)
-  const monthLabels = getMonthLabels()
+  const { keys: monthKeys, labels: monthLabels } = buildAxis(costTrends)
+  /** 축 안에 실제 확정 단가가 하나라도 놓이는가 */
+  const hasRealData = Object.values(costTrends ?? {}).some((series) =>
+    series.some((point) => monthKeys.includes(point.period.slice(0, 7))),
+  )
   const cardClassName = `card product-cost-carousel${compact ? ' product-cost-carousel--compact' : ''}`
     + (expandAll ? ' product-cost-carousel--expanded' : '')
 
@@ -231,6 +331,12 @@ export function ProductCostTrendCarousel({
     >
       <div className="product-cost-carousel__heading">
         <h2 id="product-cost-card-title"><Icon name="trend" size={22} />제품별 원가 변동 추이</h2>
+        {/* 확정 데이터로 그리는지, 참고용 곡선인지 한눈에 구분되게 한다 */}
+        {!hasRealData && (
+          <span className="product-cost-carousel__estimate" title="마감된 달의 단가가 없어 현재 배합 기준으로 그린 참고용 곡선입니다">
+            참고용 · 확정 데이터 없음
+          </span>
+        )}
         {!expandAll && products.length > 1 && (
           <div className="product-cost-carousel__nav">
             <button type="button" aria-label="이전 제품" onClick={goToPrevious}>
@@ -262,10 +368,10 @@ export function ProductCostTrendCarousel({
             : { transform: trackTransform, transition: isDragging ? 'none' : undefined }}
         >
           {products.map((product, index) => {
-            const trend = getProductCostTrend(product, index)
+            const trend = getProductCostTrend(product, index, monthKeys, costTrends?.[product.id])
             const changeDirection = trend.changeRate >= 0 ? '상승' : '하락'
             const activePointIndex = hoveredPoint?.productId === product.id ? hoveredPoint.index : null
-            const activeCoordinate = activePointIndex === null ? null : trend.coordinates[activePointIndex]
+            const activeCoordinate = activePointIndex === null ? null : trend.series[activePointIndex]
             const tooltipWidth = 150
             const tooltipX = activeCoordinate
               ? Math.min(Math.max(activeCoordinate.x - tooltipWidth / 2, 4), 900 - tooltipWidth - 4)
@@ -319,12 +425,12 @@ export function ProductCostTrendCarousel({
                     ))}
                     <path className="product-cost-slide__area" d={trend.areaPath} />
                     <polyline points={trend.points} />
-                    {trend.values.map((value, pointIndex) => (
+                    {trend.series.map((point, pointIndex) => (
                       <g
                         className="product-cost-slide__point"
-                        key={`${product.id}-${pointIndex}`}
+                        key={`${product.id}-${point.monthIndex}`}
                         role="img"
-                        aria-label={`${monthLabels[pointIndex]} ${numberFormatter.format(value)}원`}
+                        aria-label={`${monthLabels[point.monthIndex]} ${numberFormatter.format(point.value)}원`}
                         tabIndex={expandAll || index === visibleIndex ? 0 : -1}
                         onMouseEnter={() => setHoveredPoint({ productId: product.id, index: pointIndex })}
                         onMouseLeave={() => setHoveredPoint(null)}
@@ -333,14 +439,14 @@ export function ProductCostTrendCarousel({
                       >
                         <circle
                           className="product-cost-slide__point-hit"
-                          cx={trend.coordinates[pointIndex].x}
-                          cy={trend.coordinates[pointIndex].y}
+                          cx={point.x}
+                          cy={point.y}
                           r="18"
                         />
                         <circle
                           className="product-cost-slide__point-dot"
-                          cx={trend.coordinates[pointIndex].x}
-                          cy={trend.coordinates[pointIndex].y}
+                          cx={point.x}
+                          cy={point.y}
                           r="5"
                         />
                       </g>
@@ -348,9 +454,9 @@ export function ProductCostTrendCarousel({
                     {activeCoordinate && activePointIndex !== null && (
                       <g className="product-cost-slide__tooltip" aria-hidden="true">
                         <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height="40" rx="7" />
-                        <text x={tooltipX + 10} y={tooltipY + 15}>{monthLabels[activePointIndex]}</text>
+                        <text x={tooltipX + 10} y={tooltipY + 15}>{monthLabels[trend.series[activePointIndex].monthIndex]}</text>
                         <text className="product-cost-slide__tooltip-value" x={tooltipX + 10} y={tooltipY + 31}>
-                          {numberFormatter.format(trend.values[activePointIndex])}원
+                          {numberFormatter.format(trend.series[activePointIndex].value)}원
                         </text>
                       </g>
                     )}
