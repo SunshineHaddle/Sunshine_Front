@@ -77,7 +77,7 @@ const currentMonth = () => {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-type SavedRow = { cost?: number; marginRate?: number; quantityKg?: number }
+type SavedRow = { marginRate?: number; quantityKg?: number }
 
 /**
  * 사용자가 표에서 직접 고친 값만 저장한다.
@@ -120,7 +120,12 @@ export function ExchangeRateCalculatorPage({
   onAction,
 }: ExchangeRateCalculatorPageProps) {
   const [overrides, setOverrides] = useState<Record<string, SavedRow>>(loadOverrides)
-  const [unitCostById, setUnitCostById] = useState<Record<string, number>>({})
+  /**
+   * 그 달 제품별 경영 총원가 — 대시보드 수익성 표의 그 열과 같은 값이다.
+   * total_cost 가 아니라 unit_cost(포장 1개당 총원가)를 쓴다.
+   * 판매가·수량과 같은 단위여야 나란히 곱할 수 있다.
+   */
+  const [monthlyCostById, setMonthlyCostById] = useState<Record<string, number>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -130,9 +135,12 @@ export function ExchangeRateCalculatorPage({
         if (cancelled || !period) return
         const summaries = await fetchCostSummaries(period.id)
         if (cancelled) return
-        setUnitCostById(Object.fromEntries(summaries.map((s) => [s.productId, s.unitCost])))
+        setMonthlyCostById(Object.fromEntries(
+          // 소수점은 표시하지 않으므로 여기서 정수로 굳힌다
+          summaries.map((s) => [s.productId, Math.round(s.unitCost)]),
+        ))
       } catch {
-        if (!cancelled) setUnitCostById({})
+        if (!cancelled) setMonthlyCostById({})
       }
     })()
     return () => { cancelled = true }
@@ -146,12 +154,13 @@ export function ExchangeRateCalculatorPage({
     () => products.map((product, index) => ({
       id: product.id,
       name: product.name,
-      cost: overrides[product.id]?.cost ?? unitCostById[product.id] ?? product.materialCost,
+      // 계산 원가는 그 달 확정 경영 총원가(포장 1개당)를 그대로 쓴다 (직접 고치지 않는다)
+      cost: monthlyCostById[product.id] ?? 0,
       marginRate: overrides[product.id]?.marginRate
         ?? defaultMargins[index % defaultMargins.length],
       quantityKg: overrides[product.id]?.quantityKg ?? 1,
     })),
-    [products, overrides, unitCostById],
+    [products, overrides, monthlyCostById],
   )
   const [currencies, setCurrencies] = useState<Record<CurrencyCode, CurrencySetting>>(() => loadCurrencies())
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyCode>('USD')
@@ -225,7 +234,6 @@ export function ExchangeRateCalculatorPage({
       ...current,
       [id]: {
         ...current[id],
-        ...(values.cost !== undefined && { cost: values.cost }),
         ...(values.marginRate !== undefined && { marginRate: values.marginRate }),
         ...(values.quantityKg !== undefined && { quantityKg: values.quantityKg }),
       },
@@ -331,9 +339,9 @@ export function ExchangeRateCalculatorPage({
                 <tr>
                   <th scope="col">제품명</th>
                   <th scope="col">계산 원가<br />(KRW)</th>
-                  <th scope="col">마진율 (%)</th>
+                  <th scope="col">마진율 (%)<em className="exchange-th__editable">직접 입력</em></th>
                   <th scope="col">판매가 (KRW)</th>
-                  <th scope="col">수량 (kg)</th>
+                  <th scope="col">수량 (kg)<em className="exchange-th__editable">직접 입력</em></th>
                   <th scope="col">현지 판매가</th>
                 </tr>
               </thead>
@@ -352,14 +360,8 @@ export function ExchangeRateCalculatorPage({
                       <span>제품 1개 기준</span>
                     </td>
                     <td data-label="계산 원가">
-                      <label className="exchange-cost-field">
-                        <span className="visually-hidden">{row.name} 계산 원가</span>
-                        <NumberInput
-                          min="0"
-                          value={row.cost}
-                          onValueChange={(raw) => updateRow(row.id, { cost: Math.max(0, parseNumber(raw)) })}
-                        />
-                      </label>
+                      {/* 그 달 확정 총원가라 화면에서 고치지 않는다 */}
+                      <strong className="exchange-number">{formatKrw(row.cost)}</strong>
                     </td>
                     <td data-label="마진율">
                       <label className="exchange-margin-field">

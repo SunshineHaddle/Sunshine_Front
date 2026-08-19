@@ -346,26 +346,37 @@
   width: min(100%, 110px);
 }
 
+/*
+  마진율·수량은 사용자가 직접 고치는 칸이다.
+  예전에는 테두리가 투명이라 hover 하기 전에는 입력칸인 줄 몰랐다.
+*/
 .exchange-margin-field input,
 .exchange-quantity-field input {
   width: 100%;
-  height: 36px;
+  height: 38px;
   padding: 0 30px 0 13px;
   color: #2b2627;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 0;
+  background: #fff;
+  border: 1px solid #d8d2d4;
+  border-radius: 6px;
   outline: 0;
   text-align: right;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  transition: background-color 120ms ease, border-color 120ms ease;
+  cursor: text;
+  transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
 }
 
 .exchange-margin-field input:hover,
 .exchange-quantity-field input:hover {
-  background: #f6f5f5;
-  border-color: #ececec;
+  border-color: var(--color-brand);
+}
+
+.exchange-margin-field input:focus,
+.exchange-quantity-field input:focus {
+  border-color: var(--color-brand);
+  box-shadow: 0 0 0 3px rgba(186, 0, 54, 0.12);
 }
 
 .exchange-margin-field input:focus,
@@ -708,4 +719,14 @@
 
 .exchange-cost-field input::-webkit-inner-spin-button {
   appearance: none;
+}
+
+/* 어느 열이 직접 입력 칸인지 머리글에서 미리 알린다 */
+.exchange-th__editable {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-brand);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
 }
