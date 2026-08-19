@@ -105,8 +105,9 @@ export async function createDownloadUrl(storagePath: string, expiresInSec = 60):
 }
 
 // ── §10-5. 삭제 (Storage + 테이블 양쪽) ─────────────────────
+// 화면 목록은 테이블 행 기준이므로, Storage 삭제가 실패(버킷 없음·파일 이미 없음)해도
+// 이력 행은 반드시 지운다. Storage 는 best-effort.
 export async function deleteFile(fileId: string, storagePath: string) {
-  const { error } = await supabase.storage.from(BUCKET).remove([storagePath])
-  if (error) throw new Error(error.message)
+  await supabase.storage.from(BUCKET).remove([storagePath]).catch(() => {})
   unwrap(await supabase.from('file_uploads').delete().eq('id', fileId))
 }

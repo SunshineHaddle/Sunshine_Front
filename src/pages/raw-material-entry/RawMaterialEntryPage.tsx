@@ -13,10 +13,10 @@ import {
   type SubulPreview,
 } from '../../lib/api/importSubul'
 import {
-  deleteMaterialUsages,
   fetchMaterialUsages,
   fetchProduction,
   fetchUsageProductIds,
+  fetchUsageTotals,
   saveProduction,
   type UsageLine,
 } from '../../lib/api/production'
@@ -29,6 +29,10 @@ import {
 } from '../../lib/api/files'
 import { markEntrySaved } from '../../utils/entrySaved'
 import { describeDbError } from '../../lib/api/errors'
+import { confirmPeriod } from '../../lib/api/results'
+import { fetchPeriods, reopenPeriod } from '../../lib/api/periods'
+import { describeIssues, findProductionIssues } from '../production-result/productionSanity'
+import type { CostPeriodRow } from '../../lib/types'
 
 type RawMaterialEntryPageProps = {
   products: RecipeProduct[]
@@ -42,6 +46,10 @@ type RawMaterialEntryPageProps = {
   /** 제품을 새로 만든 뒤 App 의 제품 목록을 다시 읽게 한다 */
   onProductsChanged?: () => void | Promise<void>
   hideSidebar?: boolean
+  /** 이 회차가 마감(잠금)되었는지. admin 1단계에서만 넘어온다 */
+  isLocked?: boolean
+  /** 마감/마감취소 후 App 이 회차 상태를 다시 읽게 한다 */
+  onPeriodChanged?: () => void
 }
 
 /** 화면 입력은 문자열로 들고 있다가 저장 시 숫자로 바꾼다 */
@@ -80,6 +88,8 @@ export function RawMaterialEntryPage({
   onAction,
   onProductsChanged,
   hideSidebar = false,
+  isLocked = false,
+  onPeriodChanged,
 }: RawMaterialEntryPageProps) {
   const [rows, setRows] = useState<Row[]>([])
   const [preview, setPreview] = useState<SubulPreview | null>(null)
@@ -91,6 +101,10 @@ export function RawMaterialEntryPage({
   const [usages, setUsages] = useState<UsageLine[]>([])
   /** §10-3 이 달에 올린 원본 파일 */
   const [history, setHistory] = useState<FileHistoryItem[]>([])
+  /** §4-2 저장된 모든 월 회차. 월별 마감 여부를 미리 보여주는 데 쓴다 */
+  const [periods, setPeriods] = useState<CostPeriodRow[]>([])
+  /** 월별 마감 상태 목록 펼침 여부 (캘린더 클릭 시 슬라이드) */
+  const [monthListOpen, setMonthListOpen] = useState(false)
   /** 파일명이 가리키는 월이 선택한 월과 다를 때만 채워진다 */
   const [monthMismatch, setMonthMismatch] = useState<string | null>(null)
   /**
@@ -153,6 +167,24 @@ export function RawMaterialEntryPage({
   // 린터가 함수 경계를 넘어 비동기성을 추적하지 못하므로 async IIFE 로 감싼다
   useEffect(() => { void (async () => { await reloadUsages() })() }, [reloadUsages])
   useEffect(() => { void (async () => { await reloadHistory() })() }, [reloadHistory])
+
+  // 월별 마감 여부 목록. admin 1단계(onPeriodChanged 있음)에서만 쓴다.
+  // isLocked 가 바뀌면(=이 화면에서 마감/마감취소) 배지도 다시 읽는다.
+  useEffect(() => {
+    if (!onPeriodChanged) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const rows = await fetchPeriods()
+        console.log('[month-chips] fetchPeriods rows:', rows)
+        if (!cancelled) setPeriods(rows)
+      } catch (error) {
+        console.error('[month-chips] fetchPeriods failed:', error)
+        if (!cancelled) setPeriods([])
+      }
+    })()
+    return () => { cancelled = true }
+  }, [onPeriodChanged, isLocked, periodId])
 
   // §5-1 저장된 생산량을 제품 목록에 좌측 조인한다 (F-11).
   // 조인하지 않으면 아직 입력하지 않은 제품이 화면에서 사라진다.
@@ -349,19 +381,6 @@ export function RawMaterialEntryPage({
     }
   }
 
-  /** §6-3 지우면 마감 시 표준원가로 되돌아간다 */
-  const removeUsages = async (productId: string, productName: string) => {
-    if (!periodId) return
-    if (!window.confirm(`${productName}의 투입내역을 모두 지울까요?\n마감 시 레시피 기준(표준원가)으로 계산됩니다.`)) return
-    try {
-      await deleteMaterialUsages(periodId, productId)
-      await reloadUsages()
-      onAction(`${productName} 투입내역을 삭제했습니다.`)
-    } catch (error) {
-      onAction(`삭제 실패: ${describeDbError(error)}`)
-    }
-  }
-
   /** §5-2 생산량 저장 */
   const persistProduction = async () => {
     if (!periodId) return false
@@ -384,18 +403,78 @@ export function RawMaterialEntryPage({
     if (await persistProduction()) onAction('제품 생산량을 임시 저장했습니다.')
   }
 
-  const resetEntry = () => {
-    if (!window.confirm('입력한 생산량과 업로드 내용을 화면에서 지울까요?\n이미 저장된 데이터는 그대로 남습니다.')) return
-    setRows((current) => current.map((row) => ({ ...row, production: '' })))
-    setPreview(null)
-    setFile(null)
-    setFileName('')
-    setMonthMismatch(null)
-    onAction('입력 내용을 초기화했습니다.')
-  }
-
   const goToNextStep = async () => {
     if (await persistProduction()) onNavigate('data-entry-2')
+  }
+
+  /**
+   * 마감된 회차를 1단계에서 바로 풀어 값을 고칠 수 있게 한다.
+   * (원래 3단계에 있던 '마감 취소' 기능을 옮겨온 것)
+   */
+  const runReopen = async () => {
+    if (!periodId) return
+    setBusy('마감을 취소하는 중…')
+    try {
+      await reopenPeriod(periodId)
+      // 재접속 후 마감 회차는 빈 폼(freshEntry)으로 열린다. 수정하려면
+      // 저장된 생산량·투입내역을 화면에 되불러와야 한다.
+      // reloadUsages/History 는 freshEntry 면 빈 배열을 주므로 여기서 직접 읽는다
+      const [saved, usageRows, fileRows] = await Promise.all([
+        fetchProduction(periodId).catch(() => []),
+        fetchMaterialUsages(periodId).catch((): UsageLine[] => []),
+        fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => []),
+      ])
+      const byId = new Map(saved.map((s) => [s.productId, s] as const))
+      setRows((current) => current.map((row) => ({
+        ...row,
+        production: byId.has(row.id) ? String(byId.get(row.id)!.production) : row.production,
+      })))
+      setUsages(usageRows)
+      setHistory(fileRows)
+      onPeriodChanged?.()
+      onAction('마감을 취소했습니다. 값을 고친 뒤 다시 계산하세요.')
+    } catch (error) {
+      onAction(`마감 취소 실패: ${describeDbError(error)}`)
+    } finally {
+      setBusy('')
+    }
+  }
+
+  /**
+   * 현재 입력값으로 원가를 다시 계산하고 그 달을 마감한다.
+   * (원래 3단계의 '다시 계산/원가 계산' 버튼) 계산 전 생산량이 상식적인지 대조한다.
+   */
+  const runConfirm = async () => {
+    if (!periodId) return
+    // 화면에 입력한 생산량을 먼저 저장해야 계산에 반영된다
+    if (!(await persistProduction())) return
+    setBusy('원가를 계산하는 중…')
+    try {
+      const [usageTotals, savedProductions] = await Promise.all([
+        fetchUsageTotals(periodId).catch(() => []),
+        fetchProduction(periodId).catch(() => []),
+      ])
+      const issues = findProductionIssues(usageTotals, savedProductions)
+      const proceed = issues.length > 0
+        ? window.confirm(describeIssues(issues))
+        : window.confirm(
+            `${month.replace('-', '년 ')}월 원가를 계산하고 마감합니다.\n`
+            + '마감하면 입력이 잠깁니다. 값을 고치려면 마감을 취소해야 합니다.\n\n계속할까요?',
+          )
+      if (!proceed) { setBusy(''); return }
+
+      const count = await confirmPeriod(periodId)
+      onPeriodChanged?.()
+      onAction(
+        count > 0
+          ? `${count}개 제품의 원가를 계산했습니다.`
+          : '계산할 데이터가 없습니다. 생산량을 먼저 입력해주세요.',
+      )
+    } catch (error) {
+      onAction(`계산 실패: ${describeDbError(error)}`)
+    } finally {
+      setBusy('')
+    }
   }
 
   const unmatched = useMemo(
@@ -414,21 +493,74 @@ export function RawMaterialEntryPage({
             <p>수불자료(.xlsx)를 올리면 제품별 투입 재료가 등록됩니다. 생산량은 아래에서 직접 입력하세요.</p>
           </div>
           <div className="entry-heading__actions">
-            <button
-              className="workflow-outline-button"
-              type="button"
-              onClick={resetEntry}
-              disabled={!hasRows && !preview}
-            >
-              <Icon name="trash" size={16} /> 초기화
-            </button>
+            {onPeriodChanged && (
+              isLocked ? (
+                <button
+                  className="workflow-outline-button entry-reopen-button"
+                  type="button"
+                  disabled={Boolean(busy) || !periodId}
+                  onClick={() => void runReopen()}
+                >
+                  <Icon name="unlock" size={15} /> 마감 풀고 수정
+                </button>
+              ) : (
+                <button
+                  className="workflow-outline-button"
+                  type="button"
+                  disabled={Boolean(busy) || !periodId}
+                  onClick={() => void runConfirm()}
+                >
+                  <Icon name="check" size={16} /> 마감
+                </button>
+              )
+            )}
             <label className="entry-month-picker">
               <span className="visually-hidden">기준 월</span>
-              <Icon name="calendar" size={17} />
-              <input type="month" value={month} onChange={(event) => onMonthChange(event.target.value)} />
+              {onPeriodChanged && periods.length > 0 ? (
+                <button
+                  type="button"
+                  className="entry-month-picker__toggle"
+                  aria-expanded={monthListOpen}
+                  aria-label="월별 마감 상태 보기"
+                  onClick={() => setMonthListOpen((open) => !open)}
+                >
+                  <Icon name="calendar" size={17} />
+                </button>
+              ) : (
+                <Icon name="calendar" size={17} />
+              )}
+              <input
+                type="month"
+                value={month}
+                onFocus={() => { if (onPeriodChanged && periods.length > 0) setMonthListOpen(true) }}
+                onChange={(event) => onMonthChange(event.target.value)}
+              />
             </label>
           </div>
         </header>
+
+        {onPeriodChanged && periods.length > 0 && (
+          <div className={`entry-month-chips${monthListOpen ? ' is-open' : ''}`}>
+            <div className="entry-month-chips__inner" role="list" aria-label="월별 마감 상태">
+              {periods.map((p) => {
+                const m = p.period.slice(0, 7) // 'YYYY-MM-01' → 'YYYY-MM'
+                const locked = p.status === 'confirmed'
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    role="listitem"
+                    className={`entry-month-chip${m === month ? ' is-current' : ''}${locked ? ' is-locked' : ' is-draft'}`}
+                    onClick={() => { onMonthChange(m); setMonthListOpen(false) }}
+                  >
+                    <span className="entry-month-chip__dot" aria-hidden="true" />
+                    {m.replace('-', '.')} · {locked ? '마감' : '작성중'}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         <div className="production-entry">
           <section className="production-upload" aria-labelledby="production-upload-title">
@@ -668,9 +800,6 @@ export function RawMaterialEntryPage({
                     <div className="saved-usages__head">
                       <strong>{row.name}</strong>
                       <span>재료 {lines.length}개 · {won(total)}원</span>
-                      <button type="button" onClick={() => void removeUsages(row.id, row.name)}>
-                        <Icon name="trash" size={14} /> 삭제
-                      </button>
                     </div>
                     <ul>
                       {lines.map((line) => (

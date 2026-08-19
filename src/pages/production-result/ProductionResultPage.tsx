@@ -2,11 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { confirmPeriod, fetchCostSummaries, type CostSummary } from '../../lib/api/results'
-import { reopenPeriod } from '../../lib/api/periods'
-import { fetchProduction, fetchUsageTotals } from '../../lib/api/production'
+import { fetchCostSummaries, type CostSummary } from '../../lib/api/results'
 import { describeDbError } from '../../lib/api/errors'
-import { describeIssues, findProductionIssues } from './productionSanity'
 
 type ProductionResultPageProps = {
   month: string
@@ -14,7 +11,6 @@ type ProductionResultPageProps = {
   isLocked: boolean
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
-  onPeriodChanged: () => void
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
@@ -27,10 +23,8 @@ export function ProductionResultPage({
   isLocked,
   onNavigate,
   onAction,
-  onPeriodChanged,
 }: ProductionResultPageProps) {
   const [summaries, setSummaries] = useState<CostSummary[]>([])
-  const [busy, setBusy] = useState(false)
 
   const load = useCallback(async () => {
     if (!periodId) return
@@ -42,58 +36,6 @@ export function ProductionResultPage({
   }, [periodId, onAction])
 
   useEffect(() => { void (async () => { await load() })() }, [load])
-
-  const runConfirm = async () => {
-    if (!periodId) return
-    setBusy(true)
-    try {
-      // 마감은 그 달을 잠그고 되돌리려면 마감 취소가 필요하다.
-      // 실행 전에 생산량이 상식적인지 한 번 대조한다.
-      const [usageTotals, productions] = await Promise.all([
-        fetchUsageTotals(periodId).catch(() => []),
-        fetchProduction(periodId).catch(() => []),
-      ])
-      const issues = findProductionIssues(usageTotals, productions)
-
-      const proceed = issues.length > 0
-        ? window.confirm(describeIssues(issues))
-        : window.confirm(
-            `${month.replace('-', '년 ')}월 원가를 계산하고 마감합니다.\n`
-            + '마감하면 1·2단계 입력이 잠깁니다. 값을 고치려면 마감을 취소해야 합니다.\n\n계속할까요?',
-          )
-      if (!proceed) {
-        setBusy(false)
-        return
-      }
-
-      const count = await confirmPeriod(periodId)
-      await load()
-      onPeriodChanged()
-      onAction(
-        count > 0
-          ? `${count}개 제품의 원가를 계산했습니다.`
-          : '계산할 데이터가 없습니다. 1단계에서 생산량을 먼저 입력해주세요.',
-      )
-    } catch (error) {
-      onAction(`계산 실패: ${describeDbError(error)}`)
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  const runReopen = async () => {
-    if (!periodId) return
-    setBusy(true)
-    try {
-      await reopenPeriod(periodId)
-      onPeriodChanged()
-      onAction('마감을 취소했습니다. 1·2단계에서 값을 고친 뒤 다시 계산하세요.')
-    } catch (error) {
-      onAction(`마감 취소 실패: ${describeDbError(error)}`)
-    } finally {
-      setBusy(false)
-    }
-  }
 
   const grand = summaries.reduce(
     (acc, s) => ({
@@ -127,16 +69,9 @@ export function ProductionResultPage({
               {isLocked ? '마감됨' : '작성 중'}
             </strong>
           </div>
-          <div className="result-actions__buttons">
-            {isLocked && (
-              <button className="workflow-outline-button" type="button" disabled={busy} onClick={runReopen}>
-                마감 취소
-              </button>
-            )}
-            <button className="production-finish" type="button" disabled={busy || !periodId} onClick={runConfirm}>
-              {summaries.length > 0 ? '다시 계산' : '원가 계산'} <Icon name="check" size={18} />
-            </button>
-          </div>
+          <p className="result-actions__hint">
+            원가 계산·다시 계산·마감 취소는 <strong>1단계</strong>에서 할 수 있습니다.
+          </p>
         </section>
 
         {summaries.length === 0 ? (

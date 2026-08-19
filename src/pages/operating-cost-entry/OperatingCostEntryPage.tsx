@@ -153,6 +153,12 @@ export function OperatingCostEntryPage({
     }))
   }
 
+  const resetEntry = () => {
+    if (!window.confirm('입력한 인건비와 비율, 운영 항목을 화면에서 지울까요?\n이미 저장된 데이터는 그대로 남습니다.')) return
+    setCosts(initialOperatingCosts)
+    onAction('입력 내용을 초기화했습니다.')
+  }
+
   // §7-3 이미 저장된 항목이면 DB 에서도 지운다
   const removeCustomItem = (id: string) => {
     setCosts((current) => ({
@@ -216,6 +222,9 @@ export function OperatingCostEntryPage({
             <h1>2단계: 현장 운영비</h1>
             <p>제조 공정의 인건비와 운영 항목을 입력하세요.</p>
           </div>
+          <button className="workflow-outline-button" type="button" onClick={resetEntry}>
+            <Icon name="trash" size={16} /> 초기화
+          </button>
         </header>
 
         <OperatingCostForm

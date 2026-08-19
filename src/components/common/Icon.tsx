@@ -33,6 +33,7 @@ export type IconName =
   | 'settings'
   | 'trend'
   | 'trash'
+  | 'unlock'
   | 'upload'
   | 'users'
 
@@ -196,6 +197,12 @@ const paths: Record<IconName, ReactNode> = {
   trash: (
     <>
       <path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6" />
+    </>
+  ),
+  unlock: (
+    <>
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 9.9-1" />
     </>
   ),
   upload: (

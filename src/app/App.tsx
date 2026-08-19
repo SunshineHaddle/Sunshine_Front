@@ -309,7 +309,13 @@ function App() {
         <RawMaterialEntryPage {...entryProps} />
       )
   } else if (route === 'data-entry-1') {
-    page = <RawMaterialEntryPage {...entryProps} />
+    page = (
+      <RawMaterialEntryPage
+        {...entryProps}
+        isLocked={period?.status === 'confirmed'}
+        onPeriodChanged={() => void refreshPeriod()}
+      />
+    )
   } else if (route === 'data-entry-2') {
     page = <OperatingCostEntryPage {...entryProps} />
   } else if (route === 'data-entry-3') {
@@ -320,7 +326,6 @@ function App() {
         isLocked={period?.status === 'confirmed'}
         onNavigate={navigate}
         onAction={announce}
-        onPeriodChanged={() => void refreshPeriod()}
       />
     )
   } else if (route === 'product-management') {
