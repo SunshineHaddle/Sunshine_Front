@@ -208,7 +208,6 @@
 .product-cost-carousel {
   position: relative;
   padding: 24px 24px 18px;
-  overflow: hidden;
 }
 
 .product-cost-carousel__heading,
@@ -234,95 +233,40 @@
   color: var(--color-brand);
 }
 
-.product-cost-carousel__nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.product-cost-carousel__nav button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  color: var(--color-text);
-  background: #fff;
-  border: 1px solid var(--color-border);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: background 160ms ease, border-color 160ms ease;
-}
-
-.product-cost-carousel__nav button:hover {
-  background: #faf5f4;
-  border-color: var(--color-brand);
-  color: var(--color-brand);
-}
-
-.product-cost-carousel__counter {
-  min-width: 42px;
-  color: var(--color-text-subtle);
-  font-size: 12px;
-  font-weight: 600;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-
-
-.product-cost-carousel__viewport {
-  overflow: hidden;
-}
-
-.product-cost-carousel__viewport.is-draggable {
-  cursor: grab;
-  touch-action: pan-y;
-}
-
-.product-cost-carousel__viewport.is-draggable:active {
-  cursor: grabbing;
-}
-
-.product-cost-carousel__viewport.is-draggable:active .product-cost-slide {
-  user-select: none;
-}
-
-.product-cost-carousel__track {
-  display: flex;
-  transition: transform 420ms ease;
+/* ── 제품별 카드 그리드 ───────────────────────
+   예전에는 한 제품씩 넘겨 보는 캐러셀이었다. 제품이 늘수록 전부 보려면
+   계속 넘겨야 해서, 작은 카드를 격자로 깔아 모든 제품을 한 번에 보여준다. */
+.product-cost-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 18px;
 }
 
 .product-cost-slide {
-  flex: 0 0 100%;
   min-width: 0;
-  padding-top: 18px;
-}
-
-/* ── PDF 내보내기용 전개 모드 ─────────────────────────────
-   가로 캐러셀을 세로 스택으로 바꿔 모든 제품이 한 화면에 담기게 한다.
-   html2canvas 는 보이는 것만 그리므로 overflow 도 풀어야 한다. */
-.product-cost-carousel--expanded .product-cost-carousel__viewport {
-  overflow: visible;
-}
-
-.product-cost-carousel--expanded .product-cost-carousel__track {
-  display: block;
-  transform: none !important;
-  transition: none;
-}
-
-.product-cost-carousel--expanded .product-cost-slide {
-  flex: none;
-  width: 100%;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
   page-break-inside: avoid;
   break-inside: avoid;
 }
 
-.product-cost-carousel--expanded .product-cost-slide + .product-cost-slide {
-  margin-top: 26px;
-  padding-top: 26px;
-  border-top: 1px solid var(--color-border);
+.product-cost-slide__name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: 15px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* PDF 는 폭이 정해져 있어 열 수를 고정해야 카드가 찌그러지지 않는다 */
+.product-cost-carousel--expanded .product-cost-grid {
+  grid-template-columns: repeat(2, 1fr);
 }
 
 .product-cost-slide__product {
@@ -353,97 +297,6 @@
   font-size: 10px;
 }
 
-.product-cost-slide__selector {
-  position: relative;
-  min-width: 0;
-}
-
-.product-cost-slide__selector-trigger {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  width: 100%;
-  min-width: 0;
-  margin: 0;
-  padding: 4px 8px;
-  color: var(--color-text);
-  font-size: 17px;
-  font-weight: 700;
-  font-family: inherit;
-  background: transparent;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  outline: none;
-  cursor: pointer;
-  transition: background 140ms ease, border-color 140ms ease;
-}
-
-.product-cost-slide__selector-trigger > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.product-cost-slide__selector-trigger:hover {
-  background: rgba(186, 0, 54, 0.05);
-  border-color: rgba(186, 0, 54, 0.18);
-}
-
-.product-cost-slide__selector-trigger[aria-expanded='true'] {
-  background: #fff;
-  border-color: rgba(186, 0, 54, 0.42);
-}
-
-.product-cost-slide__selector-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  z-index: 20;
-  min-width: 100%;
-  max-height: 220px;
-  margin: 0;
-  padding: 4px;
-  list-style: none;
-  overflow-y: auto;
-  background: #fff;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  border-radius: 10px;
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
-}
-
-.product-cost-slide__selector-menu > li {
-  margin: 0;
-}
-
-.product-cost-slide__selector-menu button {
-  display: block;
-  width: 100%;
-  padding: 6px 10px;
-  color: var(--color-text);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  text-align: left;
-  background: transparent;
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  transition: background 120ms ease;
-}
-
-.product-cost-slide__selector-menu button:hover {
-  background: rgba(186, 0, 54, 0.06);
-}
-
-.product-cost-slide__selector-menu button.is-active {
-  color: var(--color-brand);
-  background: rgba(186, 0, 54, 0.1);
-}
-
 .product-cost-slide__product > button {
   display: flex;
   align-items: center;
@@ -454,15 +307,15 @@
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
 }
 
 .product-cost-slide__metric {
   display: grid;
-  margin-top: 18px;
-  gap: 3px;
+  margin-top: 12px;
+  gap: 2px;
 }
 
 .product-cost-slide__metric > span {
@@ -472,9 +325,9 @@
 
 .product-cost-slide__metric strong {
   color: var(--color-text);
-  font-size: 32px;
+  font-size: 24px;
   line-height: 1.15;
-  letter-spacing: -1px;
+  letter-spacing: -0.6px;
 }
 
 .product-cost-slide__metric small {

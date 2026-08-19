@@ -899,6 +899,39 @@
 .cost-trend__bar.is-manufacturing { fill: var(--color-navy); }
 .cost-trend__bar.is-total { fill: var(--color-brand); }
 
+/* 감지 영역과 강조 열. fill 을 주지 않으면 SVG 기본값(검정)으로 칠해져 그래프를 덮는다 */
+.cost-trend__hit {
+  fill: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.cost-trend__column-highlight {
+  fill: var(--color-navy);
+  opacity: 0.06;
+}
+
+.cost-trend__tooltip {
+  pointer-events: none;
+}
+
+.cost-trend__tooltip rect {
+  fill: #2e292b;
+  opacity: 0.96;
+}
+
+.cost-trend__tooltip text {
+  fill: rgba(255, 255, 255, 0.72);
+  font-size: 10px;
+}
+
+.cost-trend__tooltip .cost-trend__tooltip-value {
+  fill: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .cost-trend-card__empty {
   margin: 12px 0 0;
   padding: 24px;
