@@ -899,27 +899,16 @@
 .cost-trend__bar.is-manufacturing { fill: var(--color-navy); }
 .cost-trend__bar.is-total { fill: var(--color-brand); }
 
-/* ── 막대 hover 툴팁 ──────────────────────────────────────
-   막대가 얇아 직접 겨냥하기 어렵다. 월 단위 열 전체를 감지 영역으로 쓴다.
-   fill 을 비우면 SVG 기본값인 검정으로 칠해져 그래프를 통째로 덮는다 */
+/* 감지 영역과 강조 열. fill 을 주지 않으면 SVG 기본값(검정)으로 칠해져 그래프를 덮는다 */
 .cost-trend__hit {
   fill: transparent;
   cursor: pointer;
-}
-
-.cost-trend__hit:focus {
   outline: none;
 }
 
-.cost-trend__hit:focus-visible {
-  outline: 2px solid var(--color-brand);
-  outline-offset: -2px;
-}
-
 .cost-trend__column-highlight {
-  fill: var(--color-brand);
+  fill: var(--color-navy);
   opacity: 0.06;
-  pointer-events: none;
 }
 
 .cost-trend__tooltip {
@@ -933,11 +922,12 @@
 
 .cost-trend__tooltip text {
   fill: rgba(255, 255, 255, 0.72);
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .cost-trend__tooltip .cost-trend__tooltip-value {
   fill: #fff;
+  font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }

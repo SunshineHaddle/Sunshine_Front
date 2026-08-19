@@ -427,6 +427,31 @@
   display: none;
 }
 
+/* 브라우저 인쇄(Ctrl/Cmd+P → PDF 저장)로 뽑을 때.
+   카드·표 한 줄이 페이지 경계에서 반토막 나지 않게 한다. */
+@media print {
+  .dashboard-app {
+    display: block;
+  }
+
+  .sidebar,
+  [data-html2canvas-ignore] {
+    display: none !important;
+  }
+
+  .dashboard-content {
+    min-height: 0;
+    padding: 0;
+  }
+
+  .card,
+  .product-cost-slide,
+  .dashboard-content tbody tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
 @media print {
   .dashboard-report {
     margin: 0;

@@ -156,6 +156,11 @@
     padding-inline: 20px;
   }
 
+  /* 2열로는 카드가 너무 좁아진다. 좁은 화면에서는 한 줄에 하나씩 */
+  .product-cost-grid {
+    grid-template-columns: 1fr;
+  }
+
   .product-cost-carousel--compact {
     min-height: 240px;
   }
