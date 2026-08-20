@@ -345,6 +345,21 @@ export function RawMaterialEntryPage({
     }
   }
 
+  /**
+   * 올린 파일을 내리고 미리보기를 지운다.
+   *
+   * 지우는 것은 화면에 읽어둔 내용뿐이다 — 이미 저장된 `material_usages` 와
+   * 아래 생산량 입력칸은 건드리지 않는다. 다른 파일로 바꿔 올리거나,
+   * 잘못된 달의 자료를 읽었을 때 빠져나오는 길이다.
+   */
+  const clearPreview = () => {
+    setPreview(null)
+    setFile(null)
+    setFileName('')
+    setMonthMismatch(null)
+    onAction('읽은 파일을 내렸습니다. 저장된 투입내역은 그대로입니다.')
+  }
+
   /** §6-2 투입내역 저장 → §10-1·§10-2 원본 보관 */
   const commit = async () => {
     if (!preview || !periodId) return
@@ -665,15 +680,26 @@ export function RawMaterialEntryPage({
             <section className="subul-preview" aria-labelledby="subul-preview-title">
               <header className="subul-preview__head">
                 <h2 id="subul-preview-title">읽은 내용 확인</h2>
-                <span
-                  className={`subul-preview__badge${
-                    preview.errors.length ? ' is-error' : unmatched ? ' is-warn' : ' is-ok'
-                  }`}
-                >
-                  {preview.errors.length
-                    ? `오류 ${preview.errors.length}건`
-                    : unmatched ? `미매칭 ${unmatched}건` : `${preview.readyCount}행 저장 가능`}
-                </span>
+                <div className="subul-preview__head-actions">
+                  <span
+                    className={`subul-preview__badge${
+                      preview.errors.length ? ' is-error' : unmatched ? ' is-warn' : ' is-ok'
+                    }`}
+                  >
+                    {preview.errors.length
+                      ? `오류 ${preview.errors.length}건`
+                      : unmatched ? `미매칭 ${unmatched}건` : `${preview.readyCount}행 저장 가능`}
+                  </span>
+                  <button
+                    type="button"
+                    className="workflow-outline-button subul-preview__reset"
+                    disabled={Boolean(busy)}
+                    title="읽은 파일을 내리고 미리보기를 지웁니다. 이미 저장된 투입내역은 그대로입니다."
+                    onClick={clearPreview}
+                  >
+                    <Icon name="trash" size={14} /> 입력 초기화
+                  </button>
+                </div>
               </header>
 
               {/* 파일명의 월과 선택한 월이 다르다. 다른 달에 저장되는 사고를 막는다 */}

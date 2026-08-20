@@ -176,6 +176,25 @@
   font-size: 16px;
 }
 
+/* 배지와 초기화 버튼을 오른쪽에 함께 묶는다 */
+.subul-preview__head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* 되돌리는 동작이라 강조하지 않는다. 저장 버튼과 헷갈리면 안 된다 */
+.subul-preview__reset.workflow-outline-button {
+  padding: 5px 10px;
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.subul-preview__reset.workflow-outline-button:hover {
+  color: var(--color-text);
+  border-color: var(--color-text-subtle);
+}
+
 .subul-preview__badge {
   padding: 4px 10px;
   border-radius: 999px;

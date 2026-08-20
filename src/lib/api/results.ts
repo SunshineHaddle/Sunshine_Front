@@ -54,8 +54,35 @@ const SUMMARY_SELECT = `
   product_id, production_qty, material_cost, labor_cost, utility_cost,
   manufacturing_cost, total_cost, unit_cost, cost_source,
   sale_price, margin_rate, cost_rate, status,
-  products ( sku, name, variant, specification, package_unit )
+  products ( sku, name, variant, specification, package_unit, sale_price )
 `
+
+/**
+ * 판매가는 스냅샷 대신 `products` 의 현재 값을 쓴다.
+ *
+ * `confirm_period()` 는 마감 시점의 판매가를 스냅샷에 복사한다. 그래서
+ * 마감을 먼저 하고 나중에 판매가를 입력하면 표에 0 원이 박힌 채로 남았다.
+ * 고치려면 그 달 마감을 취소하고 다시 계산해야 했다.
+ *
+ * 원가(재료비·인건비·경비·단위원가)는 여전히 스냅샷 그대로다 — 굳히는 이유는
+ * 지난달 원가가 소급 변경되지 않게 하려는 것이고(②), 판매가는 원가가 아니다.
+ *
+ * 대신 **판매가를 바꾸면 과거 달 마진율도 함께 바뀐다.** 그때 팔던 가격으로
+ * 고정하고 싶어지면 아래 salePrice 를 스냅샷 값으로 되돌리면 된다.
+ */
+function profitFrom(unitCost: number, salePrice: number): {
+  marginRate: number
+  costRate: number
+  status: ProfitStatus
+} {
+  if (salePrice <= 0) return { marginRate: 0, costRate: 0, status: 'normal' }
+
+  // confirm_period() 의 계산과 같은 식·같은 임계값을 쓴다
+  const marginRate = Math.round((1 - unitCost / salePrice) * 100 * 100) / 100
+  const costRate = Math.round((unitCost / salePrice) * 100 * 100) / 100
+  const status: ProfitStatus = marginRate < 0 ? 'risk' : marginRate < 20 ? 'watch' : 'normal'
+  return { marginRate, costRate, status }
+}
 
 export async function fetchCostSummaries(periodId: string): Promise<CostSummary[]> {
   const rows = unwrap(
@@ -76,7 +103,15 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       variant: string | null
       specification: string | null
       package_unit: string | null
+      sale_price: number | null
     } | null
+
+    // 현재 판매가가 있으면 그것을 쓰고, 없으면 마감 당시 스냅샷으로 떨어진다
+    const unitCost = num(row.unit_cost)
+    const salePrice = product?.sale_price != null && num(product.sale_price) > 0
+      ? num(product.sale_price)
+      : num(row.sale_price)
+    const profit = profitFrom(unitCost, salePrice)
 
     return {
       productId: String(row.product_id),
@@ -91,11 +126,11 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       utilityCost: num(row.utility_cost),
       manufacturingCost: num(row.manufacturing_cost),
       totalCost: num(row.total_cost),
-      unitCost: num(row.unit_cost),
-      salePrice: num(row.sale_price),
-      marginRate: num(row.margin_rate),
-      costRate: num(row.cost_rate),
-      status: row.status as ProfitStatus,
+      unitCost,
+      salePrice,
+      marginRate: profit.marginRate,
+      costRate: profit.costRate,
+      status: profit.status,
       costSource: row.cost_source as CostSource,
     }
   })
