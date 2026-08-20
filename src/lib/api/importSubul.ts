@@ -208,6 +208,10 @@ export async function commitSubul(periodId: string, preview: SubulPreview): Prom
 
   if (rows.length === 0) return 0
 
+  // 이 회차의 기존 투입내역을 먼저 지운다. 새 수불자료가 이 달의 전체이므로,
+  // 지우지 않으면 예전 파일에만 있던 제품이 남아 목록·원가에 섞인다.
+  unwrap(await supabase.from('material_usages').delete().eq('period_id', periodId))
+
   unwrap(
     await supabase
       .from('material_usages')

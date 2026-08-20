@@ -60,8 +60,8 @@ export function OperatingCostEntryPage({
       if (!periodId) { setProductions([]); return }
       const rows = await fetchProduction(periodId).catch(() => [])
       if (cancelled) return
-      const byId = new Map(rows.map((row) => [row.productId, row.production]))
-      setProductions(products.map((p) => ({ id: p.id, production: byId.get(p.id) ?? 0 })))
+      // 1단계 엑셀로 생산량이 등록된 제품만 분배 대상 (엑셀에 없는 제품은 제외)
+      setProductions(rows.map((row) => ({ id: row.productId, production: row.production })))
     }
     void load()
     return () => { cancelled = true }
@@ -117,12 +117,14 @@ export function OperatingCostEntryPage({
   }
 
   const equalizeProductFees = () => {
-    if (products.length === 0) return
-    const even = Math.floor((100 / products.length) * 10) / 10
+    // 1단계 엑셀에 넣은 제품만 대상
+    const targets = products.filter((p) => productions.some((pr) => pr.id === p.id))
+    if (targets.length === 0) return
+    const even = Math.floor((100 / targets.length) * 10) / 10
     const shares: Record<string, string> = {}
     let remaining = 100
-    products.forEach((product, index) => {
-      const share = index === products.length - 1 ? Math.round(remaining * 10) / 10 : even
+    targets.forEach((product, index) => {
+      const share = index === targets.length - 1 ? Math.round(remaining * 10) / 10 : even
       remaining -= share
       shares[product.id] = String(share)
     })

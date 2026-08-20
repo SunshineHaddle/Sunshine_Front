@@ -117,35 +117,44 @@ export function RawMaterialEntryPage({
 
   /**
    * 이 달 수불자료에 실제로 등장한 제품.
-   * 저장된 투입내역과 방금 읽은 미리보기 양쪽을 본다.
+   * 새 파일을 읽는 중이면 그 미리보기만 기준으로 삼는다 — 예전에 저장돼 있던
+   * 다른 제품의 투입내역과 섞이면, 이번 엑셀에 없는 제품까지 목록에 나온다.
+   * 미리보기가 없으면(재접속 등) 저장된 투입내역 제품을 쓴다.
    */
   const excelProductIds = useMemo(() => {
-    const ids = new Set(usageProductIds)
-    preview?.sheets.forEach((sheet) => {
-      if (sheet.productId) ids.add(sheet.productId)
-    })
-    return ids
+    if (preview) {
+      const ids = new Set<string>()
+      preview.sheets.forEach((sheet) => {
+        if (sheet.productId) ids.add(sheet.productId)
+      })
+      return ids
+    }
+    return new Set(usageProductIds)
   }, [usageProductIds, preview])
 
   /**
-   * 수불자료가 있으면 거기 있는 제품만 생산량을 받는다.
-   * 엑셀에 없는 제품까지 칸을 열어두면 그 달에 만들지도 않은 제품에 값을 넣게 된다.
-   * 아직 아무것도 올리지 않았다면 전체 제품을 보여준다.
+   * 오직 이 달 수불자료(엑셀)에 등장한 제품만 생산량을 받는다.
+   * 엑셀을 올리기 전에는 제품관리에 등록된 제품이라도 보여주지 않는다 —
+   * 그 달에 만들지도 않은 제품에 값을 넣는 일을 막는다.
    */
   const visibleRows = useMemo(
-    () => (excelProductIds.size > 0 ? rows.filter((row) => excelProductIds.has(row.id)) : rows),
+    () => rows.filter((row) => excelProductIds.has(row.id)),
     [rows, excelProductIds],
   )
   const isFilteredByExcel = excelProductIds.size > 0 && visibleRows.length < rows.length
 
   const hasRows = visibleRows.length > 0
   const filledCount = visibleRows.filter((row) => row.production.trim() !== '').length
+  const allFilled = hasRows && filledCount === visibleRows.length
+
+  // 저장된 값을 화면에 되불러올지. worker·재접속(freshEntry)은 빈 폼이지만,
+  // 마감된 회차는 그와 무관하게 저장된 값을 읽기전용으로 보여준다.
+  const loadSaved = !freshEntry || isLocked
 
   // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
   // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
   const reloadUsages = useCallback(async () => {
-    // worker 는 저장된 투입내역을 화면에 되불러오지 않는다
-    const rows = await (periodId && !freshEntry
+    const rows = await (periodId && loadSaved
       ? fetchMaterialUsages(periodId).catch((): UsageLine[] => [])
       : Promise.resolve<UsageLine[]>([]))
     // 제품 범위는 freshEntry 와 무관하게 항상 읽는다
@@ -154,15 +163,15 @@ export function RawMaterialEntryPage({
       : Promise.resolve<string[]>([]))
     setUsages(rows)
     setUsageProductIds(ids)
-  }, [periodId, freshEntry])
+  }, [periodId, loadSaved])
 
   const reloadHistory = useCallback(async () => {
-    // 버킷·테이블이 없어도 입력 작업은 막지 않는다. worker 는 이력도 안 불러온다
-    const rows = await (periodId && !freshEntry
+    // 버킷·테이블이 없어도 입력 작업은 막지 않는다
+    const rows = await (periodId && loadSaved
       ? fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => [])
       : Promise.resolve<FileHistoryItem[]>([]))
     setHistory(rows)
-  }, [periodId, freshEntry])
+  }, [periodId, loadSaved])
 
   // 린터가 함수 경계를 넘어 비동기성을 추적하지 못하므로 async IIFE 로 감싼다
   useEffect(() => { void (async () => { await reloadUsages() })() }, [reloadUsages])
@@ -191,8 +200,8 @@ export function RawMaterialEntryPage({
   useEffect(() => {
     let cancelled = false
     const build = async () => {
-      // worker 는 저장된 생산량을 되불러오지 않고 빈 폼으로 시작한다
-      const saved = periodId && !freshEntry ? await fetchProduction(periodId).catch(() => []) : []
+      // worker·재접속은 빈 폼, 마감된 회차는 저장된 생산량을 되불러온다
+      const saved = periodId && loadSaved ? await fetchProduction(periodId).catch(() => []) : []
       if (cancelled) return
       const byId = new Map(saved.map((s) => [s.productId, s] as const))
       setRows(products.map((product) => ({
@@ -203,7 +212,7 @@ export function RawMaterialEntryPage({
     }
     void build()
     return () => { cancelled = true }
-  }, [periodId, products, freshEntry])
+  }, [periodId, products, loadSaved])
 
   const updateRow = (id: string, patch: Partial<Row>) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -404,6 +413,13 @@ export function RawMaterialEntryPage({
   }
 
   const goToNextStep = async () => {
+    // 모든 제품에 생산량이 있어야 다음 단계로 넘어간다.
+    // 하나라도 비면 그 제품의 원가가 조용히 0 으로 확정된다.
+    const empty = visibleRows.filter((row) => row.production.trim() === '')
+    if (empty.length > 0) {
+      onAction(`생산량을 입력하지 않은 제품이 ${empty.length}개 있습니다. 모두 입력해주세요.`)
+      return
+    }
     if (await persistProduction()) onNavigate('data-entry-2')
   }
 
@@ -864,6 +880,7 @@ export function RawMaterialEntryPage({
                             min="0"
                             placeholder="생산량 입력"
                             value={row.production}
+                            disabled={isLocked}
                             onValueChange={(raw) => updateRow(row.id, { production: raw })}
                           />
                           <em>kg</em>
@@ -901,7 +918,7 @@ export function RawMaterialEntryPage({
               className="workflow-outline-button"
               type="button"
               onClick={() => void saveDraft()}
-              disabled={!hasRows || !periodId}
+              disabled={!hasRows || !periodId || isLocked}
             >
               임시 저장
             </button>
@@ -909,7 +926,8 @@ export function RawMaterialEntryPage({
               className="workflow-primary-button"
               type="button"
               onClick={() => void goToNextStep()}
-              disabled={!hasRows || !periodId}
+              disabled={!allFilled || !periodId || isLocked}
+              title={isLocked ? '마감된 회차입니다. 수정하려면 마감을 취소하세요.' : (!allFilled ? '모든 제품의 생산량을 입력해주세요.' : undefined)}
             >
               다음 단계: 제조 공정 입력 <Icon name="chevron-right" size={16} />
             </button>

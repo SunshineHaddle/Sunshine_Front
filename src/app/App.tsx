@@ -288,10 +288,10 @@ function App() {
     products: recipeProducts,
     month,
     periodId: period?.id ?? null,
-    // 빈 폼으로 시작하는 조건:
-    //  - worker 는 항상 (저장은 DB 에 남지만 화면은 안 불러옴)
-    //  - admin 은 이 회차를 이미 저장 완료한 경우 (재접속 시 빈 폼, 아직이면 이전 자료)
-    freshEntry: loginRole === 'worker' || isEntrySavedBeforeSession(period?.id ?? null),
+    // 빈 폼으로 시작하는 조건: 이번 세션이 시작되기 전에 이미 저장 완료한 회차.
+    // 세션 중 저장한 값(다음 단계 갔다 돌아옴)은 DB 에서 다시 읽어 유지한다.
+    // worker/admin 모두 같은 규칙 — 재접속(로그아웃·새로고침) 하면 빈 폼.
+    freshEntry: isEntrySavedBeforeSession(period?.id ?? null),
     onMonthChange: setMonth,
     onNavigate: navigate,
     onAction: announce,
@@ -326,6 +326,7 @@ function App() {
         isLocked={period?.status === 'confirmed'}
         onNavigate={navigate}
         onAction={announce}
+        onPeriodChanged={() => void refreshPeriod()}
       />
     )
   } else if (route === 'product-management') {

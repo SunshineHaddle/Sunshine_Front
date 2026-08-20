@@ -47,15 +47,18 @@ export async function saveProduction(
 ) {
   if (rows.length === 0) return
 
+  // 이 회차의 생산량을 통째로 교체한다. 예전 엑셀에만 있던 제품 record 가 남으면
+  // 2단계(가공비 배분)에 그 달에 만들지도 않은 제품이 나온다.
+  unwrap(await supabase.from('production_records').delete().eq('period_id', periodId))
+
   unwrap(
-    await supabase.from('production_records').upsert(
+    await supabase.from('production_records').insert(
       rows.map((row) => ({
         period_id: periodId,
         product_id: row.productId,
         // 화면 입력은 문자열이라 빈 칸이 그대로 가면 22P02 가 난다
         production_qty: num(row.production),
       })),
-      { onConflict: 'period_id,product_id' },
     ),
   )
 }

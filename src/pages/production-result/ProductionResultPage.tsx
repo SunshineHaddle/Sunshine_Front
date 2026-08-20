@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { fetchCostSummaries, type CostSummary } from '../../lib/api/results'
+import { confirmPeriod, fetchCostSummaries, type CostSummary } from '../../lib/api/results'
+import { reopenPeriod } from '../../lib/api/periods'
 import { describeDbError } from '../../lib/api/errors'
 
 type ProductionResultPageProps = {
@@ -11,6 +12,8 @@ type ProductionResultPageProps = {
   isLocked: boolean
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
+  /** 마감 후 App 이 회차 상태를 다시 읽게 한다 */
+  onPeriodChanged?: () => void
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
@@ -23,19 +26,49 @@ export function ProductionResultPage({
   isLocked,
   onNavigate,
   onAction,
+  onPeriodChanged,
 }: ProductionResultPageProps) {
   const [summaries, setSummaries] = useState<CostSummary[]>([])
+  const [closing, setClosing] = useState(false)
 
   const load = useCallback(async () => {
     if (!periodId) return
     try {
+      // 3단계를 열 때마다 최신 1·2단계 입력으로 다시 계산한다.
+      // confirmPeriod 는 마감(status=confirmed)까지 하므로, 아직 작성 중이던
+      // 회차는 계산만 반영하고 상태는 작성 중으로 되돌린다.
+      if (!isLocked) {
+        try {
+          await confirmPeriod(periodId)
+          await reopenPeriod(periodId)
+        } catch (error) {
+          onAction(`재계산 실패: ${describeDbError(error)}`)
+        }
+      }
       setSummaries(await fetchCostSummaries(periodId))
     } catch (error) {
       onAction(`조회 실패: ${describeDbError(error)}`)
     }
-  }, [periodId, onAction])
+  }, [periodId, isLocked, onAction])
 
   useEffect(() => { void (async () => { await load() })() }, [load])
+
+  // 마감하기: 현재 입력으로 계산하고 그 달을 마감(잠금)한 뒤 대시보드로 간다.
+  const closePeriod = async () => {
+    if (!periodId) return
+    if (!window.confirm(`${month.replace('-', '년 ')}월을 마감할까요?\n마감하면 입력이 잠깁니다. 값을 고치려면 1단계에서 마감을 취소해야 합니다.`)) return
+    setClosing(true)
+    try {
+      await confirmPeriod(periodId)
+      onPeriodChanged?.()
+      onAction(`${month.replace('-', '년 ')}월을 마감했습니다.`)
+      onNavigate('dashboard')
+    } catch (error) {
+      onAction(`마감 실패: ${describeDbError(error)}`)
+    } finally {
+      setClosing(false)
+    }
+  }
 
   const grand = summaries.reduce(
     (acc, s) => ({
@@ -69,9 +102,6 @@ export function ProductionResultPage({
               {isLocked ? '마감됨' : '작성 중'}
             </strong>
           </div>
-          <p className="result-actions__hint">
-            원가 계산·다시 계산·마감 취소는 <strong>1단계</strong>에서 할 수 있습니다.
-          </p>
         </section>
 
         {summaries.length === 0 ? (
@@ -153,9 +183,20 @@ export function ProductionResultPage({
           <button className="production-back" type="button" onClick={() => onNavigate('data-entry-2')}>
             <Icon name="chevron-left" size={18} /> 이전 단계
           </button>
-          <button className="workflow-primary-button" type="button" onClick={() => onNavigate('dashboard')}>
-            대시보드로 <Icon name="chevron-right" size={16} />
-          </button>
+          {isLocked ? (
+            <button className="workflow-primary-button" type="button" onClick={() => onNavigate('dashboard')}>
+              대시보드로 <Icon name="chevron-right" size={16} />
+            </button>
+          ) : (
+            <button
+              className="workflow-primary-button"
+              type="button"
+              onClick={() => void closePeriod()}
+              disabled={closing || !periodId || summaries.length === 0}
+            >
+              <Icon name="check" size={16} /> 마감하기
+            </button>
+          )}
         </footer>
       </main>
     </div>

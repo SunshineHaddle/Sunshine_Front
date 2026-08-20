@@ -138,6 +138,9 @@ export function OperatingCostForm({
   onRemoveCustomItem,
 }: OperatingCostFormProps) {
   const productNameById = new Map(products.map((product) => [product.id, product.name]))
+  // 1단계 엑셀에 넣은 제품만 대상 (인건비·커스텀 항목 모두 동일)
+  const excelProductIds = new Set(productions.map((p) => p.id))
+  const excelProducts = products.filter((product) => excelProductIds.has(product.id))
   return (
     <>
       <div className="operating-cost-groups">
@@ -148,7 +151,7 @@ export function OperatingCostForm({
               <CostInput field="laborTotal" label="총 인건비" value={costs.laborTotal} suffix="원" onChange={onCostChange} />
             </div>
             <ProductFeeList
-              products={products}
+              products={excelProducts}
               values={costs.productFees}
               onChange={onProductFeeChange}
               title="제품별 가공비"
@@ -198,7 +201,7 @@ export function OperatingCostForm({
                 </div>
                 <div className="operating-cost-labor__products">
                   <div className="operating-cost-labor__products-head">
-                    <span className="operating-cost-labor__products-title">제품별 배분 (생산량 기준)</span>
+                    <span className="operating-cost-labor__products-title">제품별 배분 (균등 분배)</span>
                   </div>
                   <div className="operating-cost-labor__products-list">
                     {productions.length > 0 ? (

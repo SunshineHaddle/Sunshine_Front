@@ -341,7 +341,7 @@ export function ExchangeRateCalculatorPage({
                   <th scope="col">계산 원가<br />(KRW)</th>
                   <th scope="col">마진율 (%)<em className="exchange-th__editable">직접 입력</em></th>
                   <th scope="col">판매가 (KRW)</th>
-                  <th scope="col">수량 (kg)<em className="exchange-th__editable">직접 입력</em></th>
+                  <th scope="col">제품 수량<em className="exchange-th__editable">직접 입력</em></th>
                   <th scope="col">현지 판매가</th>
                 </tr>
               </thead>
@@ -384,13 +384,12 @@ export function ExchangeRateCalculatorPage({
                     </td>
                     <td data-label="수량">
                       <label className="exchange-quantity-field">
-                        <span className="visually-hidden">{row.name} 수량(kg)</span>
+                        <span className="visually-hidden">{row.name} 제품 수량</span>
                         <NumberInput
                           min="0"
                           value={row.quantityKg}
                           onValueChange={(raw) => updateRow(row.id, { quantityKg: Math.max(0, parseNumber(raw)) })}
                         />
-                        <em>kg</em>
                       </label>
                     </td>
                     <td data-label="현지 판매가">

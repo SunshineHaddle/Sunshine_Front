@@ -10,6 +10,10 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 // ── §8-1. 월 마감 ───────────────────────────────────────────
 /** @returns 저장된 제품 수 */
 export async function confirmPeriod(periodId: string): Promise<number> {
+  // 예전 계산 결과를 먼저 비운다. confirm_period 는 upsert 만 하므로,
+  // 이번 회차 생산량에서 빠진 제품(예전 엑셀 잔재)이 표에 그대로 남는다.
+  unwrap(await supabase.from('product_cost_summaries').delete().eq('period_id', periodId))
+
   const res = await supabase.rpc('confirm_period', { p_period_id: periodId })
 
   // 22003 = numeric overflow. 생산량이 재료비에 비해 터무니없이 작으면
@@ -59,6 +63,9 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       .from('product_cost_summaries')
       .select(SUMMARY_SELECT)
       .eq('period_id', periodId)
+      // 생산량을 입력한 제품만 보여준다. 0(미입력)인 제품은 이 달에 만들지 않은
+      // 것이므로 표에 나오면 안 된다.
+      .gt('production_qty', 0)
       .order('total_cost', { ascending: false }),
   ) as unknown as Record<string, unknown>[]
 

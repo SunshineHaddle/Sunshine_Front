@@ -14,20 +14,13 @@ export function distributeByProduction(
   const result: Record<string, number> = {}
   if (productions.length === 0) return result
 
-  const totalProduction = productions.reduce((sum, item) => sum + Math.max(0, item.production), 0)
-  const useEven = totalProduction <= 0
-
+  // 1단계 엑셀에 있는 제품끼리 균등 분배 (생산량 무관). 나머지는 마지막 제품에 몰아 총액 보존
   let allocated = 0
   productions.forEach((item, index) => {
     const isLast = index === productions.length - 1
-    if (isLast) {
-      result[item.id] = Math.round(total - allocated)
-      return
-    }
-    const ratio = useEven
-      ? 1 / productions.length
-      : Math.max(0, item.production) / totalProduction
-    const share = Math.round(total * ratio)
+    const share = isLast
+      ? Math.round(total - allocated)
+      : Math.round(total / productions.length)
     result[item.id] = share
     allocated += share
   })
