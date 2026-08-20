@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from './productManagementData'
 import { thumbnailUrl } from '../../utils/thumbnail'
+import { fetchLatestUsageMaterials, type ProductMaterialNames } from '../../lib/api/production'
 
 type ProductManagementPageProps = {
   products: RecipeProduct[]
@@ -26,15 +27,43 @@ export function ProductManagementPage({
 }: ProductManagementPageProps) {
   /** 처리 중인 제품 id. 되돌리기·삭제 버튼을 함께 잠근다 */
   const [busyId, setBusyId] = useState('')
+
+  /**
+   * 카드에 띄울 투입 재료. 수불자료 실적이 있으면 그쪽을 먼저 쓴다.
+   * 표준 배합(recipe_items)만 보면 엑셀로 등록된 제품이 텅 비어 보인다.
+   */
+  const [usageMaterials, setUsageMaterials] = useState<ProductMaterialNames>({})
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const rows = await fetchLatestUsageMaterials().catch((error: unknown) => {
+        console.error('[투입 재료] 조회 실패', error)
+        return {} as ProductMaterialNames
+      })
+      if (!cancelled) setUsageMaterials(rows)
+    })()
+    return () => { cancelled = true }
+  }, [])
+
+  /** 실적 우선, 없으면 표준 배합. confirm_period() 의 재료비 계산 순서와 같다 */
+  const materialsOf = useCallback((product: RecipeProduct) => {
+    const actual = usageMaterials[product.id]
+    if (actual) return { names: actual.names, source: `${actual.month} 수불자료` }
+    const recipe = product.ingredients.map((ingredient) => ingredient.name)
+    return { names: recipe, source: recipe.length > 0 ? '표준 배합' : '' }
+  }, [usageMaterials])
+
   const [query, setQuery] = useState('')
   const normalizedQuery = query.trim().toLocaleLowerCase('ko-KR')
+  // 검색도 카드에 보이는 재료를 따라간다. 화면에 뜬 이름으로 찾을 수 있어야 한다
   const filteredProducts = useMemo(
     () => products.filter((product) =>
-      !normalizedQuery || [product.id, product.name, ...product.ingredients.map((ingredient) => ingredient.name)].some((value) =>
+      !normalizedQuery || [product.id, product.name, ...materialsOf(product).names].some((value) =>
         value.toLocaleLowerCase('ko-KR').includes(normalizedQuery),
       ),
     ),
-    [normalizedQuery, products],
+    [materialsOf, normalizedQuery, products],
   )
 
   return (
@@ -71,7 +100,22 @@ export function ProductManagementPage({
                 <div className="recipe-card__body">
                   <div className="recipe-card__info">
                     <h3>{product.name}</h3>
-                    <p>({product.ingredients.map((ingredient) => ingredient.name).join(', ')})</p>
+                    {/* 출처를 함께 적는다. 실적과 표준 배합은 값이 다른 자료다 */}
+                    {materialsOf(product).names.length > 0 ? (
+                      <div className="recipe-card__materials">
+                        <span className="recipe-card__materials-label">
+                          투입 재료 {materialsOf(product).names.length}종
+                          <em>{materialsOf(product).source}</em>
+                        </span>
+                        <ul className="recipe-card__material-list">
+                          {materialsOf(product).names.map((name) => (
+                            <li key={name}>{name}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : (
+                      <p className="recipe-card__materials-empty">등록된 투입 재료가 없습니다.</p>
+                    )}
                   </div>
                   <span className="recipe-card__thumb" aria-hidden="true">
                     {product.imageUrl
@@ -101,8 +145,14 @@ export function ProductManagementPage({
                   </span>
                 </div>
                 <footer>
-                  <button type="button" aria-label={`${product.name} 원가 상세 보기`} onClick={() => onSelectProduct(product.id)}>
+                  <button
+                    type="button"
+                    className="recipe-card__detail-button"
+                    aria-label={`${product.name} 원가 상세 보기`}
+                    onClick={() => onSelectProduct(product.id)}
+                  >
                     <Icon name="chevron-right" size={18} />
+                    <span>제품 상세보기</span>
                   </button>
                 </footer>
               </article>

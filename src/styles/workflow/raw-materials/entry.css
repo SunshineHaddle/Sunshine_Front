@@ -1,7 +1,8 @@
 .production-entry {
   display: grid;
   gap: 18px;
-  margin-top: 33px;
+  /* 바로 위 월 칩과 붙여 놓는다. 제목과의 간격은 .entry-heading 이 만든다 */
+  margin-top: 10px;
 }
 
 .production-upload {

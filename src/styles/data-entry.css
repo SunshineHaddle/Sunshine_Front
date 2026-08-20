@@ -2,6 +2,8 @@
 
 /* ── 공통 헤더 ─────────────────────────────────────────── */
 .entry-heading {
+  /* 제목과 아래 내용 사이를 띄운다. 칩·업로드 박스는 서로 붙어 한 덩어리로 읽힌다 */
+  margin-bottom: 30px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -33,47 +35,33 @@
   stroke: #fff;
 }
 
-/* ── 월별 마감 상태 칩 (캘린더 클릭 시 아래로 슬라이드) ──── */
-.entry-month-picker__toggle {
-  display: inline-flex;
-  align-items: center;
-  padding: 0;
-  border: none;
-  background: none;
-  color: inherit;
-  cursor: pointer;
-}
-
+/* ── 월별 마감 상태 칩 ─────────────────────────────────── */
+/* 최근 12개월을 늘 보여준다. 접었다 펴는 동작은 없앴다 */
 .entry-month-chips {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.25s ease, margin 0.25s ease;
-  margin: 0;
-}
-
-.entry-month-chips.is-open {
-  grid-template-rows: 1fr;
-  margin: 4px 0 20px;
+  /* 위 여백은 헤더가 갖는다. 아래는 업로드 박스와 붙도록 좁게 */
+  margin: 0 0 10px;
 }
 
 .entry-month-chips__inner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  overflow: hidden;
-  min-height: 0;
+  /* 12칸을 한 줄에 균등하게. 폭이 모자라면 칸이 함께 좁아진다 */
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .entry-month-chip {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 6px 8px;
   border: 1px solid var(--color-workflow-border);
   border-radius: 999px;
   background: var(--color-surface);
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--color-text-subtle);
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -92,10 +80,34 @@
   background: var(--color-navy);
 }
 
+/* 회차가 아직 없는 달. 눌러서 그 달로 이동하면 회차가 만들어진다 */
+.entry-month-chip.is-empty {
+  color: #a9a3a6;
+  border-style: dashed;
+}
+
+.entry-month-chip.is-empty .entry-month-chip__dot {
+  background: transparent;
+  border: 1px solid var(--color-workflow-border);
+}
+
 .entry-month-chip.is-current {
   border-color: var(--color-navy);
+  border-style: solid;
   background: var(--color-blue-soft);
-  font-weight: 600;
+  color: var(--color-navy);
+  font-weight: 700;
+}
+
+/* 12칸이 한 줄에 들어가지 않는 폭에서는 가로 스크롤로 넘긴다 */
+@media (max-width: 1100px) {
+  .entry-month-chips__inner {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+    grid-auto-columns: minmax(84px, 1fr);
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
 }
 
 .entry-month-picker,

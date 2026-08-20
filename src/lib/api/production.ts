@@ -186,6 +186,59 @@ export async function fetchProductUsagesByMonth(
     .sort((a, b) => b.amount - a.amount)
 }
 
+/** 제품별 최근 투입 재료. 제품 관리 카드가 쓴다 */
+export type ProductMaterialNames = Record<string, { month: string; names: string[] }>
+
+/**
+ * 제품마다 "가장 최근 수불자료가 들어온 달"의 투입 재료 이름을 모은다.
+ *
+ * 제품 관리 카드는 원래 recipe_items(표준 배합)만 보여줬는데,
+ * 엑셀로 자동 등록된 제품은 배합이 비어 있어 카드가 텅 비는 반면
+ * 제품 상세에는 material_usages 실적이 가득 뜨는 어긋남이 있었다.
+ * 원가 계산(confirm_period)이 '실적 있으면 실적, 없으면 배합' 순인 것과 맞춘다.
+ *
+ * 달을 섞지 않고 최근 한 달만 쓴다 — 전 기간을 합치면
+ * 지금은 안 쓰는 재료까지 현재 배합인 것처럼 보인다.
+ */
+export async function fetchLatestUsageMaterials(): Promise<ProductMaterialNames> {
+  const rows = unwrap(
+    await supabase
+      .from('material_usages')
+      .select('product_id, amount, materials(name), cost_periods!inner(period)'),
+  ) as unknown as {
+    product_id: string
+    amount: number
+    materials: { name: string } | null
+    cost_periods: { period: string } | null
+  }[]
+
+  /** 제품별 최근 달 */
+  const latest = new Map<string, string>()
+  for (const row of rows) {
+    const period = row.cost_periods?.period
+    if (!period) continue
+    const seen = latest.get(row.product_id)
+    if (!seen || period > seen) latest.set(row.product_id, period)
+  }
+
+  const grouped: ProductMaterialNames = {}
+  for (const [productId, period] of latest) {
+    const lines = rows.filter(
+      (row) => row.product_id === productId && row.cost_periods?.period === period,
+    )
+    // 금액이 큰 재료가 앞에 온다. 제품 상세의 원재료비 상세와 같은 순서
+    const names = [...new Set(
+      lines
+        .sort((a, b) => num(b.amount) - num(a.amount))
+        .map((row) => row.materials?.name)
+        .filter((name): name is string => Boolean(name)),
+    )]
+    if (names.length > 0) grouped[productId] = { month: period.slice(0, 7), names }
+  }
+
+  return grouped
+}
+
 // ── §6-2. 투입 실적 저장 ────────────────────────────────────
 export async function saveMaterialUsages(
   periodId: string,

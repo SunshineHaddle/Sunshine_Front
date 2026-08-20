@@ -157,6 +157,56 @@
   line-height: 1.55;
 }
 
+/* ── 카드의 투입 재료 목록 ─────────────────────────────── */
+/* 표준 배합(recipe_items)에서 온다. 재료명으로도 검색되므로 전부 보여준다 */
+.recipe-card__materials {
+  margin-top: 8px;
+}
+
+.recipe-card__materials-label {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-bottom: 6px;
+  color: #6b6b6b;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+}
+
+/* 출처. 수불자료 실적인지 표준 배합인지 구분이 없으면 같은 값으로 오해한다 */
+.recipe-card__materials-label em {
+  color: #a5a5a5;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+}
+
+.recipe-card__material-list {
+  display: flex;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+  gap: 4px;
+  list-style: none;
+}
+
+.recipe-card__material-list li {
+  padding: 2px 7px;
+  color: #555;
+  background: #f5f5f5;
+  border: 1px solid #e8e8e8;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+/* 배합이 비어 있는 제품. 지어내지 않고 비었다고 말한다 */
+.recipe-card__materials-empty {
+  color: #a5a5a5;
+}
+
 .recipe-card footer {
   display: flex;
   align-items: center;
@@ -185,6 +235,20 @@
 
 .recipe-card footer button:hover {
   background: #f2f2f2;
+}
+
+/* 아이콘만 있던 원형 버튼에 글자를 붙였다. 원형 규격을 되돌린다 */
+.recipe-card footer button.recipe-card__detail-button {
+  display: inline-flex;
+  width: auto;
+  height: auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px 5px 6px;
+  border-radius: 999px;
+  color: #333;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .recipe-card--create {

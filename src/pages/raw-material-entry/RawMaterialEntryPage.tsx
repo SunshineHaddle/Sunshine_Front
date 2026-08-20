@@ -103,8 +103,6 @@ export function RawMaterialEntryPage({
   const [history, setHistory] = useState<FileHistoryItem[]>([])
   /** §4-2 저장된 모든 월 회차. 월별 마감 여부를 미리 보여주는 데 쓴다 */
   const [periods, setPeriods] = useState<CostPeriodRow[]>([])
-  /** 월별 마감 상태 목록 펼침 여부 (캘린더 클릭 시 슬라이드) */
-  const [monthListOpen, setMonthListOpen] = useState(false)
   /** 파일명이 가리키는 월이 선택한 월과 다를 때만 채워진다 */
   const [monthMismatch, setMonthMismatch] = useState<string | null>(null)
   /**
@@ -177,6 +175,30 @@ export function RawMaterialEntryPage({
   useEffect(() => { void (async () => { await reloadUsages() })() }, [reloadUsages])
   useEffect(() => { void (async () => { await reloadHistory() })() }, [reloadHistory])
 
+  /**
+   * 표시할 월 목록 — 오늘 기준 최근 12개월을 **항상** 만든다.
+   * DB 에 있는 회차만 보여주면 입력한 달만 띄엄띄엄 떠서 줄 수가 들쭉날쭉했다.
+   * 회차가 없는 달은 아직 아무것도 입력하지 않은 것이므로 '미입력' 으로 둔다.
+   */
+  const monthChips = useMemo(() => {
+    const statusByMonth = new Map(
+      periods.map((p) => [p.period.slice(0, 7), p.status] as const),
+    )
+    const today = new Date()
+    // 왼쪽이 가장 오래된 달, 오른쪽 끝이 이번 달 — 달력을 읽는 순서와 같다
+    return Array.from({ length: 12 }, (_, i) => {
+      const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const status = statusByMonth.get(key)
+      return {
+        key,
+        // '26년 8월' 형태. 두 자리 연도라 12칸이 한 줄에 들어간다
+        label: `${String(d.getFullYear()).slice(2)}년 ${d.getMonth() + 1}월`,
+        state: status === 'confirmed' ? 'locked' : status ? 'draft' : 'empty',
+      } as const
+    })
+  }, [periods])
+
   // 월별 마감 여부 목록. admin 1단계(onPeriodChanged 있음)에서만 쓴다.
   // isLocked 가 바뀌면(=이 화면에서 마감/마감취소) 배지도 다시 읽는다.
   useEffect(() => {
@@ -185,10 +207,9 @@ export function RawMaterialEntryPage({
     void (async () => {
       try {
         const rows = await fetchPeriods()
-        console.log('[month-chips] fetchPeriods rows:', rows)
         if (!cancelled) setPeriods(rows)
       } catch (error) {
-        console.error('[month-chips] fetchPeriods failed:', error)
+        console.error('[1단계] 월 회차 조회 실패', error)
         if (!cancelled) setPeriods([])
       }
     })()
@@ -506,7 +527,6 @@ export function RawMaterialEntryPage({
         <header className="workflow-page-heading entry-heading">
           <div>
             <h1>데이터 입력 1단계: 제품 생산량</h1>
-            <p>수불자료(.xlsx)를 올리면 제품별 투입 재료가 등록됩니다. 생산량은 아래에서 직접 입력하세요.</p>
           </div>
           <div className="entry-heading__actions">
             {onPeriodChanged && (
@@ -532,48 +552,37 @@ export function RawMaterialEntryPage({
             )}
             <label className="entry-month-picker">
               <span className="visually-hidden">기준 월</span>
-              {onPeriodChanged && periods.length > 0 ? (
-                <button
-                  type="button"
-                  className="entry-month-picker__toggle"
-                  aria-expanded={monthListOpen}
-                  aria-label="월별 마감 상태 보기"
-                  onClick={() => setMonthListOpen((open) => !open)}
-                >
-                  <Icon name="calendar" size={17} />
-                </button>
-              ) : (
-                <Icon name="calendar" size={17} />
-              )}
+              <Icon name="calendar" size={17} />
               <input
                 type="month"
                 value={month}
-                onFocus={() => { if (onPeriodChanged && periods.length > 0) setMonthListOpen(true) }}
                 onChange={(event) => onMonthChange(event.target.value)}
               />
             </label>
           </div>
         </header>
 
-        {onPeriodChanged && periods.length > 0 && (
-          <div className={`entry-month-chips${monthListOpen ? ' is-open' : ''}`}>
+        {/* 캘린더를 열지 않아도 늘 보인다. 최근 12개월이 한 줄에 들어간다 */}
+        {onPeriodChanged && (
+          <div className="entry-month-chips is-open">
             <div className="entry-month-chips__inner" role="list" aria-label="월별 마감 상태">
-              {periods.map((p) => {
-                const m = p.period.slice(0, 7) // 'YYYY-MM-01' → 'YYYY-MM'
-                const locked = p.status === 'confirmed'
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    role="listitem"
-                    className={`entry-month-chip${m === month ? ' is-current' : ''}${locked ? ' is-locked' : ' is-draft'}`}
-                    onClick={() => { onMonthChange(m); setMonthListOpen(false) }}
-                  >
-                    <span className="entry-month-chip__dot" aria-hidden="true" />
-                    {m.replace('-', '.')} · {locked ? '마감' : '작성중'}
-                  </button>
-                )
-              })}
+              {monthChips.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  role="listitem"
+                  className={`entry-month-chip is-${chip.state}${chip.key === month ? ' is-current' : ''}`}
+                  title={
+                    chip.state === 'locked' ? '마감됨'
+                      : chip.state === 'draft' ? '작성중'
+                        : '아직 입력하지 않은 달'
+                  }
+                  onClick={() => onMonthChange(chip.key)}
+                >
+                  <span className="entry-month-chip__dot" aria-hidden="true" />
+                  {chip.label}
+                </button>
+              ))}
             </div>
           </div>
         )}
