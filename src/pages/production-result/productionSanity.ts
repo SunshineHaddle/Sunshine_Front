@@ -84,3 +84,82 @@ export function describeIssues(issues: ProductionIssue[]): string {
     + '이대로 원가를 계산할까요?'
   )
 }
+
+/**
+ * 마감 직전 재료비 근거 검증.
+ *
+ * confirm_period() 의 재료비는 `실적 있으면 material_usages, 없으면 recipe_items × 생산량`이다.
+ * 둘 다 0 이면 **재료비 0 원**이 조용히 확정된다 — 에러도, 0 행도 아니고 그냥 0 이다.
+ *
+ * 실제 DB 가 그 상태다. 표준 배합(recipe_items)은 수량이 0 이거나 아예 비어 있고
+ * (엑셀에서 자동 등록된 제품은 재료 목록만 만들어지고 값이 0 으로 들어간다),
+ * 지금은 모든 달에 수불자료가 있어 드러나지 않을 뿐이다.
+ * 엑셀을 올리지 않은 달을 마감하는 순간 전 제품의 재료비가 0 이 된다.
+ *
+ * 생산량 검증과 같은 이유로 막지는 않고 경고만 한다 — 고객이 오차 허용을 요구했다.
+ */
+export type CostBasisIssue = {
+  productId: string
+  name: string
+  /** 생산량 kg */
+  outputKg: number
+  /** 'no-usage' : 수불자료도 배합도 없다 · 'zero-usage' : 수불자료는 있는데 금액이 0 */
+  reason: 'no-usage' | 'zero-usage'
+}
+
+/**
+ * 재료비가 0 으로 계산될 제품을 찾는다.
+ *
+ * @param productions   그 달 생산량
+ * @param usageTotals   그 달 투입 실적 (금액 합계 포함)
+ * @param standardCosts 제품 1kg 표준 배합 원가 = recipe_items 의 amount 합
+ */
+export function findMissingCostBasis(
+  productions: { productId: string; name: string; production: number }[],
+  usageTotals: { productId: string; totalAmount: number }[],
+  standardCosts: { productId: string; unitMaterialCost: number }[],
+): CostBasisIssue[] {
+  const usageById = new Map(usageTotals.map((row) => [row.productId, row.totalAmount]))
+  const standardById = new Map(standardCosts.map((row) => [row.productId, row.unitMaterialCost]))
+  const issues: CostBasisIssue[] = []
+
+  for (const record of productions) {
+    // 생산량이 없으면 애초에 계산 대상이 아니다. 그건 findProductionIssues 가 본다
+    if (record.production <= 0) continue
+
+    const usageAmount = usageById.get(record.productId)
+    // 수불자료가 있고 금액도 잡혀 있으면 실측으로 계산된다 — 문제없다
+    if (usageAmount !== undefined && usageAmount > 0) continue
+    // 실적이 없어도 표준 배합에 값이 있으면 배합 × 생산량으로 계산된다
+    if (usageAmount === undefined && (standardById.get(record.productId) ?? 0) > 0) continue
+
+    issues.push({
+      productId: record.productId,
+      name: record.name,
+      outputKg: record.production,
+      reason: usageAmount === undefined ? 'no-usage' : 'zero-usage',
+    })
+  }
+
+  return issues
+}
+
+/** 확인 다이얼로그에 넣을 문구 */
+export function describeCostBasis(issues: CostBasisIssue[]): string {
+  const lines = issues.map((issue) => {
+    const why = issue.reason === 'no-usage'
+      ? '수불자료가 없고 표준 배합도 비어 있음'
+      : '수불자료는 있으나 금액이 0 원'
+    return `· ${issue.name}: 생산 ${kg(issue.outputKg)}\n  ${why}`
+  })
+
+  return (
+    `재료비가 0 원으로 계산될 제품이 ${issues.length}개 있습니다.\n\n`
+    + `${lines.join('\n')}\n\n`
+    + '1단계에서 수불자료를 올리거나, 제품 상세의 "표준 배합 수정"에서\n'
+    + '배합 수량·단가를 채운 뒤 마감하세요.\n\n'
+    + '이대로 마감하면 재료비 0 원이 그대로 저장되고,\n'
+    + '고치려면 마감을 취소하고 다시 계산해야 합니다.\n\n'
+    + '그래도 계속할까요?'
+  )
+}

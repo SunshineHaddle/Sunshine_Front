@@ -74,7 +74,7 @@ export function ProductManagementPage({
         <header className="recipe-library-header">
           <div>
             <h1>제품 관리</h1>
-            <p>재료 비용, 수율 목표 및 제조 사양을 관리합니다.</p>
+            <p>제품과 표준 배합을 등록하고, 규격·판매 정보를 관리합니다.</p>
           </div>
           <label className="recipe-search">
             <Icon name="search" size={16} />
@@ -90,7 +90,7 @@ export function ProductManagementPage({
 
         <section className="recipe-library" aria-labelledby="recipe-library-title">
           <div className="recipe-library__label">
-            <h2 id="recipe-library-title">활성 제품군</h2>
+            <h2 id="recipe-library-title">제품 목록</h2>
             <span>총 {filteredProducts.length}개 제품</span>
           </div>
 

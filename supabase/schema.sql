@@ -252,9 +252,29 @@ begin
     'operating_cost_allocations','product_cost_summaries','file_uploads'
   ] loop
     execute format('alter table %I enable row level security', t);
+  end loop;
+end $$;
+
+-- 입력에 필요한 자료는 로그인한 사람 누구나 읽는다
+do $$
+declare t text;
+begin
+  foreach t in array array[
+    'profiles','materials','products','recipe_items','material_usages',
+    'cost_periods','production_records','operating_costs',
+    'operating_cost_allocations','file_uploads'
+  ] loop
     execute format('create policy "read" on %I for select to authenticated using (true)', t);
   end loop;
 end $$;
+
+-- 원가 결과는 관리자만 읽는다.
+-- 미팅 요구: "원가 및 통계자료는 관리자만 열람, 실무자는 입력만" (02:37)
+-- 화면은 이미 실무자에게 대시보드를 감추지만, anon key 가 번들 JS 에 박혀 있어
+-- 실무자 계정으로 로그인한 뒤 콘솔에서 직접 select 하면 그대로 나왔다.
+-- UI 가림막이 아니라 여기서 막아야 접근 통제다.
+create policy "admin read" on product_cost_summaries
+  for select to authenticated using (is_admin());
 
 -- 마스터·결과 : 관리자만
 do $$
@@ -319,7 +339,12 @@ from product_cost_summaries s
 join cost_periods cp on cp.id = s.period_id
 group by cp.period order by cp.period;
 
--- 뷰에는 RLS 를 걸 수 없어 GRANT 로 처리한다. anon 에게는 주지 않는다
+-- 뷰에는 RLS 를 직접 걸 수 없다. GRANT 로 anon 을 막고,
+-- security_invoker 로 "뷰를 부른 사람의 권한"으로 밑 테이블을 읽게 한다.
+-- 이게 없으면 뷰가 소유자 권한으로 돌아, product_cost_summaries 의 RLS 를
+-- v_cost_trend_monthly 가 통째로 우회한다 (실무자가 원가 추이를 다 읽는다).
+alter view v_product_recipe_cost set (security_invoker = true);
+alter view v_cost_trend_monthly set (security_invoker = true);
 revoke all on v_product_recipe_cost, v_cost_trend_monthly from anon;
 grant select on v_product_recipe_cost, v_cost_trend_monthly to authenticated;
 

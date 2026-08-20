@@ -116,16 +116,24 @@ export async function fetchMaterialUsages(
  */
 export async function fetchUsageTotals(
   periodId: string,
-): Promise<{ productId: string; totalUsage: number }[]> {
+): Promise<{ productId: string; totalUsage: number; totalAmount: number }[]> {
   const rows = unwrap(
-    await supabase.from('material_usages').select('product_id, usage_qty').eq('period_id', periodId),
-  ) as { product_id: string; usage_qty: number }[]
+    await supabase
+      .from('material_usages')
+      .select('product_id, usage_qty, amount')
+      .eq('period_id', periodId),
+  ) as { product_id: string; usage_qty: number; amount: number }[]
 
-  const byProduct = new Map<string, number>()
+  // 금액도 함께 모은다. confirm_period() 가 재료비로 쓰는 값이라
+  // 0 이면 원가가 0 으로 굳는다 — findMissingCostBasis() 가 이걸 본다
+  const byProduct = new Map<string, { totalUsage: number; totalAmount: number }>()
   for (const row of rows) {
-    byProduct.set(row.product_id, (byProduct.get(row.product_id) ?? 0) + num(row.usage_qty))
+    const seen = byProduct.get(row.product_id) ?? { totalUsage: 0, totalAmount: 0 }
+    seen.totalUsage += num(row.usage_qty)
+    seen.totalAmount += num(row.amount)
+    byProduct.set(row.product_id, seen)
   }
-  return [...byProduct].map(([productId, totalUsage]) => ({ productId, totalUsage }))
+  return [...byProduct].map(([productId, sums]) => ({ productId, ...sums }))
 }
 
 /**

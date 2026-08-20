@@ -86,4 +86,76 @@ assert.deepEqual(findProductionIssues([{ productId: 'p1', totalUsage: 0 }], [{ p
   assert.deepEqual(issues.map((i) => i.name), ['너무적음', '너무많음'])
 }
 
+// ── findMissingCostBasis ────────────────────────────────────
+// productionSanity.ts 의 구현을 그대로 옮겨 둔다 (이 파일의 기존 방식)
+function findMissingCostBasis(productions, usageTotals, standardCosts) {
+  const usageById = new Map(usageTotals.map((row) => [row.productId, row.totalAmount]))
+  const standardById = new Map(standardCosts.map((row) => [row.productId, row.unitMaterialCost]))
+  const issues = []
+  for (const record of productions) {
+    if (record.production <= 0) continue
+    const usageAmount = usageById.get(record.productId)
+    if (usageAmount !== undefined && usageAmount > 0) continue
+    if (usageAmount === undefined && (standardById.get(record.productId) ?? 0) > 0) continue
+    issues.push({
+      productId: record.productId,
+      name: record.name,
+      outputKg: record.production,
+      reason: usageAmount === undefined ? 'no-usage' : 'zero-usage',
+    })
+  }
+  return issues
+}
+
+// 실제 DB 상태: 포기김치는 recipe_items 가 0 행이고 그 달 수불자료도 없다
+{
+  const issues = findMissingCostBasis(
+    [{ productId: 'p1', name: '포기김치', production: 300000 }],
+    [],
+    [{ productId: 'p1', unitMaterialCost: 0 }],
+  )
+  assert.equal(issues.length, 1)
+  assert.equal(issues[0].reason, 'no-usage')
+}
+
+// 수불자료 실적이 있으면 표준 배합이 0 이어도 문제없다 — 지금 12개월이 이 상태다
+assert.deepEqual(
+  findMissingCostBasis(
+    [{ productId: 'p1', name: '포기김치', production: 300000 }],
+    [{ productId: 'p1', totalAmount: 249_000_000 }],
+    [{ productId: 'p1', unitMaterialCost: 0 }],
+  ),
+  [],
+)
+
+// 표준 배합에 값이 있으면 실적이 없어도 배합 × 생산량으로 계산된다
+assert.deepEqual(
+  findMissingCostBasis(
+    [{ productId: 'p1', name: '맛지리는김치', production: 1000 }],
+    [],
+    [{ productId: 'p1', unitMaterialCost: 1800 }],
+  ),
+  [],
+)
+
+// 수불자료 행은 있는데 금액이 0. cost_source 는 actual 인데 재료비가 0 이 된다
+{
+  const issues = findMissingCostBasis(
+    [{ productId: 'p1', name: '맛김치', production: 5000 }],
+    [{ productId: 'p1', totalAmount: 0 }],
+    [{ productId: 'p1', unitMaterialCost: 0 }],
+  )
+  assert.equal(issues[0].reason, 'zero-usage')
+}
+
+// 생산량이 0 이면 계산 대상이 아니다. 그건 findProductionIssues 몫
+assert.deepEqual(
+  findMissingCostBasis(
+    [{ productId: 'p1', name: '갓김치', production: 0 }],
+    [],
+    [{ productId: 'p1', unitMaterialCost: 0 }],
+  ),
+  [],
+)
+
 console.log('ok')

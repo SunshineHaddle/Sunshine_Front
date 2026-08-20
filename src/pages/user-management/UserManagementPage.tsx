@@ -27,6 +27,16 @@ const ROLE_CLASS: Record<UserRole, string> = {
   reviewer: 'is-reviewer',
 }
 
+/**
+ * 새로 줄 수 있는 역할. 미팅에서 요구한 것은 관리자·실무자 둘뿐이다 (03:57).
+ *
+ * reviewer 는 enum 에만 남아 있고 쓰임새가 정해지지 않았다.
+ * toLoginRole() 이 admin 화면으로 보내는데 원가 읽기는 is_admin() 이 막으므로,
+ * 지금 이 역할을 주면 빈 대시보드를 보게 된다. 그래서 목록에서 뺀다.
+ * 이미 reviewer 인 사용자가 있으면 그 사람 칸에만 선택지로 남긴다.
+ */
+const ASSIGNABLE_ROLES: UserRole[] = ['admin', 'entry']
+
 function formatLastActive(iso: string | null) {
   if (!iso) return '접속 기록 없음'
   return new Date(iso).toLocaleString('ko-KR', {
@@ -140,7 +150,10 @@ export function UserManagementPage({
                       value={user.role}
                       onChange={(event) => void changeRole(user, event.target.value as UserRole)}
                     >
-                      {(Object.keys(ROLE_LABEL) as UserRole[]).map((key) => (
+                      {(ASSIGNABLE_ROLES.includes(user.role)
+                        ? ASSIGNABLE_ROLES
+                        : [user.role, ...ASSIGNABLE_ROLES]
+                      ).map((key) => (
                         <option key={key} value={key}>{ROLE_LABEL[key]}</option>
                       ))}
                     </select>

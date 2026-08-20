@@ -31,7 +31,12 @@ import { markEntrySaved } from '../../utils/entrySaved'
 import { describeDbError } from '../../lib/api/errors'
 import { confirmPeriod } from '../../lib/api/results'
 import { fetchPeriods, reopenPeriod } from '../../lib/api/periods'
-import { describeIssues, findProductionIssues } from '../production-result/productionSanity'
+import {
+  describeCostBasis,
+  describeIssues,
+  findMissingCostBasis,
+  findProductionIssues,
+} from '../production-result/productionSanity'
 import type { CostPeriodRow } from '../../lib/types'
 
 type RawMaterialEntryPageProps = {
@@ -491,6 +496,20 @@ export function RawMaterialEntryPage({
         fetchUsageTotals(periodId).catch(() => []),
         fetchProduction(periodId).catch(() => []),
       ])
+      // 재료비 근거부터 본다. 생산량 오입력보다 조용하고, 결과가 0 원으로 굳는다
+      const noCost = findMissingCostBasis(
+        savedProductions,
+        usageTotals,
+        products.map((product) => ({
+          productId: product.id,
+          unitMaterialCost: product.materialCost,
+        })),
+      )
+      if (noCost.length > 0 && !window.confirm(describeCostBasis(noCost))) {
+        setBusy('')
+        return
+      }
+
       const issues = findProductionIssues(usageTotals, savedProductions)
       const proceed = issues.length > 0
         ? window.confirm(describeIssues(issues))
@@ -852,6 +871,8 @@ export function RawMaterialEntryPage({
                 <div className="production-list__meta">
                   <p>
                     수불자료에는 생산량이 없습니다. 생산 일지를 보고 직접 입력하세요.
+                    {' '}
+                    <strong>불량은 빼고 양품만</strong> 넣어야 합니다 — 총 생산량을 넣으면 단위원가가 실제보다 낮게 나옵니다.
                     {isFilteredByExcel && ' 이 달 수불자료에 있는 제품만 표시합니다.'}
                   </p>
                   <span className="production-list__progress">
