@@ -31,10 +31,11 @@ import { markEntrySaved } from '../../utils/entrySaved'
 import { describeDbError } from '../../lib/api/errors'
 import { confirmPeriod } from '../../lib/api/results'
 import { fetchPeriods, reopenPeriod } from '../../lib/api/periods'
+import { fetchOperatingCosts } from '../../lib/api/operating'
 import {
-  describeCostBasis,
+  describeBlockers,
   describeIssues,
-  findMissingCostBasis,
+  findConfirmBlockers,
   findProductionIssues,
 } from '../production-result/productionSanity'
 import type { CostPeriodRow } from '../../lib/types'
@@ -268,11 +269,9 @@ export function RawMaterialEntryPage({
     event.target.value = ''
     if (!picked) return
 
-    let readComplete = false
     setBusy('수불자료를 읽는 중…')
     try {
-      let result = await previewSubul(picked)
-      readComplete = true
+      const result = await previewSubul(picked)
       setPreview(result)
       setFile(picked)
       setFileName(picked.name)
@@ -281,18 +280,10 @@ export function RawMaterialEntryPage({
       const guessed = monthFromFileName(picked.name)
       setMonthMismatch(guessed && guessed !== month ? guessed : null)
 
-      if (result.errors.length === 0 && result.missingProducts.length > 0) {
-        setBusy('새 제품과 레시피를 자동 등록하는 중…')
-        const registered = await autoRegisterMissingProducts(result, picked)
-        result = registered.preview
-        setPreview(result)
-        onAction(
-          `새 제품과 레시피 ${registered.count}개를 자동 등록했습니다. `
-          + '판매가와 포장 단위는 제품 관리에서 입력해 주세요.',
-        )
-        return
-      }
-
+      // 여기서 제품을 자동으로 만들지 않는다.
+      // 시트명 오타 하나가 그대로 새 제품이 됐고, 그 달을 마감하고 나면
+      // 지울 수도 없었다 (마감된 달의 자료는 삭제가 막힌다 — ⑪).
+      // 미매칭 목록을 보여주고 사람이 눌러 만들게 한다.
       const missing = result.missingProducts.length + result.missingMaterials.length
       onAction(
         result.errors.length > 0
@@ -302,7 +293,7 @@ export function RawMaterialEntryPage({
             : `${result.sheets.length}개 제품, ${result.readyCount}개 재료 행을 읽었습니다.`,
       )
     } catch (error) {
-      onAction(`${readComplete ? '자동 등록 실패' : '읽기 실패'}: ${describeDbError(error)}`)
+      onAction(`읽기 실패: ${describeDbError(error)}`)
     } finally {
       setBusy('')
     }
@@ -492,20 +483,25 @@ export function RawMaterialEntryPage({
     if (!(await persistProduction())) return
     setBusy('원가를 계산하는 중…')
     try {
-      const [usageTotals, savedProductions] = await Promise.all([
+      const [usageTotals, savedProductions, operatingCosts] = await Promise.all([
         fetchUsageTotals(periodId).catch(() => []),
         fetchProduction(periodId).catch(() => []),
+        fetchOperatingCosts(periodId).catch(() => []),
       ])
-      // 재료비 근거부터 본다. 생산량 오입력보다 조용하고, 결과가 0 원으로 굳는다
-      const noCost = findMissingCostBasis(
+
+      // 비어 있는 값이 있으면 아예 막는다. 마감 뒤에는 손대기 어렵다
+      const blockers = findConfirmBlockers(
         savedProductions,
         usageTotals,
         products.map((product) => ({
           productId: product.id,
           unitMaterialCost: product.materialCost,
         })),
+        operatingCosts.flatMap((cost) => cost.allocations),
+        operatingCosts.some((cost) => cost.allocationBasis === 'material_cost'),
       )
-      if (noCost.length > 0 && !window.confirm(describeCostBasis(noCost))) {
+      if (blockers.length > 0) {
+        window.alert(describeBlockers(blockers))
         setBusy('')
         return
       }
@@ -751,7 +747,10 @@ export function RawMaterialEntryPage({
                 <div className="subul-preview__missing">
                   <p>
                     <strong>등록되지 않은 제품:</strong> {preview.missingProducts.join(', ')}
-                    <br />자동 등록에 실패했습니다. 아래 버튼으로 다시 시도해 주세요.
+                    <br />
+                    <strong>시트명에 오타가 없는지 먼저 확인하세요.</strong> 이름이 한 글자만 달라도
+                    다른 제품으로 새로 등록됩니다. 등록한 뒤 그 달을 마감하면 지울 수 없습니다.
+                    <br />엑셀을 고쳐서 다시 올리거나, 정말 새 제품이면 아래 버튼으로 등록하세요.
                   </p>
                   <button
                     type="button"
@@ -759,7 +758,7 @@ export function RawMaterialEntryPage({
                     disabled={Boolean(busy)}
                     onClick={() => void registerMissingProducts()}
                   >
-                    새 레시피로 등록하기
+                    새 제품으로 등록하기
                   </button>
                 </div>
               )}

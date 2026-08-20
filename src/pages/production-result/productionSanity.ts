@@ -86,80 +86,92 @@ export function describeIssues(issues: ProductionIssue[]): string {
 }
 
 /**
- * 마감 직전 재료비 근거 검증.
+ * 마감 차단 검사.
  *
- * confirm_period() 의 재료비는 `실적 있으면 material_usages, 없으면 recipe_items × 생산량`이다.
- * 둘 다 0 이면 **재료비 0 원**이 조용히 확정된다 — 에러도, 0 행도 아니고 그냥 0 이다.
+ * 위의 두 검사(⑧ 생산량, ⑬ 재료비 근거)는 경고만 하고 통과시킨다.
+ * 이건 다르다 — **막는다.**
  *
- * 실제 DB 가 그 상태다. 표준 배합(recipe_items)은 수량이 0 이거나 아예 비어 있고
- * (엑셀에서 자동 등록된 제품은 재료 목록만 만들어지고 값이 0 으로 들어간다),
- * 지금은 모든 달에 수불자료가 있어 드러나지 않을 뿐이다.
- * 엑셀을 올리지 않은 달을 마감하는 순간 전 제품의 재료비가 0 이 된다.
+ * 정보가 비어 있는 채로 마감된 제품은 나중에 손댈 수가 없다.
+ * 마감된 달의 자료는 삭제도 수정도 RLS 가 막고(⑪), 되돌리려면 그 달 전체를
+ * 다시 열어 재계산해야 한다. 그 과정에서 과거 원가 스냅샷이 바뀐다(②).
+ * 들어가기 전에 세우는 편이 싸다.
  *
- * 생산량 검증과 같은 이유로 막지는 않고 경고만 한다 — 고객이 오차 허용을 요구했다.
+ * 제품 상세 화면의 값들이 여기서 만들어진다:
+ *   재료비   ← material_usages 금액 (또는 recipe_items × 생산량)
+ *   부자재비 ← operating_cost_allocations 의 labor + 나머지 카테고리
+ *   원재료비 상세 ← 그 달 material_usages 행
  */
-export type CostBasisIssue = {
+export type ConfirmBlocker = {
   productId: string
   name: string
-  /** 생산량 kg */
-  outputKg: number
-  /** 'no-usage' : 수불자료도 배합도 없다 · 'zero-usage' : 수불자료는 있는데 금액이 0 */
-  reason: 'no-usage' | 'zero-usage'
+  /** 비어 있는 항목들 */
+  missing: ('원재료비 상세' | '재료비' | '부자재비')[]
 }
 
 /**
- * 재료비가 0 으로 계산될 제품을 찾는다.
- *
  * @param productions   그 달 생산량
- * @param usageTotals   그 달 투입 실적 (금액 합계 포함)
- * @param standardCosts 제품 1kg 표준 배합 원가 = recipe_items 의 amount 합
+ * @param usageTotals   그 달 투입 실적 (행 수·금액)
+ * @param standardCosts 제품 1kg 표준 배합 원가
+ * @param allocations   제품별 운영비 배분액. material_cost 자동배분은
+ *                      마감 시점에 계산되므로 hasAutoBasis 로 따로 받는다
+ * @param hasAutoBasis  그 달에 재료비 비중 자동배분 운영비가 있는가
  */
-export function findMissingCostBasis(
+export function findConfirmBlockers(
   productions: { productId: string; name: string; production: number }[],
-  usageTotals: { productId: string; totalAmount: number }[],
+  usageTotals: { productId: string; totalAmount: number; rowCount: number }[],
   standardCosts: { productId: string; unitMaterialCost: number }[],
-): CostBasisIssue[] {
-  const usageById = new Map(usageTotals.map((row) => [row.productId, row.totalAmount]))
+  allocations: { productId: string; amount: number }[],
+  hasAutoBasis: boolean,
+): ConfirmBlocker[] {
+  const usageById = new Map(usageTotals.map((row) => [row.productId, row]))
   const standardById = new Map(standardCosts.map((row) => [row.productId, row.unitMaterialCost]))
-  const issues: CostBasisIssue[] = []
 
-  for (const record of productions) {
-    // 생산량이 없으면 애초에 계산 대상이 아니다. 그건 findProductionIssues 가 본다
-    if (record.production <= 0) continue
-
-    const usageAmount = usageById.get(record.productId)
-    // 수불자료가 있고 금액도 잡혀 있으면 실측으로 계산된다 — 문제없다
-    if (usageAmount !== undefined && usageAmount > 0) continue
-    // 실적이 없어도 표준 배합에 값이 있으면 배합 × 생산량으로 계산된다
-    if (usageAmount === undefined && (standardById.get(record.productId) ?? 0) > 0) continue
-
-    issues.push({
-      productId: record.productId,
-      name: record.name,
-      outputKg: record.production,
-      reason: usageAmount === undefined ? 'no-usage' : 'zero-usage',
-    })
+  const allocById = new Map<string, number>()
+  for (const row of allocations) {
+    allocById.set(row.productId, (allocById.get(row.productId) ?? 0) + row.amount)
   }
 
-  return issues
+  const blockers: ConfirmBlocker[] = []
+
+  for (const record of productions) {
+    // 생산량이 없는 제품은 애초에 계산 대상이 아니다
+    if (record.production <= 0) continue
+
+    const usage = usageById.get(record.productId)
+    const missing: ConfirmBlocker['missing'] = []
+
+    // 원재료비 상세 박스 = 그 달 material_usages 행
+    if (!usage || usage.rowCount === 0) missing.push('원재료비 상세')
+
+    // 재료비 = 실적 금액, 없으면 배합 × 생산량
+    const materialCost = usage && usage.totalAmount > 0
+      ? usage.totalAmount
+      : record.production * (standardById.get(record.productId) ?? 0)
+    if (materialCost <= 0) missing.push('재료비')
+
+    // 부자재비 = 운영비 배분. 자동배분은 재료비가 있어야 몫이 생긴다
+    const allocated = allocById.get(record.productId) ?? 0
+    if (allocated <= 0 && !(hasAutoBasis && materialCost > 0)) missing.push('부자재비')
+
+    if (missing.length > 0) {
+      blockers.push({ productId: record.productId, name: record.name, missing })
+    }
+  }
+
+  return blockers
 }
 
-/** 확인 다이얼로그에 넣을 문구 */
-export function describeCostBasis(issues: CostBasisIssue[]): string {
-  const lines = issues.map((issue) => {
-    const why = issue.reason === 'no-usage'
-      ? '수불자료가 없고 표준 배합도 비어 있음'
-      : '수불자료는 있으나 금액이 0 원'
-    return `· ${issue.name}: 생산 ${kg(issue.outputKg)}\n  ${why}`
-  })
+/** 마감을 막을 때 띄울 문구 */
+export function describeBlockers(blockers: ConfirmBlocker[]): string {
+  const lines = blockers.map((b) => `· ${b.name}: ${b.missing.join(' · ')} 없음`)
 
   return (
-    `재료비가 0 원으로 계산될 제품이 ${issues.length}개 있습니다.\n\n`
+    `값이 비어 있는 제품이 ${blockers.length}개 있어 마감할 수 없습니다.\n\n`
     + `${lines.join('\n')}\n\n`
-    + '1단계에서 수불자료를 올리거나, 제품 상세의 "표준 배합 수정"에서\n'
-    + '배합 수량·단가를 채운 뒤 마감하세요.\n\n'
-    + '이대로 마감하면 재료비 0 원이 그대로 저장되고,\n'
-    + '고치려면 마감을 취소하고 다시 계산해야 합니다.\n\n'
-    + '그래도 계속할까요?'
+    + '채우는 곳\n'
+    + '  원재료비 상세 · 재료비 → 1단계에서 수불자료(.xlsx)를 올리세요\n'
+    + '  부자재비 → 2단계에서 인건비·경비를 입력하세요\n\n'
+    + '비어 있는 채로 마감하면 그 값이 그대로 굳고,\n'
+    + '고치려면 그 달 전체의 마감을 취소해 다시 계산해야 합니다.'
   )
 }

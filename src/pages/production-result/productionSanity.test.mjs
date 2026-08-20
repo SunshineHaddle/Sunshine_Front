@@ -86,75 +86,72 @@ assert.deepEqual(findProductionIssues([{ productId: 'p1', totalUsage: 0 }], [{ p
   assert.deepEqual(issues.map((i) => i.name), ['너무적음', '너무많음'])
 }
 
-// ── findMissingCostBasis ────────────────────────────────────
+// ── findConfirmBlockers ─────────────────────────────────────
 // productionSanity.ts 의 구현을 그대로 옮겨 둔다 (이 파일의 기존 방식)
-function findMissingCostBasis(productions, usageTotals, standardCosts) {
-  const usageById = new Map(usageTotals.map((row) => [row.productId, row.totalAmount]))
+function findConfirmBlockers(productions, usageTotals, standardCosts, allocations, hasAutoBasis) {
+  const usageById = new Map(usageTotals.map((row) => [row.productId, row]))
   const standardById = new Map(standardCosts.map((row) => [row.productId, row.unitMaterialCost]))
-  const issues = []
+  const allocById = new Map()
+  for (const row of allocations) {
+    allocById.set(row.productId, (allocById.get(row.productId) ?? 0) + row.amount)
+  }
+  const blockers = []
   for (const record of productions) {
     if (record.production <= 0) continue
-    const usageAmount = usageById.get(record.productId)
-    if (usageAmount !== undefined && usageAmount > 0) continue
-    if (usageAmount === undefined && (standardById.get(record.productId) ?? 0) > 0) continue
-    issues.push({
-      productId: record.productId,
-      name: record.name,
-      outputKg: record.production,
-      reason: usageAmount === undefined ? 'no-usage' : 'zero-usage',
-    })
+    const usage = usageById.get(record.productId)
+    const missing = []
+    if (!usage || usage.rowCount === 0) missing.push('원재료비 상세')
+    const materialCost = usage && usage.totalAmount > 0
+      ? usage.totalAmount
+      : record.production * (standardById.get(record.productId) ?? 0)
+    if (materialCost <= 0) missing.push('재료비')
+    const allocated = allocById.get(record.productId) ?? 0
+    if (allocated <= 0 && !(hasAutoBasis && materialCost > 0)) missing.push('부자재비')
+    if (missing.length > 0) {
+      blockers.push({ productId: record.productId, name: record.name, missing })
+    }
   }
-  return issues
+  return blockers
 }
 
-// 실제 DB 상태: 포기김치는 recipe_items 가 0 행이고 그 달 수불자료도 없다
+const OK_USAGE = [{ productId: 'p1', totalAmount: 249_000_000, rowCount: 17 }]
+const OK_ALLOC = [{ productId: 'p1', amount: 53_000_000 }]
+const PROD = [{ productId: 'p1', name: '포기김치', production: 300000 }]
+const NO_RECIPE = [{ productId: 'p1', unitMaterialCost: 0 }]
+
+// 다 갖춰지면 막지 않는다
+assert.deepEqual(findConfirmBlockers(PROD, OK_USAGE, NO_RECIPE, OK_ALLOC, false), [])
+
+// 수불자료를 안 올린 달 — 원재료비 상세와 재료비가 함께 빈다
 {
-  const issues = findMissingCostBasis(
-    [{ productId: 'p1', name: '포기김치', production: 300000 }],
-    [],
-    [{ productId: 'p1', unitMaterialCost: 0 }],
-  )
-  assert.equal(issues.length, 1)
-  assert.equal(issues[0].reason, 'no-usage')
+  const b = findConfirmBlockers(PROD, [], NO_RECIPE, OK_ALLOC, false)
+  assert.deepEqual(b[0].missing, ['원재료비 상세', '재료비'])
 }
 
-// 수불자료 실적이 있으면 표준 배합이 0 이어도 문제없다 — 지금 12개월이 이 상태다
-assert.deepEqual(
-  findMissingCostBasis(
-    [{ productId: 'p1', name: '포기김치', production: 300000 }],
-    [{ productId: 'p1', totalAmount: 249_000_000 }],
-    [{ productId: 'p1', unitMaterialCost: 0 }],
-  ),
-  [],
-)
-
-// 표준 배합에 값이 있으면 실적이 없어도 배합 × 생산량으로 계산된다
-assert.deepEqual(
-  findMissingCostBasis(
-    [{ productId: 'p1', name: '맛지리는김치', production: 1000 }],
-    [],
-    [{ productId: 'p1', unitMaterialCost: 1800 }],
-  ),
-  [],
-)
-
-// 수불자료 행은 있는데 금액이 0. cost_source 는 actual 인데 재료비가 0 이 된다
+// 2단계를 안 한 달 — 부자재비만 빈다
 {
-  const issues = findMissingCostBasis(
-    [{ productId: 'p1', name: '맛김치', production: 5000 }],
-    [{ productId: 'p1', totalAmount: 0 }],
-    [{ productId: 'p1', unitMaterialCost: 0 }],
-  )
-  assert.equal(issues[0].reason, 'zero-usage')
+  const b = findConfirmBlockers(PROD, OK_USAGE, NO_RECIPE, [], false)
+  assert.deepEqual(b[0].missing, ['부자재비'])
 }
 
-// 생산량이 0 이면 계산 대상이 아니다. 그건 findProductionIssues 몫
+// 재료비 비중 자동배분은 마감 시점에 계산되므로 배분 행이 없어도 통과시킨다
+assert.deepEqual(findConfirmBlockers(PROD, OK_USAGE, NO_RECIPE, [], true), [])
+
+// 단, 자동배분이어도 재료비가 0 이면 몫이 생기지 않는다
+{
+  const b = findConfirmBlockers(PROD, [{ productId: 'p1', totalAmount: 0, rowCount: 3 }], NO_RECIPE, [], true)
+  assert.deepEqual(b[0].missing, ['재료비', '부자재비'])
+}
+
+// 수불자료 행은 있는데 금액이 0 — 상세 박스는 차지만 재료비가 0 이다
+{
+  const b = findConfirmBlockers(PROD, [{ productId: 'p1', totalAmount: 0, rowCount: 5 }], NO_RECIPE, OK_ALLOC, false)
+  assert.deepEqual(b[0].missing, ['재료비'])
+}
+
+// 생산량 0 은 계산 대상이 아니다
 assert.deepEqual(
-  findMissingCostBasis(
-    [{ productId: 'p1', name: '갓김치', production: 0 }],
-    [],
-    [{ productId: 'p1', unitMaterialCost: 0 }],
-  ),
+  findConfirmBlockers([{ productId: 'p1', name: '갓김치', production: 0 }], [], NO_RECIPE, [], false),
   [],
 )
 

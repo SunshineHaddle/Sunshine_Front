@@ -116,7 +116,7 @@ export async function fetchMaterialUsages(
  */
 export async function fetchUsageTotals(
   periodId: string,
-): Promise<{ productId: string; totalUsage: number; totalAmount: number }[]> {
+): Promise<{ productId: string; totalUsage: number; totalAmount: number; rowCount: number }[]> {
   const rows = unwrap(
     await supabase
       .from('material_usages')
@@ -126,11 +126,14 @@ export async function fetchUsageTotals(
 
   // 금액도 함께 모은다. confirm_period() 가 재료비로 쓰는 값이라
   // 0 이면 원가가 0 으로 굳는다 — findMissingCostBasis() 가 이걸 본다
-  const byProduct = new Map<string, { totalUsage: number; totalAmount: number }>()
+  // 행 수도 센다 — 제품 상세의 '원재료비 상세' 박스가 이 행들로 그려지므로,
+  // 금액이 0 인 것과 아예 비어 있는 것을 구분해야 한다
+  const byProduct = new Map<string, { totalUsage: number; totalAmount: number; rowCount: number }>()
   for (const row of rows) {
-    const seen = byProduct.get(row.product_id) ?? { totalUsage: 0, totalAmount: 0 }
+    const seen = byProduct.get(row.product_id) ?? { totalUsage: 0, totalAmount: 0, rowCount: 0 }
     seen.totalUsage += num(row.usage_qty)
     seen.totalAmount += num(row.amount)
+    seen.rowCount += 1
     byProduct.set(row.product_id, seen)
   }
   return [...byProduct].map(([productId, sums]) => ({ productId, ...sums }))
