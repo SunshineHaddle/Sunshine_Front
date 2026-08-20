@@ -72,8 +72,19 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/*
+ * 세 줄 구성: 안내(맨 위) · 조회 조건 · 기준 월(맨 아래).
+ * 안내와 기준 월은 grid-column: 1 / -1 로 폭을 다 쓰고 오른쪽에 붙는다.
+ *
+ * 세 번째 칸은 비어 있지만 지운 적이 있는데, 그러면 남는 공간을
+ * auto 인 버튼 칸이 전부 흡수해 '조회하기' 가 가로로 늘어난다.
+ * 여백을 받아 줄 칸이 하나 있어야 버튼이 제 크기를 지킨다.
+ */
 .cost-analysis-filter--product {
   grid-template-columns: minmax(180px, 260px) auto minmax(0, 1fr);
+  /* 세 줄이 되면서 높이가 늘었다. 줄 사이 여백은 각 문구의 margin 이 맡는다 */
+  padding: 11px 26px 10px;
+  row-gap: 0;
 }
 
 .cost-analysis-filter--product > p {
@@ -81,6 +92,20 @@
   margin: 0;
   color: var(--color-text-subtle);
   font-size: 10px;
+}
+
+/* 화면 전체에 걸리는 안내라 카드마다 반복하지 않고 맨 위 한 줄로 둔다 */
+.cost-analysis-filter__rounding {
+  grid-column: 1 / -1;
+  margin-bottom: 5px;
+  color: #a9a0a0;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.cost-analysis-filter__basis {
+  grid-column: 1 / -1;
+  margin-top: 6px;
 }
 
 .cost-analysis-filter label {

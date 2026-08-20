@@ -16,6 +16,7 @@ const currencyFormatter = new Intl.NumberFormat('ko-KR', {
 
 const qtyFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
 
+
 /** 분석 월 후보. 자료가 있는 달을 위로 올려 고르기 쉽게 한다 */
 function buildMonthOptions(months: { period: string }[], selected: string) {
   const withData = new Set(months.map((m) => m.period.slice(0, 7)))
@@ -64,6 +65,14 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
   return (
     <div className="product-cost-summary">
       <div className="cost-analysis-filter cost-analysis-filter--product" aria-label="원가 분석 조회 조건">
+        {/*
+          화면의 단가는 모두 나눗셈 결과를 반올림한 값이다. 곱하거나 더해
+          총계와 맞춰보면 조금씩 어긋난다 (0.09 원/kg × 9만 kg = 8,175 원).
+          카드마다 붙이는 대신 맨 위에서 한 번만 알린다.
+        */}
+        <p className="cost-analysis-filter__rounding">
+          표시 금액은 소수점 반올림 값입니다. 항목끼리 곱하거나 더하면 총계와 다를 수 있습니다.
+        </p>
         <label>
           <span>분석 월</span>
           <select value={draftMonth} onChange={(event) => setDraftMonth(event.target.value)}>
@@ -77,7 +86,7 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
         <button className="cost-analysis-filter__submit" type="button" onClick={applyFilters}>
           조회하기
         </button>
-        <p>{monthLabel} · {product.name} 원가 기준</p>
+        <p className="cost-analysis-filter__basis">{monthLabel} · {product.name} 원가 기준</p>
       </div>
 
       {!loading && !hasData && (
@@ -88,23 +97,86 @@ export function ProductCostSummary({ product, state, onAction }: ProductCostSumm
 
       <div className="product-cost-overview product-cost-overview--embedded">
         <section className="product-cost-overview__item is-material">
-          <span>재료비</span>
+          <div className="product-cost-overview__head">
+            <span className="product-cost-overview__label">재료비</span>
+            <p className="product-cost-overview__hint">수불자료 투입 실적</p>
+          </div>
           <strong>{currencyFormatter.format(current.materialCost)}</strong>
-          <small>수불자료 투입 실적</small>
+          {current.productionQty > 0 && (
+            <dl className="product-cost-overview__rates">
+              <div>
+                <dt>생산량</dt>
+                <dd>{qtyFormatter.format(current.productionQty)} kg</dd>
+              </div>
+              <div>
+                <dt>kg 당</dt>
+                <dd>{currencyFormatter.format(current.materialCost / current.productionQty)}</dd>
+              </div>
+            </dl>
+          )}
         </section>
         <section className="product-cost-overview__item is-sub">
-          <span>부자재비</span>
+          <div className="product-cost-overview__head">
+            <span className="product-cost-overview__label">부자재비</span>
+            {/* 제품 단위 부자재 구분이 스키마에 없어 노무비+경비를 이렇게 부른다 */}
+            <p className="product-cost-overview__hint">노무비 + 경비</p>
+          </div>
           <strong>{currencyFormatter.format(current.subMaterialCost)}</strong>
-          <small>노무비 {currencyFormatter.format(current.laborCost)} · 경비 {currencyFormatter.format(current.utilityCost)}</small>
+          <dl className="product-cost-overview__rates">
+            <div>
+              <dt>노무비</dt>
+              <dd>{currencyFormatter.format(current.laborCost)}</dd>
+            </div>
+            <div>
+              <dt>경비</dt>
+              <dd>{currencyFormatter.format(current.utilityCost)}</dd>
+            </div>
+            {current.productionQty > 0 && (
+              <div>
+                <dt>kg 당</dt>
+                <dd>{currencyFormatter.format(current.subMaterialCost / current.productionQty)}</dd>
+              </div>
+            )}
+          </dl>
         </section>
         <section className="product-cost-overview__total product-cost-overview__item is-total">
-          <span className="product-cost-overview__total-label">총 금액</span>
+          {/*
+            kg 당 단가는 나눗셈 결과를 반올림한 값이라, 생산량을 곱하면
+            총 금액과 조금 어긋난다 (0.09 원/kg × 9만 kg = 8,175 원).
+            총 금액이 원본이고 단가가 파생값이라는 것을 알린다.
+          */}
+          <div className="product-cost-overview__head">
+            <span className="product-cost-overview__label product-cost-overview__total-label">
+              총 금액
+            </span>
+            <p className="product-cost-overview__hint is-note">
+              재료비 + 부자재비
+              <br />kg 당 = 총 금액 ÷ 생산량
+            </p>
+          </div>
           <strong>{currencyFormatter.format(current.totalCost)}</strong>
-          <small className="product-cost-overview__unit-price">
-            {current.productionQty > 0
-              ? `생산량 ${qtyFormatter.format(current.productionQty)}kg · 포장당 ${currencyFormatter.format(current.unitCost)}`
-              : '재료비 + 부자재비'}
-          </small>
+          {/*
+            생산량은 재료비 카드에서 한 번만 보여준다. 세 번 반복할 값이 아니다.
+            포장당 금액만 두면 생산량과 곱해 검산하게 되는데 단위가 달라
+            포장무게 배수만큼 어긋나므로, kg 당 금액을 함께 적는다.
+            포장무게가 1kg 이면 두 값이 같아 포장당 줄은 생략한다.
+          */}
+          {current.productionQty > 0 ? (
+            <dl className="product-cost-overview__rates">
+              <div>
+                <dt>kg 당</dt>
+                <dd>{currencyFormatter.format(current.totalCost / current.productionQty)}</dd>
+              </div>
+              {product.unitWeightKg && product.unitWeightKg !== 1 && (
+                <div>
+                  <dt>포장({qtyFormatter.format(product.unitWeightKg)}kg) 당</dt>
+                  <dd>{currencyFormatter.format(current.unitCost)}</dd>
+                </div>
+              )}
+            </dl>
+          ) : (
+            <small className="product-cost-overview__unit-price">재료비 + 부자재비</small>
+          )}
         </section>
       </div>
 
