@@ -28,13 +28,12 @@ type DashboardPageProps = {
 
 /**
  * 확정 스냅샷 → 표 항목.
- * unit_cost 는 포장 1개당 총원가다. 제조원가도 같은 단위로 맞춰야
- * 판매가와 나란히 비교된다.
+ *
+ * 원가는 1kg 기준으로 보여준다. 월 전체 금액(수억)은 제품끼리 규모만 다를 뿐
+ * 어느 쪽이 비싼지 알 수 없고, 포장 단위로만 보면 5kg 과 1kg 제품이 섞여 비교가 안 된다.
+ * 판매가와 잇는 값은 unitCost(포장 1개당)다.
  */
 function toTableItem(summary: CostSummary): ProductProfitabilityItem {
-  const manufacturingShare =
-    summary.totalCost > 0 ? summary.manufacturingCost / summary.totalCost : 0
-
   return {
     id: summary.productId,
     name: summary.name,
@@ -42,8 +41,9 @@ function toTableItem(summary: CostSummary): ProductProfitabilityItem {
     specification: summary.specification ?? '-',
     packageUnit: summary.packageUnit ?? 'PCK',
     productionQuantity: summary.productionQty,
-    manufacturingCost: Math.round(summary.unitCost * manufacturingShare),
-    totalCost: Math.round(summary.unitCost),
+    manufacturingCost: Math.round(summary.manufacturingCostPerKg),
+    totalCost: Math.round(summary.totalCostPerKg),
+    unitCost: Math.round(summary.unitCost),
     salePrice: summary.salePrice,
     marginRate: summary.marginRate,
     status: summary.status,

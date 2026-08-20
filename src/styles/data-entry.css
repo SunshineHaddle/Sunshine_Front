@@ -615,6 +615,14 @@
   text-align: right;
 }
 
+/* 헤더의 단위 표기. 1kg 기준 열과 포장 기준 열이 한 표에 같이 있다 */
+.result-table thead th small {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
 .result-table th:first-child,
 .result-table td:first-child {
   text-align: left;

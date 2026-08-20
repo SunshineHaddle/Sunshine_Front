@@ -42,6 +42,18 @@ export type CostSummary = {
   utilityCost: number
   manufacturingCost: number
   totalCost: number
+  /**
+   * 1kg 당 값. 위의 manufacturingCost·totalCost 는 그 달 **전체 금액**이라
+   * 제품끼리도, 판매가와도 비교가 안 된다. 화면은 이 값을 쓴다.
+   *   제조원가/kg   = (재료비 + 노무비) ÷ 생산량
+   *   경영총원가/kg = (재료비 + 노무비 + 경비) ÷ 생산량
+   *   unitCost      = 경영총원가/kg × unit_weight_kg  (포장 1개당, 판매가와 같은 단위)
+   */
+  materialCostPerKg: number
+  laborCostPerKg: number
+  utilityCostPerKg: number
+  manufacturingCostPerKg: number
+  totalCostPerKg: number
   unitCost: number
   salePrice: number
   marginRate: number
@@ -113,6 +125,10 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       : num(row.sale_price)
     const profit = profitFrom(unitCost, salePrice)
 
+    // 생산량이 0 이면 나눌 수 없다. 표에 안 나오는 행이지만(.gt 필터) 방어한다
+    const qty = num(row.production_qty)
+    const perKg = (amount: number) => (qty > 0 ? amount / qty : 0)
+
     return {
       productId: String(row.product_id),
       sku: product?.sku ?? '',
@@ -126,6 +142,11 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       utilityCost: num(row.utility_cost),
       manufacturingCost: num(row.manufacturing_cost),
       totalCost: num(row.total_cost),
+      materialCostPerKg: perKg(num(row.material_cost)),
+      laborCostPerKg: perKg(num(row.labor_cost)),
+      utilityCostPerKg: perKg(num(row.utility_cost)),
+      manufacturingCostPerKg: perKg(num(row.manufacturing_cost)),
+      totalCostPerKg: perKg(num(row.total_cost)),
       unitCost,
       salePrice,
       marginRate: profit.marginRate,

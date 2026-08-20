@@ -54,8 +54,9 @@ export function ProductProfitabilityTable({
               <th scope="col">제품명</th>
               <th scope="col">규격</th>
               <th scope="col">생산량</th>
-              <th scope="col">제조원가</th>
-              <th scope="col">경영 총원가</th>
+              <th scope="col">제조원가<small>원/kg</small></th>
+              <th scope="col">경영 총원가<small>원/kg</small></th>
+              <th scope="col">단위원가<small>원/포장</small></th>
               <th scope="col">판매가</th>
               <th scope="col">마진율</th>
             </tr>
@@ -63,7 +64,7 @@ export function ProductProfitabilityTable({
           <tbody>
             {loading ? (
               <tr>
-                <td className="profitability-empty" colSpan={7}>불러오는 중…</td>
+                <td className="profitability-empty" colSpan={8}>불러오는 중…</td>
               </tr>
             ) : items.length > 0 ? (
               items.map((item) => {
@@ -83,6 +84,8 @@ export function ProductProfitabilityTable({
                     </td>
                     <td className="money-cell">₩{numberFormatter.format(item.manufacturingCost)}</td>
                     <td className="money-cell">₩{numberFormatter.format(item.totalCost)}</td>
+                    {/* 판매가와 단위를 맞춘 값. 마진율은 이 값으로 계산된다 */}
+                    <td className="money-cell">₩{numberFormatter.format(item.unitCost)}</td>
                     <td className="money-cell money-cell--sale">₩{numberFormatter.format(item.salePrice)}</td>
                     <td>
                       {/* 판매가 0 은 마진율 0 으로 저장된다. 모르는 값을 정상처럼 보이면 안 된다 */}
@@ -101,7 +104,7 @@ export function ProductProfitabilityTable({
               })
             ) : (
               <tr>
-                <td className="profitability-empty" colSpan={7}>{emptyMessage}</td>
+                <td className="profitability-empty" colSpan={8}>{emptyMessage}</td>
               </tr>
             )}
           </tbody>

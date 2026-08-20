@@ -119,11 +119,11 @@ export function ProductionResultPage({
                   <tr>
                     <th scope="col">제품</th>
                     <th scope="col">생산량</th>
-                    <th scope="col">재료비</th>
-                    <th scope="col">노무비</th>
-                    <th scope="col">경비</th>
-                    <th scope="col">경영 총원가</th>
-                    <th scope="col">단위원가</th>
+                    <th scope="col">재료비<small>원/kg</small></th>
+                    <th scope="col">노무비<small>원/kg</small></th>
+                    <th scope="col">경비<small>원/kg</small></th>
+                    <th scope="col">경영 총원가<small>원/kg</small></th>
+                    <th scope="col">단위원가<small>원/포장</small></th>
                     <th scope="col">판매가</th>
                     <th scope="col">마진율</th>
                   </tr>
@@ -138,10 +138,11 @@ export function ProductionResultPage({
                         </small>
                       </td>
                       <td data-label="생산량">{won(s.productionQty)} kg</td>
-                      <td data-label="재료비">{won(s.materialCost)}</td>
-                      <td data-label="노무비">{won(s.laborCost)}</td>
-                      <td data-label="경비">{won(s.utilityCost)}</td>
-                      <td data-label="경영 총원가"><strong>{won(s.totalCost)}</strong></td>
+                      {/* 1kg 기준. 월 전체 금액은 생산량을 곱하면 나온다 */}
+                      <td data-label="재료비">{won(s.materialCostPerKg)}</td>
+                      <td data-label="노무비">{won(s.laborCostPerKg)}</td>
+                      <td data-label="경비">{won(s.utilityCostPerKg)}</td>
+                      <td data-label="경영 총원가"><strong>{won(s.totalCostPerKg)}</strong></td>
                       <td data-label="단위원가">{won(s.unitCost)}</td>
                       <td data-label="판매가">{won(s.salePrice)}</td>
                       <td data-label="마진율">
