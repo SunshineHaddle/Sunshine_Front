@@ -36,8 +36,15 @@ export function ProductManagementPage({
 
   useEffect(() => {
     let cancelled = false
+    // 최근 6개월만 읽는다. 전 기간을 읽으면 응답 상한(1,000행)에 걸려
+    // 조용히 잘린다 — fetchLatestUsageMaterials 주석 참고.
+    // 6개월 안에 생산 기록이 없는 제품은 표준 배합으로 떨어진다.
+    const from = new Date()
+    from.setMonth(from.getMonth() - 5)
+    const fromPeriod = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-01`
+
     void (async () => {
-      const rows = await fetchLatestUsageMaterials().catch((error: unknown) => {
+      const rows = await fetchLatestUsageMaterials(fromPeriod).catch((error: unknown) => {
         console.error('[투입 재료] 조회 실패', error)
         return {} as ProductMaterialNames
       })

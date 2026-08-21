@@ -208,20 +208,43 @@ export type ProductMaterialNames = Record<string, { month: string; names: string
  * 제품 상세에는 material_usages 실적이 가득 뜨는 어긋남이 있었다.
  * 원가 계산(confirm_period)이 '실적 있으면 실적, 없으면 배합' 순인 것과 맞춘다.
  *
- * 달을 섞지 않고 최근 한 달만 쓴다 — 전 기간을 합치면
+ * 달을 섞지 않고 제품별 최근 한 달만 쓴다 — 전 기간을 합치면
  * 지금은 안 쓰는 재료까지 현재 배합인 것처럼 보인다.
+ *
+ * ⚠️ 반드시 fromPeriod 로 범위를 좁혀서 부른다.
+ * Supabase 는 한 응답에 기본 1,000 행까지만 돌려주고, 넘치면 **에러 없이 자른다**.
+ * material_usages 는 한 달에 (제품 수 × 재료 수) 만큼 쌓여서 1년이면 수백 행이다.
+ * 전 기간을 읽으면 어느 순간부터 조용히 잘리고, 잘린 뒤에는 '제품별 최근 달'을
+ * 잘못 골라 **엉뚱한 달의 재료 목록**이 카드에 뜬다.
+ *
+ * @param fromPeriod 'YYYY-MM-01'. 이 달부터 읽는다.
+ *                   그 사이 생산 기록이 없는 제품은 결과에서 빠지고,
+ *                   화면은 표준 배합으로 떨어진다.
  */
-export async function fetchLatestUsageMaterials(): Promise<ProductMaterialNames> {
-  const rows = unwrap(
-    await supabase
-      .from('material_usages')
-      .select('product_id, amount, materials(name), cost_periods!inner(period)'),
-  ) as unknown as {
+export async function fetchLatestUsageMaterials(
+  fromPeriod: string,
+): Promise<ProductMaterialNames> {
+  const res = await supabase
+    .from('material_usages')
+    // !inner 가 없으면 기간 필터가 적용되지 않는다
+    .select('product_id, amount, materials(name), cost_periods!inner(period)')
+    .gte('cost_periods.period', fromPeriod)
+
+  const rows = unwrap(res) as unknown as {
     product_id: string
     amount: number
     materials: { name: string } | null
     cost_periods: { period: string } | null
   }[]
+
+  // 범위를 좁혔는데도 상한에 닿았다면 잘렸을 수 있다. 조용히 틀린 값을 보여주는
+  // 대신 콘솔에 남긴다 — 제품·재료가 늘면 fromPeriod 를 더 좁혀야 한다는 신호다.
+  if (rows.length >= 1000) {
+    console.warn(
+      `[투입 재료] ${fromPeriod} 이후 ${rows.length}행을 읽었습니다. `
+      + '응답 상한(1,000행)에 닿아 일부가 잘렸을 수 있습니다.',
+    )
+  }
 
   /** 제품별 최근 달 */
   const latest = new Map<string, string>()
