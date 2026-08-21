@@ -813,6 +813,13 @@
   margin-bottom: 12px;
 }
 
+/* 숨기기·삭제 두 버튼. 오른쪽 끝에 나란히 놓는다 */
+.product-detail-topbar__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .product-deactivate {
   display: inline-flex;
   align-items: center;
@@ -830,6 +837,17 @@
 .product-deactivate:hover {
   border-color: var(--color-brand);
   color: var(--color-brand);
+}
+
+/* 되돌릴 수 없는 쪽만 붉게. 숨기기와 나란히 있어 구분이 필요하다 */
+.product-deactivate.is-danger:hover {
+  color: #fff;
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+}
+
+.product-deactivate.is-danger:hover svg {
+  stroke: #fff;
 }
 
 .recipe-edit-actions {

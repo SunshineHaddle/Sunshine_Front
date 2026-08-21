@@ -336,12 +336,38 @@ export async function findLockedPeriods(productId: string): Promise<string[]> {
       .map((row) => row.cost_periods.period)
   }
 
-  const [usages, production] = await Promise.all([
+  /**
+   * 운영비 배분은 period_id 가 없다. 부모(operating_costs)를 타고 회차를 찾는다.
+   *
+   * 이 테이블을 빼먹으면 사전 검사를 통과한 뒤 마지막 products DELETE 에서
+   * 23503(FK 위반)으로 터진다 — 배분 행의 RLS 가 draft 인 달만 지우게 해서,
+   * 마감된 달의 배분은 조용히 남기 때문이다. 실제로 그렇게 막힌 적이 있다.
+   */
+  const lockedAllocations = async () => {
+    const res = await supabase
+      .from('operating_cost_allocations')
+      .select('operating_costs!inner(cost_periods!inner(period, status))')
+      .eq('product_id', productId)
+      .eq('operating_costs.cost_periods.status', 'confirmed')
+    if (res.error) throw new Error(res.error.message)
+
+    return (res.data as unknown as {
+      // 다대일 임베드는 객체로 오지만, 배열로 오는 경우도 방어한다
+      operating_costs: { cost_periods: { period: string } | { period: string }[] } | null
+    }[]).flatMap((row) => {
+      const joined = row.operating_costs?.cost_periods
+      if (!joined) return []
+      return Array.isArray(joined) ? joined.map((p) => p.period) : [joined.period]
+    })
+  }
+
+  const [usages, production, allocations] = await Promise.all([
     locked('material_usages'),
     locked('production_records'),
+    lockedAllocations(),
   ])
 
-  return [...new Set([...usages, ...production])].sort()
+  return [...new Set([...usages, ...production, ...allocations])].sort()
 }
 
 /**
@@ -359,7 +385,7 @@ export async function deleteProduct(productId: string) {
       .join(', ')
     throw new Error(
       `마감된 달의 자료가 있어 삭제할 수 없습니다: ${months}\n`
-      + '데이터 입력 3단계에서 해당 월의 마감을 먼저 취소해주세요.',
+      + '데이터 입력 1단계에서 해당 월의 마감을 먼저 취소해주세요.',
     )
   }
 

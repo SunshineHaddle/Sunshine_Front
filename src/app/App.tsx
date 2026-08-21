@@ -19,6 +19,7 @@ import type {
 } from '../pages/product-management/productManagementData'
 import {
   countProductReferences,
+  deactivateProduct,
   createProductWithRecipe,
   findLockedPeriods,
   deleteProduct,
@@ -124,7 +125,9 @@ function App() {
           `${target.name}은(는) 마감된 달의 자료를 가지고 있어 삭제할 수 없습니다.`,
           months,
           '',
-          '데이터 입력 3단계에서 해당 월의 마감을 취소한 뒤 다시 시도해주세요.',
+          '데이터 입력 1단계에서 해당 월의 마감을 취소한 뒤 다시 시도해주세요.',
+          '',
+          '지우지 않고 목록에서만 치우려면 "목록에서 숨기기" 를 쓰세요.',
         ].join('\n'),
       )
       return false
@@ -417,6 +420,22 @@ function App() {
             announce(`${selectedProduct.name}을(를) 삭제했습니다.`)
             navigate('product-management')
           }
+        }}
+        onHide={async () => {
+          // 지우는 게 아니라 is_active 만 내린다. 과거 원가는 그대로 남는다
+          const ok = window.confirm(
+            [
+              `${selectedProduct.name}을(를) 목록에서 숨길까요?`,
+              '',
+              '과거 원가 기록은 그대로 남고, 제품 관리 아래 "숨긴 제품"에서 되돌릴 수 있습니다.',
+              '1단계 생산량 입력과 대시보드에서는 보이지 않게 됩니다.',
+            ].join('\n'),
+          )
+          if (!ok) return
+          await deactivateProduct(selectedProduct.id)
+          await reloadProducts()
+          announce(`${selectedProduct.name}을(를) 목록에서 숨겼습니다.`)
+          navigate('product-management')
         }}
         onUpdateImage={(imageUrl) => {
           setRecipeProducts((current) =>

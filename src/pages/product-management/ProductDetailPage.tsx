@@ -22,6 +22,8 @@ type ProductDetailPageProps = {
   onRefresh?: () => Promise<void>
   /** §3-7 제품 비활성화 */
   onDeactivate?: () => Promise<void>
+  /** 목록에서만 감춘다. 마감된 달이 있어 지울 수 없는 제품의 출구 */
+  onHide?: () => Promise<void>
 }
 
 /** 화면 입력은 문자열로 들고 있다가 저장 시 숫자로 바꾼다 */
@@ -57,6 +59,7 @@ export function ProductDetailPage({
   catalog = [],
   onRefresh,
   onDeactivate,
+  onHide,
 }: ProductDetailPageProps) {
   const analysisState = useProductCostAnalysis(product)
 
@@ -227,21 +230,37 @@ export function ProductDetailPage({
           <button className="product-create-back" type="button" onClick={() => onNavigate('product-management')}>
             <Icon name="chevron-left" size={16} /> 제품 목록
           </button>
-          {onDeactivate && (
-            // §3-7 : 과거 원가 스냅샷이 FK 로 참조하므로 삭제가 아니라 비활성화한다
-            <button
-              className="product-deactivate"
-              type="button"
-              onClick={() => {
-                // 과거 자료가 있는지에 따라 안내가 달라져서 확인은 onDeactivate 안에서 한다
-                void onDeactivate().catch((error: unknown) =>
-                  onAction(`삭제 실패: ${describeDbError(error)}`),
-                )
-              }}
-            >
-              <Icon name="trash" size={14} /> 제품 삭제
-            </button>
-          )}
+          <div className="product-detail-topbar__actions">
+            {onHide && (
+              // 마감된 달의 자료는 삭제가 막힌다(⑪). 목록에서 치우는 길은 남겨둔다
+              <button
+                className="product-deactivate"
+                type="button"
+                onClick={() => {
+                  void onHide().catch((error: unknown) =>
+                    onAction(`숨기기 실패: ${describeDbError(error)}`),
+                  )
+                }}
+              >
+                <Icon name="box" size={14} /> 목록에서 숨기기
+              </button>
+            )}
+            {onDeactivate && (
+              // §3-7 : 과거 원가 스냅샷이 FK 로 참조하므로 삭제가 아니라 비활성화한다
+              <button
+                className="product-deactivate is-danger"
+                type="button"
+                onClick={() => {
+                  // 과거 자료가 있는지에 따라 안내가 달라져서 확인은 onDeactivate 안에서 한다
+                  void onDeactivate().catch((error: unknown) =>
+                    onAction(`삭제 실패: ${describeDbError(error)}`),
+                  )
+                }}
+              >
+                <Icon name="trash" size={14} /> 제품 삭제
+              </button>
+            )}
+          </div>
         </div>
 
         <header className="product-detail-header">
