@@ -57,6 +57,26 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
+/**
+ * 세션이 끊기면 알려준다. 다른 기기에서 로그아웃했거나 토큰 갱신에 실패한 경우다.
+ *
+ * 이게 없으면 앱은 세션이 죽은 줄 모르고 계속 조회한다. RLS 는 권한 없는 읽기에
+ * **에러 대신 빈 배열**을 주므로(§7) 화면은 "데이터가 없다"처럼 보인다.
+ * 장시간 켜두고 쓰는 업무 화면이라 실제로 만나는 상황이다.
+ *
+ * @returns 구독 해제 함수
+ */
+export function onSessionLost(handler: () => void): () => void {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    // SIGNED_OUT : 로그아웃 · 다른 기기에서의 signOut · 토큰 무효화
+    // TOKEN_REFRESHED 인데 세션이 없으면 갱신 실패다
+    if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
+      handler()
+    }
+  })
+  return () => data.subscription.unsubscribe()
+}
+
 // ── §11-3 내 프로필 ─────────────────────────────────────────
 export async function fetchMyProfile(userId: string): Promise<ProfileRow | null> {
   const { data, error } = await supabase

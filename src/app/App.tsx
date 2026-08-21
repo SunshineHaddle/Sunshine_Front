@@ -33,7 +33,7 @@ import { ensurePeriod } from '../lib/api/periods'
 import { fetchRecipeCostSummary, type RecipeCostSummary } from '../lib/api/results'
 import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { fetchMyProfile, getSessionUserId, signOut, toLoginRole } from '../lib/api/auth'
+import { fetchMyProfile, getSessionUserId, onSessionLost, signOut, toLoginRole } from '../lib/api/auth'
 import { describeDbError } from '../lib/api/errors'
 import { SessionProvider } from '../lib/session'
 import {
@@ -247,14 +247,18 @@ function App() {
     ? loadError
     : '.env 의 VITE_SUPABASE_ANON_KEY 를 채워주세요.'
 
-  const announce = (nextMessage: string) => {
+  /**
+   * 화면 하단 안내 문구. 자식 이펙트의 의존성으로 들어가므로 참조가 고정돼야 한다 —
+   * 매 렌더마다 새로 만들면 그 이펙트가 계속 다시 돌아 조회가 반복된다.
+   */
+  const announce = useCallback((nextMessage: string) => {
     window.clearTimeout(messageTimer.current)
     setMessage(nextMessage)
     messageTimer.current = window.setTimeout(() => setMessage(''), 2600)
-  }
+  }, [])
 
-  const handleSignOut = async () => {
-    await signOut()
+  /** 로그인 화면으로 되돌린다. 로그아웃과 세션 만료가 같은 처리를 쓴다 */
+  const resetToLogin = useCallback(() => {
     // 로그아웃을 새 세션 경계로 삼아, 그동안 저장한 회차는 재로그인 후 빈 폼으로 시작하게 한다
     refreshEntrySavedSnapshot()
     setLoginRole(null)
@@ -262,7 +266,32 @@ function App() {
     setLoginId('')
     setRecipeProducts([])
     setPeriod(null)
+  }, [])
+
+  const handleSignOut = async () => {
+    await signOut()
+    resetToLogin()
   }
+
+  /**
+   * 세션이 끊기면(다른 기기 로그아웃·토큰 갱신 실패) 로그인 화면으로 돌린다.
+   *
+   * 이게 없으면 앱이 계속 조회하는데, RLS 는 빈 배열을 주므로 화면이
+   * "데이터가 없다"처럼 보인다 — 원인을 알 길이 없다.
+   */
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    return onSessionLost(() => {
+      // 사용자가 직접 누른 로그아웃은 handleSignOut 이 이미 정리했다.
+      // 그때는 loginRole 이 null 이라 이 안내가 뜨지 않는다.
+      setLoginRole((current) => {
+        if (current) announce('로그인이 만료되었습니다. 다시 로그인해 주세요.')
+        return current
+      })
+      resetToLogin()
+    })
+  }, [announce, resetToLogin])
+
 
   const workerAllowedRoutes: AppRoute[] = ['data-entry-1', 'data-entry-2']
 

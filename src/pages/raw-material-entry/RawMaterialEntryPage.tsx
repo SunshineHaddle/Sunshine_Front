@@ -240,8 +240,16 @@ export function RawMaterialEntryPage({
   useEffect(() => {
     let cancelled = false
     const build = async () => {
-      // worker·재접속은 빈 폼, 마감된 회차는 저장된 생산량을 되불러온다
-      const saved = periodId && loadSaved ? await fetchProduction(periodId).catch(() => []) : []
+      // worker·재접속은 빈 폼, 마감된 회차는 저장된 생산량을 되불러온다.
+      // 조회가 실패하면 조용히 빈 폼이 되는데, 그대로 저장하면 기존 값을
+      // 덮어써 자료가 사라진다. 실패를 알리고 사용자가 새로고침하게 한다.
+      const saved = periodId && loadSaved
+        ? await fetchProduction(periodId).catch((error: unknown) => {
+            console.error('[생산량] 조회 실패', error)
+            onAction(`저장된 생산량을 불러오지 못했습니다: ${describeDbError(error)}`)
+            return []
+          })
+        : []
       if (cancelled) return
       const byId = new Map(saved.map((s) => [s.productId, s] as const))
       setRows(products.map((product) => ({
@@ -252,7 +260,7 @@ export function RawMaterialEntryPage({
     }
     void build()
     return () => { cancelled = true }
-  }, [periodId, products, loadSaved])
+  }, [periodId, products, loadSaved, onAction])
 
   const updateRow = (id: string, patch: Partial<Row>) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -524,10 +532,13 @@ export function RawMaterialEntryPage({
     if (!(await persistProduction())) return
     setBusy('원가를 계산하는 중…')
     try {
+      // 여기서 catch 로 빈 배열을 삼키면 안 된다. 생산량 조회가 실패해 [] 이 되면
+      // 아래 검사가 볼 제품이 없어 blockers 가 비고, **검사를 건너뛴 채 마감**된다.
+      // 조회 실패와 '값이 없음' 은 다른 상황이므로 여기서 멈춘다.
       const [usageTotals, savedProductions, operatingCosts] = await Promise.all([
-        fetchUsageTotals(periodId).catch(() => []),
-        fetchProduction(periodId).catch(() => []),
-        fetchOperatingCosts(periodId).catch(() => []),
+        fetchUsageTotals(periodId),
+        fetchProduction(periodId),
+        fetchOperatingCosts(periodId),
       ])
 
       // 비어 있는 값이 있으면 아예 막는다. 마감 뒤에는 손대기 어렵다

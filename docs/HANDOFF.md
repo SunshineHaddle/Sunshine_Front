@@ -273,6 +273,14 @@ API 레이어: `src/lib/api/` — 자세한 목록은 [API.md](API.md).
 **"마감된 달"이 가장 흔한 저장 실패 원인이다.** 관리자여도 막힌다(설계 의도).
 `new row violates row-level security policy for table "material_usages"` 가 뜨면 권한이 아니라 `is_draft()` 에서 걸린 것. 1단계 또는 3단계에서 마감을 취소해야 한다.
 
+**세션이 끊겨도 앱은 모른다 — `onSessionLost()` 를 쓴다.**
+다른 기기에서 로그아웃하거나 토큰 갱신이 실패하면 조회는 계속 나가는데,
+RLS 가 에러 대신 빈 배열을 주므로 화면은 "데이터가 없다"처럼 보인다.
+`App.tsx` 가 이 구독으로 로그인 화면으로 되돌린다.
+
+**렌더링 중 예외는 `ErrorBoundary` 가 잡는다.** 없으면 흰 화면이 된다.
+이벤트 핸들러·비동기 오류는 잡지 못한다 — 그쪽은 각 화면의 try/catch 몫이다.
+
 **로그인 전에 조회하면 anon으로 나간다.** 세션 복구가 끝나기 전에 fetch를 걸면 조용히 0행. `App.tsx` 의 데이터 이펙트는 `loginRole` 을 의존성에 두고 게이트한다.
 
 **`signOut()` 은 해당 계정의 모든 세션을 무효화한다.** 스크립트로 테스트하면 브라우저 세션이 죽는다. 테스트용 클라이언트는 `persistSession: false` + signOut 생략.
