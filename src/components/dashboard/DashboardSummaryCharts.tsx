@@ -41,10 +41,6 @@ type ProductCostTrendCarouselProps = {
 // 원 단위 금액이라 소수점을 쓰지 않는다. unit_cost 는 numeric(16,2) 라
 // 그대로 두면 '6,761.71원' 처럼 나온다
 const numberFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
-const compactWonFormatter = new Intl.NumberFormat('ko-KR', {
-  notation: 'compact',
-  maximumFractionDigits: 1,
-})
 
 /** 'YYYY-MM' 한 달 뒤로 이동 */
 function shiftMonth(month: string, delta: number) {
@@ -103,9 +99,20 @@ function buildAxis(costTrends?: Record<string, { period: string; unitCost: numbe
 /** 그래프에 찍히는 점 하나. monthIndex 는 가로축(12개월)에서의 자리 */
 type TrendPoint = { monthIndex: number; value: number; x: number; y: number }
 
+/**
+ * 그래프 영역의 좌우 끝 (viewBox 900 기준).
+ *
+ * 왼쪽을 58 에서 넓혔다 — y축 금액 라벨('1.2만원')이 그만큼 자리를 못 잡고
+ * 그래프 안까지 밀고 들어왔다. 라벨은 PLOT_LEFT 왼쪽에 오른쪽 정렬로 붙는다.
+ */
+const PLOT_LEFT = 80
+const PLOT_RIGHT = 880
+
 /** 축 칸 수에 맞춘 x 좌표. 칸이 하나뿐이면 가운데 */
 const xForMonth = (monthIndex: number, count: number) =>
-  count <= 1 ? 469 : 58 + (monthIndex / (count - 1)) * 822
+  count <= 1
+    ? (PLOT_LEFT + PLOT_RIGHT) / 2
+    : PLOT_LEFT + (monthIndex / (count - 1)) * (PLOT_RIGHT - PLOT_LEFT)
 
 /**
  * 제품 원가 추이.
@@ -205,11 +212,11 @@ export function ProductCostTrendCarousel({
           const activePointIndex = hoveredPoint?.productId === product.id ? hoveredPoint.index : null
           const activeCoordinate =
             trend && activePointIndex !== null ? trend.series[activePointIndex] : null
-          const tooltipWidth = 150
+          const tooltipWidth = 260
           const tooltipX = activeCoordinate
             ? Math.min(Math.max(activeCoordinate.x - tooltipWidth / 2, 4), 900 - tooltipWidth - 4)
             : 0
-          const tooltipY = activeCoordinate ? Math.max(activeCoordinate.y - 50, 8) : 0
+          const tooltipY = activeCoordinate ? Math.max(activeCoordinate.y - 96, 8) : 0
 
           return (
             <article className="product-cost-slide" key={product.id}>
@@ -236,10 +243,10 @@ export function ProductCostTrendCarousel({
                   <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 12개월 총원가 추이`}>
                     {[70, 160, 250].map((y, tickIndex) => (
                       <g aria-hidden="true" key={y}>
-                        <line x1="58" x2="880" y1={y} y2={y} />
+                        <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={y} y2={y} />
                         {trend.yTicks.lastIndexOf(trend.yTicks[tickIndex]) === tickIndex && (
-                          <text className="product-cost-slide__axis-label" x="4" y={y + 4}>
-                            {compactWonFormatter.format(trend.yTicks[tickIndex])}원
+                          <text className="product-cost-slide__axis-label" x={PLOT_LEFT - 10} y={y + 6}>
+                            {numberFormatter.format(trend.yTicks[tickIndex])}
                           </text>
                         )}
                       </g>
@@ -274,15 +281,31 @@ export function ProductCostTrendCarousel({
                     ))}
                     {activeCoordinate && activePointIndex !== null && (
                       <g className="product-cost-slide__tooltip" aria-hidden="true">
-                        <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height="40" rx="7" />
-                        <text x={tooltipX + 10} y={tooltipY + 15}>{monthLabels[trend.series[activePointIndex].monthIndex]}</text>
-                        <text className="product-cost-slide__tooltip-value" x={tooltipX + 10} y={tooltipY + 31}>
+                        <rect x={tooltipX} y={tooltipY} width={tooltipWidth} height="86" rx="12" />
+                        <text x={tooltipX + 18} y={tooltipY + 33}>{monthLabels[trend.series[activePointIndex].monthIndex]}</text>
+                        <text className="product-cost-slide__tooltip-value" x={tooltipX + 18} y={tooltipY + 68}>
                           {numberFormatter.format(trend.series[activePointIndex].value)}원
                         </text>
                       </g>
                     )}
                   </svg>
-                  <div>{monthLabels.map((month) => <span key={month}>{month}</span>)}</div>
+                  {/*
+                    라벨을 점과 같은 식으로 배치한다. 예전에는 12칸 그리드로
+                    균등 분할했는데, 칸의 가운데와 점의 x 가 반 칸씩 어긋났다
+                    (점은 58~880 사이에 놓이고 그리드는 패딩 안을 12등분했다).
+                  */}
+                  <div className="product-cost-slide__axis">
+                    {monthLabels.map((month, monthIndex) => (
+                      <span
+                        key={month}
+                        style={{
+                          left: `${(xForMonth(monthIndex, monthLabels.length) / 900) * 100}%`,
+                        }}
+                      >
+                        {month}
+                      </span>
+                    ))}
+                  </div>
                 </div>
                 </>
               ) : (

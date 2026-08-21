@@ -385,9 +385,10 @@
 
 .product-cost-slide__axis-label {
   fill: var(--color-text-subtle);
-  font-size: 9px;
+  font-size: 17px;
   font-variant-numeric: tabular-nums;
-  text-anchor: start;
+  /* 그래프 왼쪽 끝에 오른쪽 정렬로 붙인다. start 로 두면 안쪽으로 밀고 들어온다 */
+  text-anchor: end;
 }
 
 .product-cost-slide__point {
@@ -424,25 +425,35 @@
 
 .product-cost-slide__tooltip text {
   fill: rgba(255, 255, 255, 0.72);
-  font-size: 9px;
+  font-size: 24px;
 }
 
 .product-cost-slide__tooltip .product-cost-slide__tooltip-value {
   fill: #fff;
-  font-size: 11px;
+  font-size: 30px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
-.product-cost-slide__chart > div {
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  margin-top: -2px;
-  padding-right: 2.2%;
-  padding-left: 6.45%;
+/*
+ * x축 라벨. TSX 가 점과 같은 식(xForMonth)으로 left 를 계산해 꽂는다.
+ * 예전에는 12칸 그리드로 균등 분할해서 칸 가운데와 점이 반 칸씩 어긋났고,
+ * 달 수가 12가 아니면 더 크게 틀어졌다.
+ */
+.product-cost-slide__axis {
+  position: relative;
+  height: 20px;
+  margin-top: 2px;
   color: var(--color-text-subtle);
-  font-size: 9px;
-  text-align: center;
+  font-size: 13px;
+}
+
+.product-cost-slide__axis span {
+  position: absolute;
+  top: 0;
+  /* left 는 점의 x. 글자 가운데를 그 자리에 맞춘다 */
+  transform: translateX(-50%);
+  white-space: nowrap;
 }
 
 .product-cost-carousel__empty {
@@ -509,9 +520,10 @@
   height: 42px;
 }
 
-.product-cost-carousel--compact .product-cost-slide__chart > div {
-  margin-top: -5px;
-  font-size: 8px;
+.product-cost-carousel--compact .product-cost-slide__axis {
+  height: 15px;
+  margin-top: 0;
+  font-size: 10px;
 }
 
 .product-cost-carousel--compact .product-cost-carousel__empty {
