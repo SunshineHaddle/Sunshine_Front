@@ -52,7 +52,7 @@ type RawMaterialEntryPageProps = {
   /** 제품을 새로 만든 뒤 App 의 제품 목록을 다시 읽게 한다 */
   onProductsChanged?: () => void | Promise<void>
   hideSidebar?: boolean
-  /** 이 회차가 마감(잠금)되었는지. admin 1단계에서만 넘어온다 */
+  /** 이 회차가 마감(잠금)되었는지. 1단계(worker·admin 공통)에서 넘어온다 */
   isLocked?: boolean
   /** 마감/마감취소 후 App 이 회차 상태를 다시 읽게 한다 */
   onPeriodChanged?: () => void
@@ -147,6 +147,16 @@ export function RawMaterialEntryPage({
   )
   const isFilteredByExcel = excelProductIds.size > 0 && visibleRows.length < rows.length
 
+  /**
+   * 저장된 투입내역 중 이번 수불자료에 등장한 제품 것만.
+   * 예전 파일에만 있던 제품의 행이 남아 있어도 화면에는 내지 않는다 —
+   * 저장 버튼을 누르면 어차피 이 회차 투입내역은 통째로 교체된다(commitSubul).
+   */
+  const scopedUsages = useMemo(
+    () => usages.filter((usage) => excelProductIds.has(usage.productId)),
+    [usages, excelProductIds],
+  )
+
   const hasRows = visibleRows.length > 0
   const filledCount = visibleRows.filter((row) => row.production.trim() !== '').length
   const allFilled = hasRows && filledCount === visibleRows.length
@@ -170,9 +180,12 @@ export function RawMaterialEntryPage({
   }, [periodId, loadSaved])
 
   const reloadHistory = useCallback(async () => {
-    // 버킷·테이블이 없어도 입력 작업은 막지 않는다
+    // 이 달에 마지막으로 올린 파일 하나만 보여준다. 저장할 때마다 투입내역은
+    // 통째로 교체되므로(commitSubul), 지금 화면의 값과 짝이 맞는 원본은 최신 파일뿐이다.
+    // 예전 파일까지 늘어놓으면 어느 것이 반영된 자료인지 헷갈린다.
+    // (버킷·테이블이 없어도 입력 작업은 막지 않는다)
     const rows = await (periodId && loadSaved
-      ? fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => [])
+      ? fetchFileHistory({ periodId, limit: 1 }).catch((): FileHistoryItem[] => [])
       : Promise.resolve<FileHistoryItem[]>([]))
     setHistory(rows)
   }, [periodId, loadSaved])
@@ -205,7 +218,7 @@ export function RawMaterialEntryPage({
     })
   }, [periods])
 
-  // 월별 마감 여부 목록. admin 1단계(onPeriodChanged 있음)에서만 쓴다.
+  // 월별 마감 여부 목록. 1단계(onPeriodChanged 있음)에서만 쓴다 — worker·admin 공통.
   // isLocked 가 바뀌면(=이 화면에서 마감/마감취소) 배지도 다시 읽는다.
   useEffect(() => {
     if (!onPeriodChanged) return
@@ -360,9 +373,13 @@ export function RawMaterialEntryPage({
     onAction('읽은 파일을 내렸습니다. 저장된 투입내역은 그대로입니다.')
   }
 
-  /** §6-2 투입내역 저장 → §10-1·§10-2 원본 보관 */
-  const commit = async () => {
-    if (!preview || !periodId) return
+  /**
+   * §6-2 투입내역 저장 → §10-1·§10-2 원본 보관
+   * @returns 저장에 성공했으면 true. 성공하면 preview 를 비우므로,
+   *          preview 가 남아 있다 = 이 엑셀은 아직 저장되지 않았다는 뜻이다.
+   */
+  const commit = async (): Promise<boolean> => {
+    if (!preview || !periodId) return false
 
     setBusy('투입내역을 저장하는 중…')
     let saved: number
@@ -373,7 +390,7 @@ export function RawMaterialEntryPage({
     } catch (error) {
       setBusy('')
       onAction(`저장 실패: ${describeDbError(error)}`)
-      return
+      return false
     }
 
     // 버킷이 없어도 위에서 저장한 투입내역은 유지되어야 하므로 따로 잡는다
@@ -399,6 +416,7 @@ export function RawMaterialEntryPage({
     setFile(null)
     setMonthMismatch(null)
     setBusy('')
+    return true
   }
 
   /** §10-4 Private 버킷이라 60초짜리 서명 URL 을 발급받는다 */
@@ -425,6 +443,13 @@ export function RawMaterialEntryPage({
   /** §5-2 생산량 저장 */
   const persistProduction = async () => {
     if (!periodId) return false
+
+    // 엑셀을 읽어만 두고 [투입내역 저장] 을 누르지 않은 채 임시저장·다음 단계·마감으로
+    // 넘어가면, 파싱해 둔 수불자료가 화면에서 통째로 사라졌다. 생산량만 저장되고
+    // 투입내역은 예전 것이 남아 "엑셀을 넣었는데 안 넣은 제품이 그대로 나온다"가 됐다.
+    // 넘어가기 전에 함께 저장한다. 실패하면 여기서 멈춘다.
+    if (preview && !(await commit())) return false
+
     try {
       // 화면에 보이는 제품만 저장한다. 숨겨진 제품까지 0 으로 덮어쓰면
       // 다른 경로로 들어간 생산량이 지워진다.
@@ -470,7 +495,8 @@ export function RawMaterialEntryPage({
       const [saved, usageRows, fileRows] = await Promise.all([
         fetchProduction(periodId).catch(() => []),
         fetchMaterialUsages(periodId).catch((): UsageLine[] => []),
-        fetchFileHistory({ periodId, limit: 10 }).catch((): FileHistoryItem[] => []),
+        // 위 reloadHistory 와 같게 최신 1건만 (마감 취소 후에도 목록이 늘지 않도록)
+        fetchFileHistory({ periodId, limit: 1 }).catch((): FileHistoryItem[] => []),
       ])
       const byId = new Map(saved.map((s) => [s.productId, s] as const))
       setRows((current) => current.map((row) => ({
@@ -805,25 +831,37 @@ export function RawMaterialEntryPage({
               <button
                 className="workflow-primary-button"
                 type="button"
+                // 마감된 회차는 RLS 가 쓰기를 막는다. 예전엔 버튼이 눌려서
+                // "저장 실패" 토스트만 스쳐 지나갔고, 화면에는 예전 투입내역이
+                // 그대로 남아 저장된 것처럼 보였다. 아예 누르지 못하게 한다.
                 disabled={
                   preview.readyCount === 0 || preview.errors.length > 0 || unmatched > 0
-                  || !periodId || Boolean(busy)
+                  || !periodId || Boolean(busy) || isLocked
                 }
-                onClick={commit}
+                onClick={() => void commit()}
               >
-                {preview.errors.length > 0
-                  ? '오류를 수정한 뒤 다시 올려주세요'
+                {isLocked
+                  ? '마감된 회차입니다 — 마감을 풀어야 저장됩니다'
+                  : preview.errors.length > 0
+                    ? '오류를 수정한 뒤 다시 올려주세요'
                   : unmatched > 0
                     ? '미매칭 항목을 먼저 등록해 주세요'
                   : <>투입내역 {preview.readyCount}행 저장 · 원본 보관 <Icon name="check" size={16} /></>}
               </button>
+              {isLocked && (
+                <p className="subul-preview__warning">
+                  이 달은 마감되어 있습니다. 위쪽 <strong>마감 풀고 수정</strong> 을 누른 뒤
+                  저장해야 새 수불자료로 교체됩니다. 지금 화면에 보이는 저장된 투입내역은
+                  이전에 저장한 내용입니다.
+                </p>
+              )}
             </section>
           )}
 
           {/* ── §10-3 이 달에 올린 원본 파일 ───────────────── */}
           {history.length > 0 && (
             <section className="upload-history" aria-labelledby="upload-history-title">
-              <h2 id="upload-history-title">이 달에 올린 파일</h2>
+              <h2 id="upload-history-title">이 달에 마지막으로 올린 파일</h2>
               <ul>
                 {history.map((item) => (
                   <li key={item.id}>
@@ -854,13 +892,25 @@ export function RawMaterialEntryPage({
           )}
 
           {/* ── §6-1 저장된 투입 실적 ─────────────────────── */}
-          {usages.length > 0 && (
+          {/*
+            생산량 목록과 같은 기준(visibleRows)으로 좁힌다. rows(전 제품)를 돌면
+            이번 엑셀에 없는 제품의 예전 투입내역까지 같이 나와, 방금 올린 파일에
+            2개 제품만 있는데 화면에는 6개가 뜨는 일이 생겼다.
+          */}
+          {scopedUsages.length > 0 && (
             <section className="saved-usages" aria-labelledby="saved-usages-title">
               <header>
                 <h2 id="saved-usages-title">저장된 투입내역</h2>
-                <span>{usages.length}행</span>
+                <span>{scopedUsages.length}행</span>
               </header>
-              {rows.map((row) => {
+              {usages.length > scopedUsages.length && (
+                <p className="subul-preview__warning">
+                  이번 수불자료에 없는 제품의 예전 투입내역 {usages.length - scopedUsages.length}행이
+                  아직 DB 에 남아 있습니다(화면에서는 숨김). 위에서 <strong>저장</strong> 을 누르면
+                  이 달 투입내역이 지금 파일 내용으로 통째로 교체됩니다.
+                </p>
+              )}
+              {visibleRows.map((row) => {
                 const lines = usages.filter((usage) => usage.productId === row.id)
                 if (lines.length === 0) return null
                 const total = lines.reduce((sum, line) => sum + line.amount, 0)

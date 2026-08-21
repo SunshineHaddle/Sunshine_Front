@@ -36,7 +36,11 @@ import { isSupabaseConfigured } from '../lib/supabase'
 import { fetchMyProfile, getSessionUserId, signOut, toLoginRole } from '../lib/api/auth'
 import { describeDbError } from '../lib/api/errors'
 import { SessionProvider } from '../lib/session'
-import { isEntrySavedBeforeSession, refreshEntrySavedSnapshot } from '../utils/entrySaved'
+import {
+  isEntrySavedBeforeSession,
+  isEntrySavedThisSession,
+  refreshEntrySavedSnapshot,
+} from '../utils/entrySaved'
 
 import { ProductDetailPage } from '../pages/product-management/ProductDetailPage'
 import { ExchangeRateCalculatorPage } from '../pages/exchange-rate/ExchangeRateCalculatorPage'
@@ -262,8 +266,14 @@ function App() {
 
   const workerAllowedRoutes: AppRoute[] = ['data-entry-1', 'data-entry-2']
 
-  const navigate = (nextRoute: AppRoute) => {
-    if (loginRole === 'worker' && !workerAllowedRoutes.includes(nextRoute)) return
+  const navigate = (requestedRoute: AppRoute) => {
+    // worker 는 3단계로 못 간다. 예전엔 조용히 무시했는데, 2단계에서 저장하면
+    // 그 이동이 3단계 시도라 화면이 멈춘 것처럼 보였다. 1단계로 돌려보낸다 —
+    // 방금 저장한 값이 채워진 채로 열린다 (freshEntry 판정 참고).
+    const nextRoute: AppRoute =
+      loginRole === 'worker' && !workerAllowedRoutes.includes(requestedRoute)
+        ? 'data-entry-1'
+        : requestedRoute
     setRoute(nextRoute)
     const nextHash = hashForRoute(nextRoute)
     if (window.location.hash !== nextHash) window.location.hash = nextHash
@@ -292,9 +302,14 @@ function App() {
     month,
     periodId: period?.id ?? null,
     // 빈 폼으로 시작하는 조건: 이번 세션이 시작되기 전에 이미 저장 완료한 회차.
-    // 세션 중 저장한 값(다음 단계 갔다 돌아옴)은 DB 에서 다시 읽어 유지한다.
     // worker/admin 모두 같은 규칙 — 재접속(로그아웃·새로고침) 하면 빈 폼.
-    freshEntry: isEntrySavedBeforeSession(period?.id ?? null),
+    //
+    // 단, worker 가 이번 세션에 저장 버튼을 눌렀다면 그 회차는 빈 폼으로 돌리지 않는다.
+    // 2단계에서 저장하면 1단계로 돌아오는데(navigate 참고), 거기서 방금 넣은 값이
+    // 사라져 보이면 안 된다. admin 은 저장 후 3단계로 가므로 예전 그대로 둔다.
+    freshEntry:
+      isEntrySavedBeforeSession(period?.id ?? null)
+      && !(loginRole === 'worker' && isEntrySavedThisSession(period?.id ?? null)),
     onMonthChange: setMonth,
     onNavigate: navigate,
     onAction: announce,
@@ -302,23 +317,28 @@ function App() {
     onProductsChanged: reloadProducts,
   }
 
+  // 1단계는 worker·admin 이 같은 화면을 본다 — 월별 마감 배지와 마감 버튼까지 동일.
+  // (3단계 접근만 worker 에게 막혀 있다)
+  const rawMaterialEntryPage = (
+    <RawMaterialEntryPage
+      {...entryProps}
+      isLocked={period?.status === 'confirmed'}
+      onPeriodChanged={() => void refreshPeriod()}
+    />
+  )
+
   let page: ReactNode
 
   if (loginRole === 'worker') {
+    // 해시를 직접 고쳐 허용되지 않은 route 로 들어와도 1단계로 떨어뜨린다
     page =
       route === 'data-entry-2' ? (
         <OperatingCostEntryPage {...entryProps} />
       ) : (
-        <RawMaterialEntryPage {...entryProps} />
+        rawMaterialEntryPage
       )
   } else if (route === 'data-entry-1') {
-    page = (
-      <RawMaterialEntryPage
-        {...entryProps}
-        isLocked={period?.status === 'confirmed'}
-        onPeriodChanged={() => void refreshPeriod()}
-      />
-    )
+    page = rawMaterialEntryPage
   } else if (route === 'data-entry-2') {
     page = <OperatingCostEntryPage {...entryProps} />
   } else if (route === 'data-entry-3') {
@@ -329,7 +349,8 @@ function App() {
         isLocked={period?.status === 'confirmed'}
         onNavigate={navigate}
         onAction={announce}
-        onPeriodChanged={() => void refreshPeriod()}
+        // 마감 후 1단계로 넘어가기 전에 상태 갱신이 끝나야 해서 Promise 를 넘긴다
+        onPeriodChanged={() => refreshPeriod()}
       />
     )
   } else if (route === 'product-management') {

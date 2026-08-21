@@ -2,7 +2,6 @@ import { Icon, type IconName } from '../../components/common/Icon'
 import { NumberInput } from '../../components/common/NumberInput'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import {
-  distributeByProduction,
   formatWon,
   sumProductFees,
   toWonNumber,
@@ -22,6 +21,8 @@ type OperatingCostFormProps = {
   onAddCustomItem: () => void
   onUpdateCustomItemName: (id: string, name: string) => void
   onUpdateCustomItemTotal: (id: string, value: string) => void
+  onUpdateCustomItemShare: (id: string, productId: string, value: string) => void
+  onEqualizeCustomItemShares: (id: string) => void
   onRemoveCustomItem: (id: string) => void
 }
 
@@ -54,7 +55,10 @@ type ProductFeeListProps = {
   title: string
   unit?: string
   showShareTotal?: boolean
-  laborTotal?: string
+  /** 비율을 곱할 총액. 제품마다 환산 금액을 함께 보여준다 */
+  totalAmount?: string
+  /** 환산 금액 앞에 붙일 말 (인건비 섹션은 '인건비', 추가 항목은 생략) */
+  amountLabel?: string
   onEqualize?: () => void
 }
 
@@ -65,12 +69,13 @@ function ProductFeeList({
   title,
   unit = '원',
   showShareTotal = false,
-  laborTotal,
+  totalAmount,
+  amountLabel,
   onEqualize,
 }: ProductFeeListProps) {
   const shareTotal = sumProductFees(values)
   const isValid = Math.round(shareTotal * 10) / 10 === 100
-  const laborTotalNum = toWonNumber(laborTotal ?? '0')
+  const totalAmountNum = toWonNumber(totalAmount ?? '0')
 
   return (
     <div className="operating-cost-labor__products">
@@ -93,13 +98,15 @@ function ProductFeeList({
         {products.length > 0 ? (
           products.map((product) => {
             const share = Number(values[product.id]) || 0
-            const perProductLabor = laborTotalNum * (share / 100)
+            const perProductAmount = totalAmountNum * (share / 100)
             return (
               <label className="operating-cost-field" key={product.id}>
                 <span className="operating-cost-field__label">
                   {product.name}
                   {showShareTotal && (
-                    <em className="operating-cost-field__amount">인건비 {formatWon(Math.round(perProductLabor))}</em>
+                    <em className="operating-cost-field__amount">
+                      {amountLabel ? `${amountLabel} ` : ''}{formatWon(Math.round(perProductAmount))}
+                    </em>
                   )}
                 </span>
                 <span className="operating-cost-input">
@@ -135,9 +142,10 @@ export function OperatingCostForm({
   onAddCustomItem,
   onUpdateCustomItemName,
   onUpdateCustomItemTotal,
+  onUpdateCustomItemShare,
+  onEqualizeCustomItemShares,
   onRemoveCustomItem,
 }: OperatingCostFormProps) {
-  const productNameById = new Map(products.map((product) => [product.id, product.name]))
   // 1단계 엑셀에 넣은 제품만 대상 (인건비·커스텀 항목 모두 동일)
   const excelProductIds = new Set(productions.map((p) => p.id))
   const excelProducts = products.filter((product) => excelProductIds.has(product.id))
@@ -157,15 +165,14 @@ export function OperatingCostForm({
               title="제품별 가공비"
               unit="%"
               showShareTotal
-              laborTotal={costs.laborTotal}
+              totalAmount={costs.laborTotal}
+              amountLabel="인건비"
               onEqualize={onEqualizeProductFees}
             />
           </div>
         </section>
 
         {costs.customItems.map((item) => {
-          const itemTotal = toWonNumber(item.total)
-          const allocation = distributeByProduction(itemTotal, productions)
           return (
             <section className="operating-cost-group operating-cost-group--wide operating-cost-group--custom" key={item.id}>
               <header>
@@ -199,27 +206,16 @@ export function OperatingCostForm({
                     </span>
                   </label>
                 </div>
-                <div className="operating-cost-labor__products">
-                  <div className="operating-cost-labor__products-head">
-                    <span className="operating-cost-labor__products-title">제품별 배분 (균등 분배)</span>
-                  </div>
-                  <div className="operating-cost-labor__products-list">
-                    {productions.length > 0 ? (
-                      productions.map((production) => (
-                        <div className="operating-cost-alloc" key={production.id}>
-                          <span className="operating-cost-alloc__name">
-                            {productNameById.get(production.id) ?? production.id}
-                          </span>
-                          <span className="operating-cost-alloc__amount">
-                            {formatWon(allocation[production.id] ?? 0)}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="operating-cost-labor__empty">등록된 제품이 없습니다.</p>
-                    )}
-                  </div>
-                </div>
+                <ProductFeeList
+                  products={excelProducts}
+                  values={item.shares}
+                  onChange={(productId, value) => onUpdateCustomItemShare(item.id, productId, value)}
+                  title="제품별 배분"
+                  unit="%"
+                  showShareTotal
+                  totalAmount={item.total}
+                  onEqualize={() => onEqualizeCustomItemShares(item.id)}
+                />
               </div>
             </section>
           )

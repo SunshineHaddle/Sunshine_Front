@@ -372,10 +372,23 @@ end $$;
 
 -- 월 마감. 1·2단계 입력을 읽어 원가를 계산하고 스냅샷으로 굳힌다.
 -- 재실행해도 중복되지 않는다 (upsert).
+-- security definer 인 이유: 실무자(entry)도 1단계에서 마감할 수 있어야 하는데
+-- product_cost_summaries 는 "admin write" 정책이라 invoker 로는 insert 가 막힌다.
+-- 결과를 *읽는* 권한("admin read")은 그대로 관리자 전용이라, 실무자는 계산만
+-- 돌릴 뿐 원가 결과를 볼 수는 없다 (미팅 요구 그대로).
 create or replace function confirm_period(p_period_id uuid)
-returns int language plpgsql security invoker as $$
+returns int language plpgsql security definer set search_path = public as $$
 declare affected int;
 begin
+  -- definer 는 RLS 를 지나치므로 호출 권한을 여기서 직접 막는다
+  if not is_editor() then
+    raise exception '마감 권한이 없습니다.' using errcode = '42501';
+  end if;
+
+  -- 예전 계산 결과를 먼저 비운다. 아래는 upsert 라, 이번 회차 생산량에서 빠진
+  -- 제품(예전 엑셀 잔재)이 지워지지 않고 표에 그대로 남는다.
+  delete from product_cost_summaries where period_id = p_period_id;
+
   with standard_cost as (
     select product_id, sum(amount) as unit_material_cost
     from recipe_items group by product_id

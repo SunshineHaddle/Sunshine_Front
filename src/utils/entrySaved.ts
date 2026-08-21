@@ -34,6 +34,18 @@ export function isEntrySavedBeforeSession(periodId: string | null): boolean {
   return sessionStartSnapshot.has(periodId)
 }
 
+/** 이번 세션에 방금 저장한 회차. 저장 직후 되돌아온 화면은 빈 폼이 아니어야 한다 */
+let savedThisSession = new Set<string>()
+
+/**
+ * 이번 세션에 저장 버튼을 눌러 값을 넣은 회차인지.
+ * 재접속 규칙(빈 폼)보다 우선한다 — 방금 내가 저장한 값은 보여야 한다.
+ */
+export function isEntrySavedThisSession(periodId: string | null): boolean {
+  if (!periodId) return false
+  return savedThisSession.has(periodId)
+}
+
 /**
  * 스냅샷을 지금 시점으로 다시 찍는다. 로그아웃 시 호출한다 —
  * SPA 라 모듈이 재로드되지 않으므로, 로그아웃을 새 세션 경계로 삼아
@@ -41,11 +53,13 @@ export function isEntrySavedBeforeSession(periodId: string | null): boolean {
  */
 export function refreshEntrySavedSnapshot() {
   sessionStartSnapshot = read()
+  savedThisSession = new Set()
 }
 
 /** 저장 성공 시 호출. 이 회차를 저장 완료로 표시한다 (다음 재접속부터 빈 폼). */
 export function markEntrySaved(periodId: string | null) {
   if (!periodId) return
+  savedThisSession.add(periodId)
   const set = read()
   set.add(periodId)
   try {

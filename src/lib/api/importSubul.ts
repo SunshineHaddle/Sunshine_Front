@@ -188,6 +188,19 @@ export async function commitSubul(periodId: string, preview: SubulPreview): Prom
     throw new Error('등록되지 않은 제품 또는 원재료가 있어 저장할 수 없습니다.')
   }
 
+  // 마감된 회차면 아래 delete 는 RLS 에 걸러져 0건이 되고(오류가 안 난다),
+  // insert 만 거부된다. 그러면 예전 투입내역이 그대로 남아 "저장했는데 화면이
+  // 그대로"인 상태가 된다. 손대기 전에 여기서 분명히 막는다.
+  const period = unwrap(
+    await supabase.from('cost_periods').select('status').eq('id', periodId).single(),
+  ) as { status: string }
+  if (period.status === 'confirmed') {
+    throw new Error(
+      '이 달은 마감되어 있어 투입내역을 바꿀 수 없습니다. '
+      + '1단계에서 [마감 풀고 수정] 을 누른 뒤 다시 저장해주세요.',
+    )
+  }
+
   const rows = preview.sheets.flatMap((sheet) =>
     sheet.productId === null
       ? []

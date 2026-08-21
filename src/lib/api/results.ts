@@ -12,6 +12,10 @@ function unwrap<T>(res: { data: T | null; error: { message: string } | null }): 
 export async function confirmPeriod(periodId: string): Promise<number> {
   // 예전 계산 결과를 먼저 비운다. confirm_period 는 upsert 만 하므로,
   // 이번 회차 생산량에서 빠진 제품(예전 엑셀 잔재)이 표에 그대로 남는다.
+  //
+  // 이 delete 는 product_cost_summaries 의 "admin write" 정책에 걸려 실무자에게는
+  // 0건 처리된다. 그래서 같은 삭제를 confirm_period 안에도 넣어뒀다(2026-08-21 패치).
+  // 여기 것은 패치 이전 DB 에서도 관리자 마감이 멀쩡하도록 남겨둔 중복이다.
   unwrap(await supabase.from('product_cost_summaries').delete().eq('period_id', periodId))
 
   const res = await supabase.rpc('confirm_period', { p_period_id: periodId })

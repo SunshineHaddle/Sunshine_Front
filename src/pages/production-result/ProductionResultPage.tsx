@@ -12,8 +12,11 @@ type ProductionResultPageProps = {
   isLocked: boolean
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
-  /** 마감 후 App 이 회차 상태를 다시 읽게 한다 */
-  onPeriodChanged?: () => void
+  /**
+   * 마감 후 App 이 회차 상태를 다시 읽게 한다.
+   * 1단계로 넘어가기 전에 끝나야 하므로 Promise 를 돌려줄 수 있다.
+   */
+  onPeriodChanged?: () => void | Promise<void>
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
@@ -60,9 +63,11 @@ export function ProductionResultPage({
     setClosing(true)
     try {
       await confirmPeriod(periodId)
-      onPeriodChanged?.()
-      onAction(`${month.replace('-', '년 ')}월을 마감했습니다.`)
-      onNavigate('dashboard')
+      // 1단계가 '마감됨' 상태로 열려야 저장된 투입내역이 읽기전용으로 보인다.
+      // 회차 상태를 다 읽은 뒤에 넘어가야 draft 로 잠깐 깜빡이지 않는다.
+      await onPeriodChanged?.()
+      onAction(`${month.replace('-', '년 ')}월을 마감했습니다. 저장된 투입내역을 확인하세요.`)
+      onNavigate('data-entry-1')
     } catch (error) {
       onAction(`마감 실패: ${describeDbError(error)}`)
     } finally {

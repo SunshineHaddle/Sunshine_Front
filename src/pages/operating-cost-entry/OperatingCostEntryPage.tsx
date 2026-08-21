@@ -15,7 +15,8 @@ import { markEntrySaved } from '../../utils/entrySaved'
 import { describeDbError } from '../../lib/api/errors'
 import {
   calculateOperatingCosts,
-  distributeByProduction,
+  distributeByShares,
+  equalShares,
   initialOperatingCosts,
   sumProductFees,
   toWonNumber,
@@ -43,8 +44,14 @@ export function OperatingCostEntryPage({
   hideSidebar = false,
 }: OperatingCostEntryPageProps) {
   const [costs, setCosts] = useState(initialOperatingCosts)
-  /** 커스텀 항목 배분에 쓰는 제품별 생산량. 예전엔 localStorage 에서 읽었다 */
-  const [productions, setProductions] = useState<{ id: string; production: number }[]>([])
+  /**
+   * 커스텀 항목 배분에 쓰는 제품별 생산량. 예전엔 localStorage 에서 읽었다.
+   * 어느 회차 것인지 함께 담는다 — 저장된 운영비를 화면 모델로 바꿀 때 배분 대상
+   * 제품이 필요해서(비율이 없는 옛 항목은 균등 분배로 채운다), 이 값으로 순서를 맞춘다.
+   */
+  const [loadedProductions, setLoadedProductions] =
+    useState<{ periodId: string | null; rows: { id: string; production: number }[] } | null>(null)
+  const productions = loadedProductions?.rows ?? []
   /** DB 에 이미 있는 항목 id. 삭제 시 필요하다 */
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
@@ -53,15 +60,29 @@ export function OperatingCostEntryPage({
   const laborShareTotal = sumProductFees(costs.productFees)
   const isLaborShareValid = Math.round(laborShareTotal * 10) / 10 === 100
 
+  const productIds = productions.map((production) => production.id)
+  // 이름을 넣은 항목만 저장 대상이라, 비율 검사도 그 항목만 한다
+  const invalidCustomItem = productions.length === 0
+    ? undefined
+    : costs.customItems.find((item) => (
+        item.name.trim() !== '' && Math.round(sumProductFees(item.shares) * 10) / 10 !== 100
+      ))
+
   // §5-1 생산량 (배분 기준)
   useEffect(() => {
     let cancelled = false
     const load = async () => {
-      if (!periodId) { setProductions([]); return }
+      if (!periodId) {
+        setLoadedProductions({ periodId, rows: [] })
+        return
+      }
       const rows = await fetchProduction(periodId).catch(() => [])
       if (cancelled) return
       // 1단계 엑셀로 생산량이 등록된 제품만 분배 대상 (엑셀에 없는 제품은 제외)
-      setProductions(rows.map((row) => ({ id: row.productId, production: row.production })))
+      setLoadedProductions({
+        periodId,
+        rows: rows.map((row) => ({ id: row.productId, production: row.production })),
+      })
     }
     void load()
     return () => { cancelled = true }
@@ -77,13 +98,15 @@ export function OperatingCostEntryPage({
         setSavedIds(new Set())
         return
       }
-      if (!periodId) return
+      // 이 회차의 생산량을 다 읽은 뒤에 돈다 (배분 대상 제품이 필요하다)
+      if (!periodId || loadedProductions?.periodId !== periodId) return
       try {
         const rows = await fetchOperatingCosts(periodId)
         if (cancelled) return
 
         const labor = rows.find((row) => row.allocation === 'percent')
         const custom = rows.filter((row) => row.allocation === 'amount')
+        const targetIds = loadedProductions.rows.map((production) => production.id)
 
         setCosts({
           laborTotal: labor ? String(labor.totalAmount) : '0',
@@ -94,6 +117,14 @@ export function OperatingCostEntryPage({
             id: row.id,
             name: row.name,
             total: String(row.totalAmount),
+            // 추가 항목은 금액으로 저장된다. 화면은 비율로 다루므로 되돌려 계산한다.
+            // 비율을 쓰기 전에 저장된 항목은 배분 행이 없을 수 있어 균등 분배로 채운다.
+            shares: row.totalAmount > 0 && row.allocations.length > 0
+              ? Object.fromEntries(row.allocations.map((a) => [
+                  a.productId,
+                  String(Math.round((a.amount / row.totalAmount) * 1000) / 10),
+                ]))
+              : equalShares(targetIds),
           })),
         })
         setSavedIds(new Set(custom.map((row) => row.id)))
@@ -103,7 +134,7 @@ export function OperatingCostEntryPage({
     }
     void load()
     return () => { cancelled = true }
-  }, [periodId, onAction, freshEntry])
+  }, [periodId, onAction, freshEntry, loadedProductions])
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -116,26 +147,42 @@ export function OperatingCostEntryPage({
     }))
   }
 
+  /** 1단계 엑셀에 넣은 제품만 배분 대상 (인건비·추가 항목 공통) */
+  const targetProductIds = () =>
+    products.filter((p) => productions.some((pr) => pr.id === p.id)).map((p) => p.id)
+
   const equalizeProductFees = () => {
-    // 1단계 엑셀에 넣은 제품만 대상
-    const targets = products.filter((p) => productions.some((pr) => pr.id === p.id))
+    const targets = targetProductIds()
     if (targets.length === 0) return
-    const even = Math.floor((100 / targets.length) * 10) / 10
-    const shares: Record<string, string> = {}
-    let remaining = 100
-    targets.forEach((product, index) => {
-      const share = index === targets.length - 1 ? Math.round(remaining * 10) / 10 : even
-      remaining -= share
-      shares[product.id] = String(share)
-    })
-    setCosts((current) => ({ ...current, productFees: shares }))
+    setCosts((current) => ({ ...current, productFees: equalShares(targets) }))
+  }
+
+  const updateCustomItemShare = (id: string, productId: string, value: string) => {
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.map((item) => (
+        item.id === id ? { ...item, shares: { ...item.shares, [productId]: value } } : item
+      )),
+    }))
+  }
+
+  const equalizeCustomItemShares = (id: string) => {
+    const targets = targetProductIds()
+    if (targets.length === 0) return
+    setCosts((current) => ({
+      ...current,
+      customItems: current.customItems.map((item) => (
+        item.id === id ? { ...item, shares: equalShares(targets) } : item
+      )),
+    }))
   }
 
   const addCustomItem = () => {
     const id = `custom-${Date.now()}`
     setCosts((current) => ({
       ...current,
-      customItems: [...current.customItems, { id, name: '', total: '0' }],
+      // 새 항목은 균등 분배로 시작한다 — 예전 동작(무조건 균등)과 같은 출발점
+      customItems: [...current.customItems, { id, name: '', total: '0', shares: equalShares(targetProductIds()) }],
     }))
   }
 
@@ -176,7 +223,7 @@ export function OperatingCostEntryPage({
 
   /**
    * §7-2 인건비(%) + 커스텀 항목(총액)을 저장한다.
-   * 커스텀 항목은 화면에서 총액만 받고, 제품별 금액은 생산량 비례로 배분해 넣는다.
+   * 커스텀 항목은 화면에서 총액과 제품별 비율(%)을 받고, DB 에는 금액으로 환산해 넣는다.
    */
   const persist = async () => {
     if (!periodId) return false
@@ -186,7 +233,7 @@ export function OperatingCostEntryPage({
 
       for (const [index, item] of costs.customItems.entries()) {
         if (!item.name.trim()) continue
-        const allocation = distributeByProduction(toWonNumber(item.total), productions)
+        const allocation = distributeByShares(toWonNumber(item.total), item.shares, productIds)
         await saveCustomCost(periodId, item.name.trim(), allocation, { sortOrder: index + 1 })
       }
       markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
@@ -202,6 +249,14 @@ export function OperatingCostEntryPage({
   const goToNextStep = async () => {
     if (!isLaborShareValid) {
       onAction(`제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`)
+      return
+    }
+    if (invalidCustomItem) {
+      const share = sumProductFees(invalidCustomItem.shares)
+      onAction(
+        `${invalidCustomItem.name.trim()} 항목의 제품별 비율 합이 100%가 되어야 합니다. `
+        + `(현재 ${share.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`,
+      )
       return
     }
     if (!(await persist())) return
@@ -239,6 +294,8 @@ export function OperatingCostEntryPage({
           onAddCustomItem={addCustomItem}
           onUpdateCustomItemName={updateCustomItemName}
           onUpdateCustomItemTotal={updateCustomItemTotal}
+          onUpdateCustomItemShare={updateCustomItemShare}
+          onEqualizeCustomItemShares={equalizeCustomItemShares}
           onRemoveCustomItem={removeCustomItem}
         />
 
@@ -254,7 +311,7 @@ export function OperatingCostEntryPage({
             className="workflow-coral-button"
             type="button"
             onClick={() => void goToNextStep()}
-            disabled={!isLaborShareValid || busy || !periodId}
+            disabled={!isLaborShareValid || Boolean(invalidCustomItem) || busy || !periodId}
           >
             {hideSidebar ? '저장' : '다음 단계'} <Icon name="chevron-right" size={16} />
           </button>

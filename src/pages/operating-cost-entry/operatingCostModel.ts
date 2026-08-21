@@ -4,25 +4,49 @@ export type CustomCostItem = {
   id: string
   name: string
   total: string
-  allocation?: Record<string, number>
+  /** productId → 배분 비율(%). 인건비의 productFees 와 같은 형식 */
+  shares: Record<string, string>
 }
 
-export function distributeByProduction(
+/**
+ * 대상 제품에 100% 를 고르게 나눈다 (인건비·추가 항목 공용).
+ * 소수점 첫째 자리까지만 쓰고, 남는 끝수는 마지막 제품이 흡수해 합이 정확히 100% 가 된다.
+ */
+export function equalShares(productIds: string[]): Record<string, string> {
+  const shares: Record<string, string> = {}
+  if (productIds.length === 0) return shares
+
+  const even = Math.floor((100 / productIds.length) * 10) / 10
+  let remaining = 100
+  productIds.forEach((productId, index) => {
+    const share = index === productIds.length - 1 ? Math.round(remaining * 10) / 10 : even
+    remaining -= share
+    shares[productId] = String(share)
+  })
+
+  return shares
+}
+
+/**
+ * 비율(%) 대로 총액을 나눈다. 반올림 끝수는 마지막 제품에 몰아 총액을 보존한다.
+ * (예전 distributeByProduction 이 하던 균등 분배는 equalShares 로 만든 비율이 대신한다)
+ */
+export function distributeByShares(
   total: number,
-  productions: Array<{ id: string; production: number }>,
+  shares: Record<string, string>,
+  productIds: string[],
 ): Record<string, number> {
   const result: Record<string, number> = {}
-  if (productions.length === 0) return result
+  if (productIds.length === 0) return result
 
-  // 1단계 엑셀에 있는 제품끼리 균등 분배 (생산량 무관). 나머지는 마지막 제품에 몰아 총액 보존
   let allocated = 0
-  productions.forEach((item, index) => {
-    const isLast = index === productions.length - 1
-    const share = isLast
+  productIds.forEach((productId, index) => {
+    const isLast = index === productIds.length - 1
+    const amount = isLast
       ? Math.round(total - allocated)
-      : Math.round(total / productions.length)
-    result[item.id] = share
-    allocated += share
+      : Math.round((total * toWonNumber(shares[productId] ?? '0')) / 100)
+    result[productId] = amount
+    allocated += amount
   })
 
   return result
