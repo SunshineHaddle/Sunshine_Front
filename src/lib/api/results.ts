@@ -66,7 +66,7 @@ const SUMMARY_SELECT = `
   product_id, production_qty, material_cost, labor_cost, utility_cost,
   manufacturing_cost, total_cost, unit_cost, cost_source,
   sale_price, margin_rate, cost_rate, status,
-  products ( sku, name, variant, specification, package_unit, sale_price )
+  products!inner ( sku, name, variant, specification, package_unit, sale_price )
 `
 
 /**
@@ -105,6 +105,11 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       // 생산량을 입력한 제품만 보여준다. 0(미입력)인 제품은 이 달에 만들지 않은
       // 것이므로 표에 나오면 안 된다.
       .gt('production_qty', 0)
+      // 숨긴 제품은 뺀다. 오타로 만들어진 제품을 숨겨도 이 표에는 계속 떴다.
+      // 원가 추이 차트(v_cost_trend_monthly)의 합계는 건드리지 않는다 —
+      // 그건 그 달에 실제로 쓴 돈이고, 지금 숨겼다고 과거가 줄면 안 된다(②).
+      // 임베드에 필터를 걸려면 products!inner 여야 한다.
+      .eq('products.is_active', true)
       .order('total_cost', { ascending: false }),
   ) as unknown as Record<string, unknown>[]
 
