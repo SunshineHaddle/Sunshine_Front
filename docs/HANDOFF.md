@@ -197,10 +197,20 @@ RLS는 컬럼 단위 제한이 안 돼서, 사용자가 자기 `role` 을 `admin
 | `cost_periods` 생성 | ❌ | ✅ | ✅ |
 | 월별 입력 4종 | ❌ | ✅ draft만 | ✅ draft만 |
 | 마감된 달 수정 | ❌ | ❌ | ❌ |
-| `confirm_period` | ❌ | ❌ | ✅ |
+| `confirm_period` | ❌ | ✅ | ✅ |
 | Storage 업로드 | ❌ | ✅ | ✅ |
 
 헬퍼: `my_role()` `is_admin()` `is_editor()` `is_draft(uuid)` — 전부 `security definer`.
+
+> ⚠️ **헬퍼는 false 가 아니라 NULL 을 돌려줄 수 있다.** `profiles` 행이 없거나
+> `is_active = false` 면 `my_role()` 이 NULL 이고, `is_admin()`·`is_editor()` 도 NULL 이 된다.
+> RLS 정책에서는 NULL 이 '거부'라 안전하지만, **plpgsql 의 `IF` 는 NULL 을 false 로 취급**해
+> `if not is_editor()` 같은 가드가 오히려 통과시킨다.
+> 함수 안에서 쓸 때는 `coalesce(is_editor(), false)` 로 감쌀 것.
+
+`confirm_period` 는 `security definer` 다 — 실무자도 마감해야 하는데
+`product_cost_summaries` 가 관리자 전용 쓰기라 invoker 로는 막힌다.
+대신 RLS 를 지나치므로 **권한(`is_editor`)과 회차 상태(`draft`)를 함수가 직접 검사**한다.
 `dev anon all` 정책은 제거됨. **로그인해야만 데이터가 보인다.**
 
 `read` 정책은 나머지 10개 테이블에만 `using (true)` 로 걸려 있다.

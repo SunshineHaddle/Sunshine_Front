@@ -380,9 +380,23 @@ create or replace function confirm_period(p_period_id uuid)
 returns int language plpgsql security definer set search_path = public as $$
 declare affected int;
 begin
-  -- definer 는 RLS 를 지나치므로 호출 권한을 여기서 직접 막는다
-  if not is_editor() then
+  -- definer 는 RLS 를 지나치므로 호출 권한을 여기서 직접 막는다.
+  --
+  -- coalesce 가 꼭 필요하다. my_role() 은 profiles 행이 없거나 is_active=false 면
+  -- NULL 을 돌려주고, 그러면 is_editor() 도 false 가 아니라 NULL 이 된다.
+  -- plpgsql 의 IF 는 NULL 을 false 로 취급하므로 `if not is_editor()` 는
+  -- 비활성 계정을 **막지 못하고 통과시킨다** (RLS 에서는 NULL 이 거부인데 반대다).
+  if coalesce(is_editor(), false) is not true then
     raise exception '마감 권한이 없습니다.' using errcode = '42501';
+  end if;
+
+  -- 이미 마감된 달을 다시 계산하지 못하게 막는다.
+  -- 예전에는 invoker 라 product_cost_summaries 의 RLS 가 막아줬는데,
+  -- definer 가 되면서 그 방어가 사라졌다. 이게 없으면 굳혀둔 스냅샷이
+  -- 조용히 덮어써진다(②). 화면은 셋 다 draft 일 때만 부르므로 영향이 없다.
+  if not exists (select 1 from cost_periods where id = p_period_id and status = 'draft') then
+    raise exception '이미 마감된 달입니다. 1단계에서 마감을 먼저 취소해주세요.'
+      using errcode = '42501';
   end if;
 
   -- 예전 계산 결과를 먼저 비운다. 아래는 upsert 라, 이번 회차 생산량에서 빠진

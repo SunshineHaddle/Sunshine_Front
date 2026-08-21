@@ -40,7 +40,7 @@ export function describeDbError(error: unknown): string {
 
   if (PERIOD_LOCKED_TABLES.includes(table)) {
     return `이 달은 이미 마감되어 ${label}을(를) 수정할 수 없습니다. `
-      + '데이터 입력 3단계에서 마감을 취소한 뒤 다시 시도해주세요.'
+      + '데이터 입력 1단계에서 마감을 취소한 뒤 다시 시도해주세요.'
   }
 
   if (ADMIN_ONLY_TABLES.includes(table)) {
