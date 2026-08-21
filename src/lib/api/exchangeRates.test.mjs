@@ -1,8 +1,6 @@
-// node src/lib/api/exchangeRates.test.mjs — 환율 변환·변동률 self-check
+// node src/lib/api/exchangeRates.test.mjs — 환율 변환 검증
 import assert from 'node:assert/strict'
-
-// 변환 규칙: API 는 "1 KRW = perKrw 외화" → 앱은 "1 외화 = 1/perKrw 원"
-const invert = (perKrw) => 1 / perKrw
+import { krwPerUnit as invert } from './exchangeRates.ts'
 
 // USD: 1 KRW = 0.00071 USD → 1 USD ≈ 1408.45 원
 assert.ok(Math.abs(invert(0.00071) - 1408.45) < 1, `USD 변환: ${invert(0.00071)}`)

@@ -1,30 +1,6 @@
 // node src/components/dashboard/niceTicks.test.mjs
 import assert from 'node:assert/strict'
-
-// DashboardSummaryCharts.tsx 의 구현을 그대로 옮겨 둔다 (이 저장소의 기존 방식)
-const TICK_COUNT = 4
-
-function niceTicks(min, max, count = TICK_COUNT) {
-  const lo = Math.min(min, max)
-  const hi = Math.max(min, max)
-  if (hi === lo) return niceTicks(0, hi === 0 ? 1 : hi, count)
-
-  const span = count - 1
-  const step = (() => {
-    const raw = (hi - lo) / span
-    let magnitude = 10 ** Math.floor(Math.log10(raw))
-    for (;;) {
-      for (const nice of [1, 1.5, 2, 2.5, 3, 4, 5]) {
-        const candidate = nice * magnitude
-        if (Math.floor(lo / candidate) * candidate + span * candidate >= hi) return candidate
-      }
-      magnitude *= 10
-    }
-  })()
-
-  const first = Math.floor(lo / step) * step
-  return Array.from({ length: count }, (_, i) => Math.round((first + i * step) * 100) / 100)
-}
+import { niceTicks } from './chartAxis.ts'
 
 const gap = (t) => t[1] - t[0]
 const evenly = (t) => t.every((v, i) => i === 0 || Math.abs((v - t[i - 1]) - gap(t)) < 1e-6)

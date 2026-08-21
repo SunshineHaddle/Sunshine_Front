@@ -1,14 +1,6 @@
 // node src/pages/raw-material-entry/monthFromFileName.test.mjs
-// RawMaterialEntryPage 의 monthFromFileName 정규식 self-check
 import assert from 'node:assert/strict'
-
-function monthFromFileName(fileName) {
-  const full = fileName.match(/(20\d{2})[._-](0[1-9]|1[0-2])(?!\d)/)
-  if (full) return `${full[1]}-${full[2]}`
-  const short = fileName.match(/(?<!\d)(\d{2})[._-](0[1-9]|1[0-2])(?!\d)/)
-  if (short) return `20${short[1]}-${short[2]}`
-  return null
-}
+import { monthFromFileName } from './monthFromFileName.ts'
 
 // 실제 파일명 (두 자리 연도)
 assert.equal(monthFromFileName('수불자료_테스트_26.09.xlsx'), '2026-09')

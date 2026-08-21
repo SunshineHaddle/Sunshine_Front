@@ -10,6 +10,12 @@ const CACHE_KEY = 'sunshine.exchange-rates.v1'
 const TTL_MS = 6 * 60 * 60 * 1000 // 6시간
 
 /** code → 1 외화 단위당 원화 (예: USD → 1342.5) */
+/**
+ * API 는 "1 KRW = perKrw 외화" 로 준다. 앱은 "1 외화 = 몇 원" 이 필요하다.
+ * 뒤집는 이 한 줄이 환율 화면 전체의 기준이라 따로 빼서 테스트한다.
+ */
+export const krwPerUnit = (perKrw: number) => (perKrw > 0 ? 1 / perKrw : 0)
+
 export type RateMap = Record<string, number>
 
 export type ExchangeRatesResult = {
@@ -66,8 +72,7 @@ export async function fetchExchangeRates(force = false): Promise<ExchangeRatesRe
 
     const rates: RateMap = {}
     for (const [code, perKrw] of Object.entries(data.rates)) {
-      // "1 KRW = perKrw 외화" → "1 외화 = 1/perKrw 원"
-      if (perKrw > 0) rates[code] = 1 / perKrw
+      if (perKrw > 0) rates[code] = krwPerUnit(perKrw)
     }
 
     const result: ExchangeRatesResult = {

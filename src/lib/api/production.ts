@@ -1,6 +1,13 @@
 /** §5·§6 — 생산량 / 원재료 투입 실적 */
 import { supabase } from '../supabase'
 import { num, type MaterialUnit } from '../types'
+import {
+  groupLatestUsageMaterials,
+  type ProductMaterialNames,
+  type UsageMaterialRow,
+} from './usageMaterials'
+
+export type { ProductMaterialNames }
 
 function unwrap<T>(res: { data: T | null; error: { message: string } | null }): T {
   if (res.error) throw new Error(res.error.message)
@@ -197,8 +204,6 @@ export async function fetchProductUsagesByMonth(
     .sort((a, b) => b.amount - a.amount)
 }
 
-/** 제품별 최근 투입 재료. 제품 관리 카드가 쓴다 */
-export type ProductMaterialNames = Record<string, { month: string; names: string[] }>
 
 /**
  * 제품마다 "가장 최근 수불자료가 들어온 달"의 투입 재료 이름을 모은다.
@@ -230,12 +235,7 @@ export async function fetchLatestUsageMaterials(
     .select('product_id, amount, materials(name), cost_periods!inner(period)')
     .gte('cost_periods.period', fromPeriod)
 
-  const rows = unwrap(res) as unknown as {
-    product_id: string
-    amount: number
-    materials: { name: string } | null
-    cost_periods: { period: string } | null
-  }[]
+  const rows = unwrap(res) as unknown as UsageMaterialRow[]
 
   // 범위를 좁혔는데도 상한에 닿았다면 잘렸을 수 있다. 조용히 틀린 값을 보여주는
   // 대신 콘솔에 남긴다 — 제품·재료가 늘면 fromPeriod 를 더 좁혀야 한다는 신호다.
@@ -246,32 +246,9 @@ export async function fetchLatestUsageMaterials(
     )
   }
 
-  /** 제품별 최근 달 */
-  const latest = new Map<string, string>()
-  for (const row of rows) {
-    const period = row.cost_periods?.period
-    if (!period) continue
-    const seen = latest.get(row.product_id)
-    if (!seen || period > seen) latest.set(row.product_id, period)
-  }
-
-  const grouped: ProductMaterialNames = {}
-  for (const [productId, period] of latest) {
-    const lines = rows.filter(
-      (row) => row.product_id === productId && row.cost_periods?.period === period,
-    )
-    // 금액이 큰 재료가 앞에 온다. 제품 상세의 원재료비 상세와 같은 순서
-    const names = [...new Set(
-      lines
-        .sort((a, b) => num(b.amount) - num(a.amount))
-        .map((row) => row.materials?.name)
-        .filter((name): name is string => Boolean(name)),
-    )]
-    if (names.length > 0) grouped[productId] = { month: period.slice(0, 7), names }
-  }
-
-  return grouped
+  return groupLatestUsageMaterials(rows)
 }
+
 
 // ── §6-2. 투입 실적 저장 ────────────────────────────────────
 export async function saveMaterialUsages(

@@ -63,7 +63,7 @@ create table materials (
   code       text unique not null,
   name       text not null,
   unit       material_unit not null default 'kg',
-  unit_price numeric(14,2) not null default 0,
+  unit_price numeric(14,2) not null default 0 check (unit_price >= 0),
   is_active  boolean not null default true,
   created_at timestamptz not null default now()
 );
@@ -79,8 +79,8 @@ create table products (
   package_unit   text not null default 'PCK',
   -- 포장 1개의 무게(kg). 원가는 kg 단위, 판매가는 포장 단위라 환산이 필요하다.
   -- 비워두면 1 로 간주하며, 그러면 마진율이 실제보다 크게 나온다.
-  unit_weight_kg numeric(10,3),
-  sale_price     numeric(14,2) not null default 0,
+  unit_weight_kg numeric(10,3) check (unit_weight_kg is null or unit_weight_kg > 0),
+  sale_price     numeric(14,2) not null default 0 check (sale_price >= 0),
   margin_rate    numeric(6,2)  not null default 20,
   status         product_status not null default 'review',
   is_active      boolean not null default true,
@@ -95,9 +95,9 @@ create table recipe_items (
   id          uuid primary key default gen_random_uuid(),
   product_id  uuid not null references products(id) on delete cascade,
   material_id uuid not null references materials(id),
-  usage_qty   numeric(14,3) not null default 0,
+  usage_qty   numeric(14,3) not null default 0 check (usage_qty >= 0),
   unit        material_unit not null default 'kg',
-  unit_price  numeric(14,2) not null default 0,   -- 시세 변동에 소급되지 않도록 복사해 둔다
+  unit_price  numeric(14,2) not null default 0 check (unit_price >= 0),  -- 시세 변동에 소급되지 않도록 복사해 둔다
   amount      numeric(16,2) generated always as (usage_qty * unit_price) stored,
   sort_order  int not null default 0,
   unique (product_id, material_id)
@@ -121,7 +121,7 @@ create table production_records (
   id             uuid primary key default gen_random_uuid(),
   period_id      uuid not null references cost_periods(id) on delete cascade,
   product_id     uuid not null references products(id),
-  production_qty numeric(14,3) not null default 0,
+  production_qty numeric(14,3) not null default 0 check (production_qty >= 0),
   note           text,
   unique (period_id, product_id)
 );
@@ -132,9 +132,9 @@ create table material_usages (
   period_id   uuid not null references cost_periods(id) on delete cascade,
   product_id  uuid not null references products(id),
   material_id uuid not null references materials(id),
-  usage_qty   numeric(14,3) not null default 0,
+  usage_qty   numeric(14,3) not null default 0 check (usage_qty >= 0),
   unit        material_unit not null default 'kg',
-  unit_price  numeric(14,2) not null default 0,
+  unit_price  numeric(14,2) not null default 0 check (unit_price >= 0),
   -- 장부 금액을 쓰지 않고 다시 계산한다. 손글씨 전사본은 금액이 틀린 경우가 있다
   amount      numeric(16,2) generated always as (usage_qty * unit_price) stored,
   source      text not null default 'manual',    -- 'manual' | 'excel'
@@ -150,7 +150,7 @@ create table operating_costs (
   category         cost_category not null default 'other',
   allocation       allocation_type not null default 'amount',
   allocation_basis text not null default 'manual',
-  total_amount     numeric(16,2) not null default 0,
+  total_amount     numeric(16,2) not null default 0 check (total_amount >= 0),
   sort_order       int not null default 0,
   unique (period_id, name)
 );
@@ -159,8 +159,8 @@ create table operating_cost_allocations (
   id                uuid primary key default gen_random_uuid(),
   operating_cost_id uuid not null references operating_costs(id) on delete cascade,
   product_id        uuid not null references products(id),
-  share_percent     numeric(6,3),          -- 인건비 % 입력용. 계산은 amount 만 참조
-  amount            numeric(16,2) not null default 0,
+  share_percent     numeric(6,3) check (share_percent is null or share_percent >= 0),
+  amount            numeric(16,2) not null default 0 check (amount >= 0),
   unique (operating_cost_id, product_id)
 );
 

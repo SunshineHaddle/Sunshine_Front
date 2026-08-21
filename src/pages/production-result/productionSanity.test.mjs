@@ -1,27 +1,6 @@
 // node src/pages/production-result/productionSanity.test.mjs
 import assert from 'node:assert/strict'
-
-const MIN_RATIO = 0.5
-const MAX_RATIO = 1.5
-
-function findProductionIssues(usageTotals, productions) {
-  const productionById = new Map(productions.map((p) => [p.productId, p]))
-  const issues = []
-  for (const { productId, totalUsage } of usageTotals) {
-    if (totalUsage <= 0) continue
-    const record = productionById.get(productId)
-    const name = record?.name ?? '(이름 없는 제품)'
-    const outputKg = record?.production ?? 0
-    if (outputKg <= 0) {
-      issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio: null, reason: 'missing' })
-      continue
-    }
-    const ratio = outputKg / totalUsage
-    if (ratio < MIN_RATIO) issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio, reason: 'too-low' })
-    else if (ratio > MAX_RATIO) issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio, reason: 'too-high' })
-  }
-  return issues
-}
+import { findConfirmBlockers, findProductionIssues } from './productionSanity.ts'
 
 // 실제로 있었던 사고: 포기김치 847톤 투입에 생산량 24kg
 {
@@ -87,32 +66,6 @@ assert.deepEqual(findProductionIssues([{ productId: 'p1', totalUsage: 0 }], [{ p
 }
 
 // ── findConfirmBlockers ─────────────────────────────────────
-// productionSanity.ts 의 구현을 그대로 옮겨 둔다 (이 파일의 기존 방식)
-function findConfirmBlockers(productions, usageTotals, standardCosts, allocations, hasAutoBasis) {
-  const usageById = new Map(usageTotals.map((row) => [row.productId, row]))
-  const standardById = new Map(standardCosts.map((row) => [row.productId, row.unitMaterialCost]))
-  const allocById = new Map()
-  for (const row of allocations) {
-    allocById.set(row.productId, (allocById.get(row.productId) ?? 0) + row.amount)
-  }
-  const blockers = []
-  for (const record of productions) {
-    if (record.production <= 0) continue
-    const usage = usageById.get(record.productId)
-    const missing = []
-    if (!usage || usage.rowCount === 0) missing.push('원재료비 상세')
-    const materialCost = usage && usage.totalAmount > 0
-      ? usage.totalAmount
-      : record.production * (standardById.get(record.productId) ?? 0)
-    if (materialCost <= 0) missing.push('재료비')
-    const allocated = allocById.get(record.productId) ?? 0
-    if (allocated <= 0 && !(hasAutoBasis && materialCost > 0)) missing.push('부자재비')
-    if (missing.length > 0) {
-      blockers.push({ productId: record.productId, name: record.name, missing })
-    }
-  }
-  return blockers
-}
 
 const OK_USAGE = [{ productId: 'p1', totalAmount: 249_000_000, rowCount: 17 }]
 const OK_ALLOC = [{ productId: 'p1', amount: 53_000_000 }]

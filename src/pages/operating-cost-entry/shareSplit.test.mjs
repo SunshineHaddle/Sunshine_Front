@@ -2,40 +2,7 @@
 // operatingCostModel.ts 의 equalShares / distributeByShares 와 같은 계산.
 // 끝수 처리가 틀리면 배분 합계가 총액과 어긋나므로 여기서 지킨다.
 import assert from 'node:assert/strict'
-
-const toWonNumber = (value) => Math.max(0, Number(value) || 0)
-
-function equalShares(productIds) {
-  const shares = {}
-  if (productIds.length === 0) return shares
-
-  const even = Math.floor((100 / productIds.length) * 10) / 10
-  let remaining = 100
-  productIds.forEach((productId, index) => {
-    const share = index === productIds.length - 1 ? Math.round(remaining * 10) / 10 : even
-    remaining -= share
-    shares[productId] = String(share)
-  })
-
-  return shares
-}
-
-function distributeByShares(total, shares, productIds) {
-  const result = {}
-  if (productIds.length === 0) return result
-
-  let allocated = 0
-  productIds.forEach((productId, index) => {
-    const isLast = index === productIds.length - 1
-    const amount = isLast
-      ? Math.round(total - allocated)
-      : Math.round((total * toWonNumber(shares[productId] ?? '0')) / 100)
-    result[productId] = amount
-    allocated += amount
-  })
-
-  return result
-}
+import { distributeByShares, equalShares, toWonNumber } from './operatingCostModel.ts'
 
 const sumShares = (shares) => Object.values(shares).reduce((sum, v) => sum + toWonNumber(v), 0)
 const sumAmounts = (amounts) => Object.values(amounts).reduce((sum, v) => sum + v, 0)

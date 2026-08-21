@@ -16,7 +16,6 @@ import {
   type UnitCostPoint,
 } from '../../lib/api/results'
 import { CostTrendChart } from '../../components/dashboard/CostTrendChart'
-import { exportElementToPdf } from '../../lib/pdf/exportElementToPdf'
 
 type DashboardPageProps = {
   isWorker?: boolean
@@ -131,6 +130,9 @@ export function DashboardPage({
 
       const today = new Date()
       const stamp = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`
+      // jspdf + html2canvas 는 합쳐 360kB 다. PDF 를 누를 때만 받아 온다 —
+      // 로그인 화면을 여는 데는 필요 없는 무게다.
+      const { exportElementToPdf } = await import('../../lib/pdf/exportElementToPdf')
       await exportElementToPdf(contentRef.current, {
         fileName: `경영진_대시보드_${stamp}.pdf`,
       })

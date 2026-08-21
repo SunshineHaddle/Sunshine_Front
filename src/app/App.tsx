@@ -5,6 +5,7 @@ import '../styles/product-management.css'
 import { DashboardPage } from '../pages/dashboard/DashboardPage'
 import {
   hashForRoute,
+  resolveRoute,
   routeFromHash,
   type AppRoute,
 } from '../data/navigation'
@@ -192,14 +193,27 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const handleHashChange = () => setRoute(routeFromHash(window.location.hash))
+    // 주소창에 직접 치거나 뒤로가기로 들어와도 같은 판정을 거친다.
+    // 예전에는 여기서 routeFromHash 결과를 그대로 써서, 실무자가 #dashboard 를
+    // 입력하면 route 상태가 dashboard 가 됐다 (화면 분기가 가려줬을 뿐이다).
+    const handleHashChange = () => {
+      if (!loginRole) return
+      const requested = routeFromHash(window.location.hash)
+      const allowed = resolveRoute(requested, loginRole)
+      setRoute(allowed)
+      // 막힌 화면이면 주소창도 되돌린다. 안 그러면 URL 과 화면이 어긋난 채 남는다
+      if (allowed !== requested) {
+        window.history.replaceState(null, '', hashForRoute(allowed))
+      }
+    }
+    handleHashChange()
     window.addEventListener('hashchange', handleHashChange)
     if (!window.location.hash) window.history.replaceState(null, '', '#dashboard')
     return () => {
       window.removeEventListener('hashchange', handleHashChange)
       window.clearTimeout(messageTimer.current)
     }
-  }, [])
+  }, [loginRole])
 
   // §3-1 제품 · §2-1 원재료를 Supabase 에서 불러온다.
   // RLS 때문에 로그인 전에 조회하면 조용히 0행이 온다. 반드시 세션이 선 뒤에 부른다.
@@ -293,16 +307,11 @@ function App() {
   }, [announce, resetToLogin])
 
 
-  const workerAllowedRoutes: AppRoute[] = ['data-entry-1', 'data-entry-2']
-
   const navigate = (requestedRoute: AppRoute) => {
     // worker 는 3단계로 못 간다. 예전엔 조용히 무시했는데, 2단계에서 저장하면
     // 그 이동이 3단계 시도라 화면이 멈춘 것처럼 보였다. 1단계로 돌려보낸다 —
     // 방금 저장한 값이 채워진 채로 열린다 (freshEntry 판정 참고).
-    const nextRoute: AppRoute =
-      loginRole === 'worker' && !workerAllowedRoutes.includes(requestedRoute)
-        ? 'data-entry-1'
-        : requestedRoute
+    const nextRoute = loginRole ? resolveRoute(requestedRoute, loginRole) : requestedRoute
     setRoute(nextRoute)
     const nextHash = hashForRoute(nextRoute)
     if (window.location.hash !== nextHash) window.location.hash = nextHash

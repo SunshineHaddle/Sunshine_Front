@@ -300,6 +300,7 @@ export function ProductDetailPage({
                   ref={fileInputRef}
                   type="file"
                   accept="image/*"
+                  aria-label="제품 사진 선택"
                   hidden
                   onChange={handleFileChange}
                 />

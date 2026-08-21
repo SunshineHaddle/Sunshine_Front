@@ -1,16 +1,5 @@
-// node src/utils/thumbnail.test.mjs — thumbnailUrl 정규식 self-check
 import assert from 'node:assert/strict'
-
-// thumbnail.ts 의 thumbnailUrl 만 복사 (ts 런타임 없이 검증)
-function thumbnailUrl(url, width = 320) {
-  if (!url) return url
-  const m = url.match(/^(https?:\/\/upload\.wikimedia\.org\/wikipedia\/commons)(\/thumb)?\/([0-9a-f])\/([0-9a-f]{2})\/([^/]+?)(?:\/\d+px-[^/]+)?$/i)
-  if (m) {
-    const [, base, , d1, d2, file] = m
-    return `${base}/thumb/${d1}/${d2}/${file}/${width}px-${file}`
-  }
-  return url
-}
+import { thumbnailUrl } from './thumbnail.ts'
 
 // 위키미디어 원본 → 320px 썸네일
 assert.equal(

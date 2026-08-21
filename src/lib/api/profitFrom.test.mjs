@@ -1,14 +1,6 @@
 // node src/lib/api/profitFrom.test.mjs
 import assert from 'node:assert/strict'
-
-// results.ts 의 구현을 그대로 옮겨 둔다 (이 저장소의 기존 방식)
-function profitFrom(unitCost, salePrice) {
-  if (salePrice <= 0) return { marginRate: 0, costRate: 0, status: 'normal' }
-  const marginRate = Math.round((1 - unitCost / salePrice) * 100 * 100) / 100
-  const costRate = Math.round((unitCost / salePrice) * 100 * 100) / 100
-  const status = marginRate < 0 ? 'risk' : marginRate < 20 ? 'watch' : 'normal'
-  return { marginRate, costRate, status }
-}
+import { profitFrom } from './profit.ts'
 
 // 포기김치 5월: 포장당 10,366원 · 판매가 17,200원
 assert.deepEqual(profitFrom(10366, 17200), { marginRate: 39.73, costRate: 60.27, status: 'normal' })

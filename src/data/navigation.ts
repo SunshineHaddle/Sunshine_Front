@@ -36,6 +36,28 @@ export const dataEntrySteps: DataEntryStep[] = [
   { label: '3단계: 결과 확인', route: 'data-entry-3' },
 ]
 
+/** 화면 라우팅용 역할. auth.ts 의 LoginRole 과 같은 값이다 */
+export type RouteRole = 'admin' | 'worker'
+
+/** 실무자가 열 수 있는 화면. 나머지는 전부 관리자 전용이다 */
+export const WORKER_ROUTES: AppRoute[] = ['data-entry-1', 'data-entry-2']
+
+/**
+ * 그 역할이 이 화면을 열 수 있나.
+ *
+ * 사이드바를 감추는 것만으로는 부족하다 — 주소창에 `#dashboard` 를 직접 치면
+ * 그대로 들어와졌다. 화면 렌더 분기가 막아주고 있었을 뿐이라, 분기가 한 번
+ * 어긋나면 새어 나간다. 판정을 여기 한 곳에 모아 두고 전부 이걸 거친다.
+ */
+export function canOpen(route: AppRoute, role: RouteRole): boolean {
+  return role === 'admin' || WORKER_ROUTES.includes(route)
+}
+
+/** 열 수 없는 화면이면 그 역할의 첫 화면으로 돌려보낸다 */
+export function resolveRoute(route: AppRoute, role: RouteRole): AppRoute {
+  return canOpen(route, role) ? route : 'data-entry-1'
+}
+
 export function routeFromHash(hash: string): AppRoute {
   switch (hash.replace(/^#/, '')) {
     case 'data-entry/1':

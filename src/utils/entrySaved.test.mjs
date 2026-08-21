@@ -1,15 +1,21 @@
-// node src/utils/entrySaved.test.mjs — 저장 완료/세션 스냅샷 로직 self-check
-// entrySaved.ts 의 로직을 그대로 복제해 검증한다 (node 는 .ts 직접 import 불가)
+// node src/utils/entrySaved.test.mjs
 import assert from 'node:assert/strict'
 
+// entrySaved.ts 는 window.localStorage 를 쓴다. import 전에 붙여 둬야
+// 모듈 로드 시점의 스냅샷이 이 저장소를 읽는다.
 const store = new Map()
-const KEY = 'sunshine.entry-saved-periods.v1'
-const read = () => { try { const r = store.get(KEY); return new Set(r ? JSON.parse(r) : []) } catch { return new Set() } }
+globalThis.window = {
+  localStorage: {
+    getItem: (k) => store.get(k) ?? null,
+    setItem: (k, v) => store.set(k, String(v)),
+  },
+}
 
-let sessionStartSnapshot = read()
-const isEntrySavedBeforeSession = (id) => (id ? sessionStartSnapshot.has(id) : false)
-const refreshEntrySavedSnapshot = () => { sessionStartSnapshot = read() }
-const markEntrySaved = (id) => { if (!id) return; const s = read(); s.add(id); store.set(KEY, JSON.stringify([...s])) }
+const {
+  isEntrySavedBeforeSession,
+  markEntrySaved,
+  refreshEntrySavedSnapshot,
+} = await import('./entrySaved.ts')
 
 // 세션 시작 시 아무것도 없음
 assert.equal(isEntrySavedBeforeSession('p1'), false)

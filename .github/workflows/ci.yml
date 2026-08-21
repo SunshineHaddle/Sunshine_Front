@@ -18,8 +18,9 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          # node --test 의 glob 패턴을 쓰므로 22 이상이 필요하다
-          node-version: '22'
+          # 테스트가 .ts 구현을 직접 import 한다. 타입 스트리핑이 기본으로 켜진
+          # 버전이 필요하다 (예전에는 테스트마다 구현을 베껴 두고 검증했다).
+          node-version: '24'
           cache: npm
 
       - name: 의존성 설치

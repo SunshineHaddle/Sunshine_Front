@@ -113,6 +113,7 @@ function ProductFeeList({
                   <input
                     min="0"
                     type="number"
+                    aria-label={`${product.name} ${title} (${unit})`}
                     value={values[product.id] ?? ''}
                     onChange={(event) => onChange(product.id, event.target.value)}
                   />
@@ -180,6 +181,7 @@ export function OperatingCostForm({
                 <input
                   className="operating-cost-group__name-input"
                   type="text"
+                  aria-label="추가 항목 이름"
                   value={item.name}
                   placeholder="항목 이름"
                   onChange={(event) => onUpdateCustomItemName(item.id, event.target.value)}

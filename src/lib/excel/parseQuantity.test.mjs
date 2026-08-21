@@ -1,54 +1,5 @@
-// node src/lib/excel/parseQuantity.test.mjs — 수량·단가 단위 해석 self-check
 import assert from 'node:assert/strict'
-
-// parseQuantity.ts 의 로직만 복사 (ts 런타임 없이 검증)
-const WEIGHT_FACTOR = { kg: 1, g: 0.001, t: 1000 }
-const WEIGHT_ALIASES = {
-  kg: 'kg', KG: 'kg', 킬로: 'kg', 킬로그램: 'kg', 키로: 'kg',
-  g: 'g', gram: 'g', grams: 'g', 그램: 'g',
-  t: 't', ton: 't', tons: 't', 톤: 't',
-}
-const COUNT_UNITS = new Set([
-  '개', '개수', 'ea', 'EA', 'pcs', 'pc',
-  '박스', 'box', 'BOX', '상자',
-  '팩', 'pack', 'PACK', '봉', '봉지', '포', '포대', '자루',
-  '병', '캔', '통', '말',
-])
-const VOLUME_UNITS = new Set(['l', 'L', 'ml', 'mL', '리터', '밀리리터', 'cc'])
-
-function parseQuantity(raw, headerUnit = 'kg') {
-  if (raw === null || raw === undefined || raw === '') return { ok: false, reason: '비어 있음' }
-  if (typeof raw === 'number') {
-    if (!Number.isFinite(raw)) return { ok: false, reason: '숫자가 아님' }
-    if (raw < 0) return { ok: false, reason: '음수' }
-    const qty = raw * WEIGHT_FACTOR[headerUnit]
-    return headerUnit === 'kg' ? { ok: true, qty } : { ok: true, qty, convertedFrom: headerUnit }
-  }
-  const text = String(raw).trim()
-  if (text === '') return { ok: false, reason: '비어 있음' }
-  const matched = text.match(/^([+-]?[\d,\s]*\.?\d+)\s*(.*)$/)
-  if (!matched) return { ok: false, reason: `숫자를 찾을 수 없음 ('${text}')` }
-  const number = Number(matched[1].replace(/[,\s]/g, ''))
-  if (!Number.isFinite(number)) return { ok: false, reason: `숫자가 아님 ('${text}')` }
-  if (number < 0) return { ok: false, reason: `음수 ('${text}')` }
-  const suffix = matched[2].replace(/[()[\]{}].*$/, '').split('/')[0].trim()
-  if (suffix === '') {
-    const qty = number * WEIGHT_FACTOR[headerUnit]
-    return headerUnit === 'kg' ? { ok: true, qty } : { ok: true, qty, convertedFrom: headerUnit }
-  }
-  if (COUNT_UNITS.has(suffix)) return { ok: false, reason: `'${suffix}' 는 개수 단위` }
-  if (VOLUME_UNITS.has(suffix)) return { ok: false, reason: `'${suffix}' 는 부피 단위` }
-  const unit = WEIGHT_ALIASES[suffix] ?? WEIGHT_ALIASES[suffix.toLowerCase()]
-  if (!unit) return { ok: false, reason: `알 수 없는 단위 '${suffix}'` }
-  const qty = number * WEIGHT_FACTOR[unit]
-  return unit === 'kg' ? { ok: true, qty } : { ok: true, qty, convertedFrom: unit }
-}
-
-function unitFromHeader(headerText) {
-  const inside = String(headerText ?? '').match(/[([]([^)\]]+)[)\]]/)?.[1]?.trim()
-  if (!inside) return 'kg'
-  return WEIGHT_ALIASES[inside] ?? WEIGHT_ALIASES[inside.toLowerCase()] ?? 'kg'
-}
+import { parseQuantity, unitFromHeader } from './parseQuantity.ts'
 
 // ── 숫자 그대로 (기존 양식) ───────────────────────────────
 assert.deepEqual(parseQuantity(606248), { ok: true, qty: 606248 })
