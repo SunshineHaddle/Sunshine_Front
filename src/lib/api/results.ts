@@ -218,7 +218,14 @@ export async function fetchUnitCostTrend(
  * 전 제품의 단가 추이를 한 번에. 대시보드 캐러셀이 쓴다.
  * 제품마다 fetchUnitCostTrend 를 부르면 요청이 제품 수만큼 늘어난다.
  */
-export type UnitCostPoint = { period: string; unitCost: number }
+/**
+ * 제품 단가 추이의 한 점.
+ *
+ * unitCost 는 포장 1개당, materialCost 는 그 달 재료비 **총액**이다.
+ * 대시보드 그래프는 총액을 그린다 — 제품 상세의 '재료비' 카드와 같은 값이라야
+ * 두 화면을 나란히 놓고 봤을 때 숫자가 맞는다.
+ */
+export type UnitCostPoint = { period: string; unitCost: number; materialCost: number }
 
 export async function fetchUnitCostTrendAll(
   fromPeriod: string,
@@ -229,11 +236,12 @@ export async function fetchUnitCostTrendAll(
     await supabase
       .from('product_cost_summaries')
       // !inner 가 없으면 기간 필터가 적용되지 않는다
-      .select('product_id, unit_cost, cost_periods!inner(period)')
+      .select('product_id, unit_cost, material_cost, cost_periods!inner(period)')
       .gte('cost_periods.period', fromPeriod),
   ) as unknown as {
     product_id: string
     unit_cost: number
+    material_cost: number
     // 다대일 임베드는 객체로 오지만, 배열로 오는 경우도 방어한다
     cost_periods: { period: string } | { period: string }[] | null
   }[]
@@ -243,7 +251,11 @@ export async function fetchUnitCostTrendAll(
     const joined = Array.isArray(row.cost_periods) ? row.cost_periods[0] : row.cost_periods
     if (!joined) continue
     const list = byProduct[row.product_id] ?? (byProduct[row.product_id] = [])
-    list.push({ period: joined.period, unitCost: num(row.unit_cost) })
+    list.push({
+      period: joined.period,
+      unitCost: num(row.unit_cost),
+      materialCost: num(row.material_cost),
+    })
   }
   for (const list of Object.values(byProduct)) {
     list.sort((a, b) => a.period.localeCompare(b.period))

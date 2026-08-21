@@ -35,7 +35,7 @@ type ProductCostTrendCarouselProps = {
    * 제품별 확정 단가 추이(§9-2). productId → 'YYYY-MM-01' 별 포장 단가.
    * 값이 없는 제품은 카드에 안내 문구가 대신 뜬다.
    */
-  costTrends?: Record<string, { period: string; unitCost: number }[]>
+  costTrends?: Record<string, { period: string; unitCost: number; materialCost: number }[]>
 }
 
 // 원 단위 금액이라 소수점을 쓰지 않는다. unit_cost 는 numeric(16,2) 라
@@ -60,7 +60,7 @@ const MAX_MONTHS = 12
  *
  * 어떤 제품에도 확정 데이터가 없으면 이번 달로 끝나는 12개월을 축으로 둔다.
  */
-function buildAxis(costTrends?: Record<string, { period: string; unitCost: number }[]>) {
+function buildAxis(costTrends?: Record<string, { period: string; unitCost: number; materialCost: number }[]>) {
   const months = new Set<string>()
   for (const series of Object.values(costTrends ?? {})) {
     for (const point of series) months.add(point.period.slice(0, 7))
@@ -105,8 +105,52 @@ type TrendPoint = { monthIndex: number; value: number; x: number; y: number }
  * 왼쪽을 58 에서 넓혔다 — y축 금액 라벨('1.2만원')이 그만큼 자리를 못 잡고
  * 그래프 안까지 밀고 들어왔다. 라벨은 PLOT_LEFT 왼쪽에 오른쪽 정렬로 붙는다.
  */
-const PLOT_LEFT = 80
+const PLOT_LEFT = 115
 const PLOT_RIGHT = 880
+
+/** 그래프 위·아래 끝 (viewBox 300 기준) */
+const PLOT_TOP = 60
+const PLOT_BOTTOM = 250
+
+/** y축 눈금 수. 제품마다 다르면 카드끼리 격자 높이가 안 맞는다 */
+const TICK_COUNT = 4
+
+/**
+ * y축 눈금을 '읽기 좋은 금액'으로 **정확히 TICK_COUNT 개** 끊는다.
+ *
+ * 예전에는 데이터의 최대·중간·최소를 그대로 찍어서 633,988,316 같은
+ * 어중간한 값이 축에 올라왔다. 간격도 제각각이라 눈금 사이 거리로
+ * 금액을 가늠할 수 없었다.
+ *
+ * 간격은 1 · 1.5 · 2 · 2.5 · 3 · 4 · 5 배수만 쓴다. 3 과 4 를 넣은 이유는
+ * 이것들이 없으면 간격이 2.5 에서 5 로 건너뛰면서 범위가 필요 이상으로
+ * 넓어지기 때문이다 (5.5억~6.3억 자료에 5.5억~7억 축이 잡혔다).
+ */
+function niceTicks(min: number, max: number, count = TICK_COUNT): number[] {
+  // 값이 하나뿐이거나 전부 같으면 0 부터 그 값까지를 범위로 잡는다
+  const lo = Math.min(min, max)
+  const hi = Math.max(min, max)
+  // 값이 하나뿐이거나 전부 같으면 0 부터 그 값까지를 범위로 잡는다
+  if (hi === lo) return niceTicks(0, hi === 0 ? 1 : hi, count)
+
+  const span = count - 1
+  const step = (() => {
+    const raw = (hi - lo) / span
+    let magnitude = 10 ** Math.floor(Math.log10(raw))
+    for (;;) {
+      for (const nice of [1, 1.5, 2, 2.5, 3, 4, 5]) {
+        const candidate = nice * magnitude
+        // 아래로 눈금에 맞춰 내린 뒤에도 마지막 눈금이 최대값을 덮어야 한다
+        if (Math.floor(lo / candidate) * candidate + span * candidate >= hi) return candidate
+      }
+      magnitude *= 10
+    }
+  })()
+
+  const first = Math.floor(lo / step) * step
+  // 부동소수 누적 오차를 피하려고 인덱스로 곱한다
+  return Array.from({ length: count }, (_, i) => Math.round((first + i * step) * 100) / 100)
+}
 
 /** 축 칸 수에 맞춘 x 좌표. 칸이 하나뿐이면 가운데 */
 const xForMonth = (monthIndex: number, count: number) =>
@@ -117,18 +161,19 @@ const xForMonth = (monthIndex: number, count: number) =>
 /**
  * 제품 원가 추이.
  *
- * 확정된 달의 실제 단가(product_cost_summaries.unit_cost)만 그린다.
+ * 확정된 달의 실제 재료비 총액(product_cost_summaries.material_cost)만 그린다.
+ * 포장 1개당 단가가 아니라 총액이다 — 제품 상세의 '재료비' 카드와 같은 값.
  * 값이 없으면 null 을 돌려주고, 호출부가 안내 문구로 대체한다.
  */
 function getProductCostTrend(
   monthKeys: string[],
-  realSeries?: { period: string; unitCost: number }[],
+  realSeries?: { period: string; unitCost: number; materialCost: number }[],
 ) {
   // 'YYYY-MM-01' → 가로축 자리
   const byMonth = new Map<number, number>()
   for (const point of realSeries ?? []) {
     const index = monthKeys.indexOf(point.period.slice(0, 7))
-    if (index >= 0) byMonth.set(index, point.unitCost)
+    if (index >= 0) byMonth.set(index, point.materialCost)
   }
 
   // 확정된 달이 없으면 아무것도 그리지 않는다.
@@ -141,16 +186,20 @@ function getProductCostTrend(
     .map(([monthIndex, value]) => ({ monthIndex, value }))
 
   const values = raw.map((point) => point.value)
-  const minimum = Math.min(...values)
-  const maximum = Math.max(...values)
-  const range = Math.max(maximum - minimum, 1)
+  const ticks = niceTicks(Math.min(...values), Math.max(...values))
+  const axisMin = ticks[0]
+  const axisMax = ticks[ticks.length - 1]
+  const axisRange = Math.max(axisMax - axisMin, 1)
 
-  // 점이 하나뿐이면 세로로 흔들릴 곳이 없다. 가운데 높이에 놓는다
+  // 눈금 범위에 맞춰 세로 자리를 잡는다. 점과 격자선이 같은 자를 쓴다
+  const yFor = (value: number) =>
+    PLOT_BOTTOM - ((value - axisMin) / axisRange) * (PLOT_BOTTOM - PLOT_TOP)
+
   const series: TrendPoint[] = raw.map(({ monthIndex, value }) => ({
     monthIndex,
     value,
     x: xForMonth(monthIndex, monthKeys.length),
-    y: raw.length === 1 ? 160 : 250 - ((value - minimum) / range) * 180,
+    y: yFor(value),
   }))
 
   const currentCost = values.at(-1) ?? 0
@@ -168,7 +217,8 @@ function getProductCostTrend(
     series,
     points: series.map(({ x, y }) => `${x},${y}`).join(' '),
     areaPath,
-    yTicks: [maximum, Math.round((maximum + minimum) / 2), minimum],
+    // 값과 그려질 자리를 함께 넘긴다. 격자선도 이 자리에 그어야 눈금과 맞는다
+    yTicks: ticks.map((value) => ({ value, y: yFor(value) })),
   }
 }
 
@@ -232,7 +282,7 @@ export function ProductCostTrendCarousel({
               {trend ? (
                 <>
                 <div className="product-cost-slide__metric">
-                  <span>현재 총원가</span>
+                  <span>이 달 재료비</span>
                   <strong>{numberFormatter.format(trend.currentCost)}<small>원</small></strong>
                   <em className={trend.changeRate >= 0 ? 'is-up' : 'is-down'}>
                     전월 대비 {Math.abs(trend.changeRate).toFixed(1)}% {changeDirection}
@@ -240,15 +290,13 @@ export function ProductCostTrendCarousel({
                 </div>
 
                 <div className="product-cost-slide__chart">
-                  <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 12개월 총원가 추이`}>
-                    {[70, 160, 250].map((y, tickIndex) => (
-                      <g aria-hidden="true" key={y}>
-                        <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={y} y2={y} />
-                        {trend.yTicks.lastIndexOf(trend.yTicks[tickIndex]) === tickIndex && (
-                          <text className="product-cost-slide__axis-label" x={PLOT_LEFT - 10} y={y + 6}>
-                            {numberFormatter.format(trend.yTicks[tickIndex])}
-                          </text>
-                        )}
+                  <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label={`${product.name} 최근 12개월 재료비 추이`}>
+                    {trend.yTicks.map((tick) => (
+                      <g aria-hidden="true" key={tick.value}>
+                        <line x1={PLOT_LEFT} x2={PLOT_RIGHT} y1={tick.y} y2={tick.y} />
+                        <text className="product-cost-slide__axis-label" x={PLOT_LEFT - 10} y={tick.y + 6}>
+                          {numberFormatter.format(tick.value)}
+                        </text>
                       </g>
                     ))}
                     <path className="product-cost-slide__area" d={trend.areaPath} />
