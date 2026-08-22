@@ -1013,7 +1013,12 @@
 .saved-usages li > b { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── §9-1 원가 추이 차트 ───────────────────────────────── */
-.cost-trend-card { padding: 20px; }
+/* 위의 '제품별 원가 변동 추이' 와 붙어 있었다. 아래 수익성 표(.profitability-card)
+   가 쓰는 35px 과 같은 간격으로 맞춘다 — 대시보드 섹션 사이 간격이 일정해진다 */
+.cost-trend-card {
+  margin-top: 35px;
+  padding: 20px;
+}
 .cost-trend-card h2 { margin: 0; font-size: 16px; }
 
 .cost-trend-card__head {
