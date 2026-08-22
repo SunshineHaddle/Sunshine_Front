@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { RecipeProduct } from '../../pages/product-management/productManagementData'
 import { Icon } from '../common/Icon'
 import {
@@ -36,8 +36,8 @@ type ProductCostTrendCarouselProps = {
   onOpen: (productId: string) => void
   compact?: boolean
   /**
-   * PDF 내보내기 모드. 격자를 2열로 고정하고 카드가 페이지 중간에서
-   * 잘리지 않게 한다. (제품 목록 자체는 평소에도 전부 보인다)
+   * PDF 내보내기 모드. 페이지네이션을 끄고 전 제품을 한 번에 펼친다.
+   * 격자는 2열로 고정해 카드가 페이지 중간에서 잘리지 않게 한다.
    */
   expandAll?: boolean
   /**
@@ -50,6 +50,12 @@ type ProductCostTrendCarouselProps = {
 // 원 단위 금액이라 소수점을 쓰지 않는다. unit_cost 는 numeric(16,2) 라
 // 그대로 두면 '6,761.71원' 처럼 나온다
 const numberFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
+
+/**
+ * 한 페이지에 깔 제품 카드 수. 2열 격자라 4개면 두 줄로 딱 떨어진다.
+ * PDF(expandAll)에서는 페이지네이션을 쓸 수 없어 이 값을 무시하고 전부 그린다.
+ */
+const PRODUCTS_PER_PAGE = 4
 
 
 
@@ -129,9 +135,24 @@ export function ProductCostTrendCarousel({
   costTrends,
 }: ProductCostTrendCarouselProps) {
   const [hoveredPoint, setHoveredPoint] = useState<{ productId: string; index: number } | null>(null)
+  const [page, setPage] = useState(0)
   const { keys: monthKeys, labels: monthLabels } = buildAxis(costTrends)
   const cardClassName = `card product-cost-carousel${compact ? ' product-cost-carousel--compact' : ''}`
     + (expandAll ? ' product-cost-carousel--expanded' : '')
+
+  const pageCount = Math.max(1, Math.ceil(products.length / PRODUCTS_PER_PAGE))
+  // 제품이 지워져 페이지 수가 줄면 지금 페이지가 범위를 벗어난다. 그릴 때 마지막
+  // 장으로 당겨 빈 칸이 뜨지 않게 한다 (effect 로 되돌리면 렌더가 한 번 더 돈다)
+  const currentPage = Math.min(page, pageCount - 1)
+
+  // PDF 는 넘길 수 없으니 페이지네이션을 끄고 전 제품을 그린다
+  const visibleProducts = useMemo(
+    () => (expandAll
+      ? products
+      : products.slice(currentPage * PRODUCTS_PER_PAGE, (currentPage + 1) * PRODUCTS_PER_PAGE)),
+    [products, currentPage, expandAll],
+  )
+  const showPagination = !expandAll && pageCount > 1
 
   if (products.length === 0) {
     return (
@@ -155,7 +176,7 @@ export function ProductCostTrendCarousel({
         계속 넘겨야 해서, 작은 카드를 격자로 깔아 모든 제품을 한 번에 보여준다.
       */}
       <div className="product-cost-grid">
-        {products.map((product) => {
+        {visibleProducts.map((product) => {
           const trend = getProductCostTrend(monthKeys, costTrends?.[product.id])
           const changeDirection = trend && trend.changeRate >= 0 ? '상승' : '하락'
           const activePointIndex = hoveredPoint?.productId === product.id ? hoveredPoint.index : null
@@ -266,6 +287,42 @@ export function ProductCostTrendCarousel({
           )
         })}
       </div>
+
+      {showPagination && (
+        <div className="product-cost-carousel__footer">
+          <span>총 {products.length}개 제품</span>
+          <nav className="table-pagination" aria-label="제품 원가 추이 페이지">
+            <button
+              type="button"
+              aria-label="이전 페이지"
+              disabled={currentPage === 0}
+              onClick={() => setPage((value) => Math.max(value - 1, 0))}
+            >
+              <Icon name="chevron-left" size={14} />
+            </button>
+            {Array.from({ length: pageCount }, (_, index) => (
+              <button
+                type="button"
+                key={index}
+                className={index === currentPage ? 'is-current' : undefined}
+                aria-current={index === currentPage ? 'page' : undefined}
+                aria-label={`${index + 1}페이지`}
+                onClick={() => setPage(index)}
+              >
+                {index + 1}
+              </button>
+            ))}
+            <button
+              type="button"
+              aria-label="다음 페이지"
+              disabled={currentPage === pageCount - 1}
+              onClick={() => setPage((value) => Math.min(value + 1, pageCount - 1))}
+            >
+              <Icon name="chevron-right" size={14} />
+            </button>
+          </nav>
+        </div>
+      )}
     </section>
   )
 }

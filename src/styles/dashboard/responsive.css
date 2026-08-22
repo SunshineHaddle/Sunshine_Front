@@ -161,6 +161,18 @@
     grid-template-columns: 1fr;
   }
 
+  /* 좁은 폭에서는 품목 수와 페이지 버튼을 한 줄에 나란히 두면 눌린다.
+     위아래로 쌓고 둘 다 가운데로 모은다 */
+  .product-cost-carousel__footer {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 8px;
+  }
+
+  .product-cost-carousel__footer .table-pagination {
+    grid-column: 1;
+  }
+
   .product-cost-carousel--compact {
     min-height: 240px;
   }

@@ -269,6 +269,32 @@
   grid-template-columns: repeat(2, 1fr);
 }
 
+/* ── 페이지네이션 ──────────────────────────────
+   한 장에 4개씩 깔고 나머지는 넘겨서 본다. 버튼 모양은 수익성 표와 같은
+   .table-pagination 을 그대로 쓴다 (profitability/metrics.css). */
+.product-cost-carousel__footer {
+  /* 가운데 칸을 auto 로 두고 양옆을 1fr 로 맞춰야 페이지 버튼이 품목 수
+     글자 길이와 상관없이 카드 정중앙에 온다 (flex 로는 한쪽으로 밀린다) */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  color: #9b9492;
+  font-size: 11px;
+}
+
+.product-cost-carousel__footer .table-pagination {
+  grid-column: 2;
+  justify-content: center;
+}
+
+.product-cost-carousel__footer .table-pagination button svg {
+  display: block;
+}
+
 .product-cost-slide__product {
   justify-content: space-between;
   gap: 12px;
