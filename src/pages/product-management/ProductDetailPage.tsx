@@ -9,7 +9,7 @@ import { NumberInput } from '../../components/common/NumberInput'
 import { saveRecipeItems, updateProduct, uploadProductImage } from '../../lib/api/products'
 import { fetchProductUsagesByMonth, type UsageLine } from '../../lib/api/production'
 import { describeDbError } from '../../lib/api/errors'
-import { thumbnailUrl } from '../../utils/thumbnail'
+import { MAX_IMAGE_BYTES, thumbnailUrl } from '../../utils/thumbnail'
 
 type ProductDetailPageProps = {
   product: RecipeProduct
@@ -34,7 +34,6 @@ type RecipeRow = {
   unitPrice: string
 }
 
-const MAX_IMAGE_BYTES = 3 * 1024 * 1024
 
 // 원 단위 금액에 전(錢)까지 보일 이유가 없다. 소수점이 붙으면 자릿수가 들쭉날쭉해
 // 오른쪽 정렬한 열이 어긋나 보인다
@@ -196,7 +195,7 @@ export function ProductDetailPage({
       return
     }
     if (file.size > MAX_IMAGE_BYTES) {
-      onAction('이미지 용량은 3MB 이하만 가능합니다.')
+      onAction('이미지 용량은 10MB 이하만 가능합니다.')
       return
     }
 

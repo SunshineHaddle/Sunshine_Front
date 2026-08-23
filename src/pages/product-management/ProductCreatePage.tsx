@@ -2,7 +2,11 @@ import { useRef } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { shrinkImage } from '../../utils/thumbnail'
+import {
+  MAX_IMAGE_BYTES,
+  MAX_STORED_IMAGE_BYTES,
+  shrinkImage,
+} from '../../utils/thumbnail'
 import type { IngredientCatalogItem, RecipeProduct } from './productManagementData'
 import { useProductRecipeForm } from './useProductRecipeForm'
 
@@ -42,12 +46,21 @@ export function ProductCreatePage({
       onAction('이미지 파일만 업로드할 수 있습니다.')
       return
     }
-    if (file.size > 3 * 1024 * 1024) {
-      onAction('이미지 용량은 3MB 이하만 가능합니다.')
+    if (file.size > MAX_IMAGE_BYTES) {
+      onAction('이미지 용량은 10MB 이하만 가능합니다.')
       return
     }
     // 썸네일로만 쓰이므로 최대 512px 로 줄여 data URL 을 작게 만든다
     const small = await shrinkImage(file, 512)
+
+    // shrinkImage 는 이미지를 못 읽으면 원본을 그대로 돌려준다. 이 경로는
+    // 결과가 data URL 로 products.image_url 에 바로 들어가므로, 그때는
+    // 10MB 짜리 문자열이 제품 목록을 읽을 때마다 따라온다. 여기서 끊는다.
+    if (small.size > MAX_STORED_IMAGE_BYTES) {
+      onAction('사진을 줄이지 못했습니다. 다른 이미지로 시도해주세요.')
+      return
+    }
+
     const reader = new FileReader()
     reader.onload = () => setImageUrl(String(reader.result))
     reader.onerror = () => onAction('사진을 읽는 중 문제가 발생했습니다.')
