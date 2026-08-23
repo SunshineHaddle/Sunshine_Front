@@ -339,7 +339,7 @@ RLS 가 에러 대신 빈 배열을 주므로 화면은 "데이터가 없다"처
 
 | 파일 | 내용 |
 |---|---|
-| `supabase/schema.sql` | **DB 전체 스키마 단일 파일** (가장 중요) |
+| `supabase/schema.sql` | **DB 전체 스키마 단일 파일** (가장 중요). 시드 없음 — 실행하면 빈 상태 |
 | [DATA-MODEL.md](DATA-MODEL.md) | 테이블·뷰·RPC·RLS 상세 |
 | [API.md](API.md) | `src/lib/api/` 함수별 명세 |
 | [EXCEL.md](EXCEL.md) | 수불자료 양식과 검증 규칙 |
