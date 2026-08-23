@@ -450,7 +450,13 @@ function App() {
                 : [],
             ),
           })
-            .then(async () => {
+            .then(async (newProductId) => {
+              // 사진은 RPC 가 받지 않는다. 제품이 생긴 뒤 따로 붙인다 —
+              // 예전에는 이 단계가 없어서, 생성 화면에서 고른 사진이
+              // 저장에서 조용히 버려졌다 (상세에서 다시 넣어야 보였다).
+              if (product.imageUrl) {
+                await updateProduct(newProductId, { image_url: product.imageUrl })
+              }
               await reloadProducts()
               announce(`${product.name} 레시피를 저장했습니다.`)
               navigate('product-management')

@@ -188,6 +188,56 @@ export async function saveCustomCost(
   )
 }
 
+/**
+ * 이번에 저장한 항목 말고는 그 달에서 지운다.
+ *
+ * upsert 는 (period_id, name) 기준이라 **폼에서 없앤 항목이 DB 에 남는다.**
+ * 실제로 이런 일이 있었다 — 8월 경비를 지우고 다시 마감했는데 100만원이
+ * 계속 붙어 나왔다. 이름을 바꿔 저장한 경우도 같다: 새 이름으로 행이 하나 더
+ * 생기고 옛 행은 그대로 남아 두 번 배분된다.
+ *
+ * 마감 계산(confirm_period)은 그 달 operating_costs 를 전부 훑으므로,
+ * 화면에 없는 행이 남아 있으면 원가에 조용히 섞인다.
+ */
+async function pruneOperatingCosts(periodId: string, keepNames: string[]) {
+  const rows = unwrap(
+    await supabase.from('operating_costs').select('id, name').eq('period_id', periodId),
+  ) as { id: string; name: string }[]
+
+  const keep = new Set(keepNames)
+  const stale = rows.filter((row) => !keep.has(row.name)).map((row) => row.id)
+  if (stale.length === 0) return
+
+  // .in('col', []) 은 문법 오류라 위에서 빈 배열을 걸러낸다
+  unwrap(await supabase.from('operating_costs').delete().in('id', stale))
+}
+
+/**
+ * 그 달 운영비를 화면 상태 그대로 맞춘다 (있는 건 갱신, 없는 건 삭제).
+ * 항목을 하나씩 저장하면 지운 항목이 남으므로 저장은 이 함수로만 한다.
+ */
+export async function saveOperatingCosts(input: {
+  periodId: string
+  laborTotal: number
+  /** productId → 인건비 비율(%) */
+  laborShares: Record<string, string | number>
+  /** 추가 항목. 이름이 빈 것은 호출부에서 걸러 온다 */
+  customItems: { name: string; amountsByProduct: Record<string, string | number> }[]
+}) {
+  await saveLaborCost(input.periodId, input.laborTotal, input.laborShares)
+
+  for (const [index, item] of input.customItems.entries()) {
+    await saveCustomCost(input.periodId, item.name, item.amountsByProduct, {
+      sortOrder: index + 1,
+    })
+  }
+
+  await pruneOperatingCosts(input.periodId, [
+    '인건비',
+    ...input.customItems.map((item) => item.name),
+  ])
+}
+
 // ── §7-3. 항목 삭제 ─────────────────────────────────────────
 export async function deleteOperatingCost(costId: string) {
   // on delete cascade 로 배분 행도 함께 지워진다

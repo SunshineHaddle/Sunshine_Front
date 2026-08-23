@@ -5,7 +5,7 @@ import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
 import type { RecipeProduct } from '../product-management/productManagementData'
 import { fetchExchangeRates } from '../../lib/api/exchangeRates'
-import { fetchPeriodByMonth } from '../../lib/api/periods'
+import { fetchPeriods } from '../../lib/api/periods'
 import { fetchCostSummaries } from '../../lib/api/results'
 import { FlagIcon } from '../../components/common/FlagIcon'
 
@@ -72,11 +72,6 @@ const parseNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-const currentMonth = () => {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
 type SavedRow = { marginRate?: number; quantityKg?: number }
 
 /**
@@ -126,25 +121,39 @@ export function ExchangeRateCalculatorPage({
    * 판매가·수량과 같은 단위여야 나란히 곱할 수 있다.
    */
   const [monthlyCostById, setMonthlyCostById] = useState<Record<string, number>>({})
+  /** 원가를 가져온 달. 어느 달 기준인지 화면에 밝혀야 판단이 선다 */
+  const [costMonth, setCostMonth] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
     void (async () => {
       try {
-        const period = await fetchPeriodByMonth(currentMonth())
-        if (cancelled || !period) return
-        const summaries = await fetchCostSummaries(period.id)
+        // 이번 달만 보면, 아직 마감 안 한 달에는 원가가 통째로 비어 0 원이 뜬다.
+        // 마감된 달 중 가장 최근 것을 쓰고, 어느 달인지 화면에 적는다.
+        const periods = await fetchPeriods()
+        const latest = periods.find((row) => row.status === 'confirmed')
+        if (cancelled || !latest) return
+
+        const summaries = await fetchCostSummaries(latest.id)
         if (cancelled) return
+        setCostMonth(latest.period.slice(0, 7))
         setMonthlyCostById(Object.fromEntries(
           // 소수점은 표시하지 않으므로 여기서 정수로 굳힌다
           summaries.map((s) => [s.productId, Math.round(s.unitCost)]),
         ))
       } catch {
-        if (!cancelled) setMonthlyCostById({})
+        if (!cancelled) {
+          setMonthlyCostById({})
+          setCostMonth(null)
+        }
       }
     })()
     return () => { cancelled = true }
   }, [])
+
+  const costMonthLabel = costMonth
+    ? `${costMonth.slice(0, 4)}년 ${Number(costMonth.slice(5, 7))}월`
+    : null
 
   /**
    * 표의 행 = 제품 관리에 등록된 제품 전부, 그리고 그것뿐.
@@ -248,7 +257,12 @@ export function ExchangeRateCalculatorPage({
         <header className="exchange-calculator-header">
           <div>
             <h1>제품별 환율 산출</h1>
-            <p>등록된 제품의 원가를 기준으로 마진과 고정 환율을 적용해 현지 판매가를 계산합니다.</p>
+            <p>
+              등록된 제품의 원가를 기준으로 마진과 고정 환율을 적용해 현지 판매가를 계산합니다.
+              {costMonthLabel
+                ? ` 원가는 마지막으로 마감한 ${costMonthLabel} 기준입니다.`
+                : ' 아직 마감한 달이 없어 원가가 비어 있습니다.'}
+            </p>
           </div>
           <div className="exchange-currency-picker">
             <label>
@@ -338,7 +352,12 @@ export function ExchangeRateCalculatorPage({
               <thead>
                 <tr>
                   <th scope="col">제품명</th>
-                  <th scope="col">계산 원가<br />(KRW)</th>
+                  <th scope="col">
+                    계산 원가<br />
+                    <em className="exchange-th__source">
+                      {costMonthLabel ? `${costMonthLabel} 기준 · KRW` : 'KRW'}
+                    </em>
+                  </th>
                   <th scope="col">마진율 (%)<em className="exchange-th__editable">직접 입력</em></th>
                   <th scope="col">판매가 (KRW)</th>
                   <th scope="col">제품 수량<em className="exchange-th__editable">직접 입력</em></th>

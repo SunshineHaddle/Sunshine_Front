@@ -730,3 +730,13 @@
   font-style: normal;
   font-weight: 700;
 }
+
+/* 계산 원가가 어느 달 기준인지. 마감한 달이 여럿이면 헷갈린다 */
+.exchange-th__source {
+  display: block;
+  margin-top: 2px;
+  color: var(--color-text-subtle);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 500;
+}

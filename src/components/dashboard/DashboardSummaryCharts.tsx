@@ -51,6 +51,10 @@ type ProductCostTrendCarouselProps = {
 // 그대로 두면 '6,761.71원' 처럼 나온다
 const numberFormatter = new Intl.NumberFormat('ko-KR', { maximumFractionDigits: 0 })
 
+/** 'YYYY-MM' → '2026년 4월'. 값이 없으면 빈 문자열 */
+const monthLabelOf = (month: string) =>
+  month ? `${month.slice(0, 4)}년 ${Number(month.slice(5, 7))}월` : ''
+
 /**
  * 한 페이지에 깔 제품 카드 수. 2열 격자라 4개면 두 줄로 딱 떨어진다.
  * PDF(expandAll)에서는 페이지네이션을 쓸 수 없어 이 값을 무시하고 전부 그린다.
@@ -109,6 +113,8 @@ function getProductCostTrend(
 
   const currentCost = values.at(-1) ?? 0
   const previousCost = values.at(-2) ?? currentCost
+  /** 마지막 확정 달. '이 달' 이라고 뭉뚱그리면 4월 값이 이번 달 값처럼 보인다 */
+  const latestMonth = monthKeys[raw.at(-1)?.monthIndex ?? 0] ?? ''
   const changeRate = ((currentCost - previousCost) / Math.max(previousCost, 1)) * 100
 
   const baseline = 290
@@ -119,6 +125,7 @@ function getProductCostTrend(
   return {
     changeRate,
     currentCost,
+    latestMonth,
     series,
     points: series.map(({ x, y }) => `${x},${y}`).join(' '),
     areaPath,
@@ -202,7 +209,11 @@ export function ProductCostTrendCarousel({
               {trend ? (
                 <>
                 <div className="product-cost-slide__metric">
-                  <span>이 달 재료비</span>
+                  {/*
+                    확정된 마지막 달을 그대로 적는다. 예전에는 '이 달 재료비' 라고 써서,
+                    4월만 확정한 상태에서 8월 대시보드를 열면 4월 값이 이번 달 값처럼 보였다.
+                  */}
+                  <span>{monthLabelOf(trend.latestMonth)} 재료비</span>
                   <strong>{numberFormatter.format(trend.currentCost)}<small>원</small></strong>
                   <em className={trend.changeRate >= 0 ? 'is-up' : 'is-down'}>
                     전월 대비 {Math.abs(trend.changeRate).toFixed(1)}% {changeDirection}

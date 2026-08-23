@@ -8,12 +8,12 @@
  * DB 는 이런 값을 막지 않는다. margin_rate 를 numeric(12,2) 로 넓힌 뒤로는
  * 오버플로 에러조차 나지 않아, 틀린 원가가 조용히 확정된다.
  *
- * 고객이 "오차 허용, 현실적인 수준의 정확성"을 요구했으므로 막지 않고 경고만 한다.
+ * 고객이 "오차 허용, 현실적인 수준의 정확성"을 요구했으므로 대부분 경고만 한다.
+ * **단 하나, 생산량이 투입량을 넘는 것은 막는다** — 넣은 것보다 많이 나올 수는 없다.
  */
 
 /** 이 배수 밖이면 자릿수 실수로 본다. 정상 범위(0.85~0.95)보다 넉넉하게 잡았다 */
 const MIN_RATIO = 0.5
-const MAX_RATIO = 1.5
 
 export type ProductionIssue = {
   productId: string
@@ -24,13 +24,14 @@ export type ProductionIssue = {
   outputKg: number
   /** outputKg / inputKg. inputKg 이 0 이면 null */
   ratio: number | null
-  reason: 'missing' | 'too-low' | 'too-high'
+  /** 'over-input' 만 마감을 막는다. 나머지는 경고 */
+  reason: 'missing' | 'too-low' | 'over-input'
 }
 
 const REASON_TEXT: Record<ProductionIssue['reason'], string> = {
   missing: '생산량이 비어 있음',
   'too-low': '생산량이 투입량에 비해 너무 적음',
-  'too-high': '생산량이 투입량보다 지나치게 많음',
+  'over-input': '생산량이 투입량보다 많음 — 넣은 것보다 많이 나올 수 없다',
 }
 
 /**
@@ -59,8 +60,9 @@ export function findProductionIssues(
     const ratio = outputKg / totalUsage
     if (ratio < MIN_RATIO) {
       issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio, reason: 'too-low' })
-    } else if (ratio > MAX_RATIO) {
-      issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio, reason: 'too-high' })
+    } else if (ratio > 1) {
+      // 질량 보존. 절임·탈수로 줄었다 양념으로 붙어도 투입 총량을 넘지는 못한다
+      issues.push({ productId, name, inputKg: totalUsage, outputKg, ratio, reason: 'over-input' })
     }
   }
 
@@ -68,6 +70,25 @@ export function findProductionIssues(
 }
 
 const kg = (n: number) => `${Math.round(n).toLocaleString('ko-KR')} kg`
+
+/** 마감을 막아야 하는 것만. 나머지는 경고로 넘긴다 */
+export function blockingIssues(issues: ProductionIssue[]): ProductionIssue[] {
+  return issues.filter((issue) => issue.reason === 'over-input')
+}
+
+/** 생산량이 투입량을 넘어 마감을 막을 때 띄울 문구 */
+export function describeOverInput(issues: ProductionIssue[]): string {
+  const lines = issues.map(
+    (issue) => `· ${issue.name}: 투입 ${kg(issue.inputKg)} → 생산 ${kg(issue.outputKg)}`,
+  )
+
+  return (
+    `생산량이 투입량보다 많은 제품이 ${issues.length}개 있어 마감할 수 없습니다.\n\n`
+    + `${lines.join('\n')}\n\n`
+    + '넣은 것보다 많이 나올 수는 없습니다. 생산량을 다시 확인해주세요.\n'
+    + '(절임·탈수로 무게가 줄어 보통 투입량의 85~95% 입니다)'
+  )
+}
 
 /** 확인 다이얼로그에 넣을 문구 */
 export function describeIssues(issues: ProductionIssue[]): string {

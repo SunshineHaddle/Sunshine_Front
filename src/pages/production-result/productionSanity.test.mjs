@@ -1,6 +1,10 @@
 // node src/pages/production-result/productionSanity.test.mjs
 import assert from 'node:assert/strict'
-import { findConfirmBlockers, findProductionIssues } from './productionSanity.ts'
+import {
+  blockingIssues,
+  findConfirmBlockers,
+  findProductionIssues,
+} from './productionSanity.ts'
 
 // 실제로 있었던 사고: 포기김치 847톤 투입에 생산량 24kg
 {
@@ -22,11 +26,22 @@ assert.deepEqual(
   [],
 )
 
-// 경계값: 정확히 0.5 / 1.5 는 통과 (미만·초과만 잡는다)
-assert.equal(findProductionIssues([{ productId: 'p', totalUsage: 100 }], [{ productId: 'p', name: 'x', production: 50 }]).length, 0)
-assert.equal(findProductionIssues([{ productId: 'p', totalUsage: 100 }], [{ productId: 'p', name: 'x', production: 150 }]).length, 0)
-assert.equal(findProductionIssues([{ productId: 'p', totalUsage: 100 }], [{ productId: 'p', name: 'x', production: 49 }])[0].reason, 'too-low')
-assert.equal(findProductionIssues([{ productId: 'p', totalUsage: 100 }], [{ productId: 'p', name: 'x', production: 151 }])[0].reason, 'too-high')
+const at = (input, output) =>
+  findProductionIssues([{ productId: 'p', totalUsage: input }], [{ productId: 'p', name: 'x', production: output }])
+
+// 아래쪽 경계: 정확히 0.5 는 통과, 미만이면 경고
+assert.equal(at(100, 50).length, 0)
+assert.equal(at(100, 49)[0].reason, 'too-low')
+
+// 위쪽은 투입량이 상한이다. 넣은 것보다 많이 나올 수 없다 (질량 보존)
+assert.equal(at(100, 100).length, 0, '투입량과 같으면 통과')
+assert.equal(at(100, 101)[0].reason, 'over-input')
+assert.equal(at(100, 150)[0].reason, 'over-input')
+
+// over-input 만 마감을 막는다. 나머지는 경고로 넘어간다
+assert.equal(blockingIssues(at(100, 101)).length, 1)
+assert.equal(blockingIssues(at(100, 49)).length, 0)
+assert.equal(blockingIssues(at(100, 0)).length, 0)
 
 // 생산량 미입력
 {
@@ -59,10 +74,10 @@ assert.deepEqual(findProductionIssues([{ productId: 'p1', totalUsage: 0 }], [{ p
     [
       { productId: 'a', name: '정상', production: 900 },
       { productId: 'b', name: '너무적음', production: 10 },
-      { productId: 'c', name: '너무많음', production: 9000 },
+      { productId: 'c', name: '투입량초과', production: 9000 },
     ],
   )
-  assert.deepEqual(issues.map((i) => i.name), ['너무적음', '너무많음'])
+  assert.deepEqual(issues.map((i) => i.name), ['너무적음', '투입량초과'])
 }
 
 // ── findConfirmBlockers ─────────────────────────────────────

@@ -7,8 +7,7 @@ import { OperatingCostForm } from './OperatingCostForm'
 import {
   deleteOperatingCost,
   fetchOperatingCosts,
-  saveCustomCost,
-  saveLaborCost,
+  saveOperatingCosts,
 } from '../../lib/api/operating'
 import { fetchProduction } from '../../lib/api/production'
 import { markEntrySaved } from '../../utils/entrySaved'
@@ -229,13 +228,19 @@ export function OperatingCostEntryPage({
     if (!periodId) return false
     setBusy(true)
     try {
-      await saveLaborCost(periodId, toWonNumber(costs.laborTotal), costs.productFees)
-
-      for (const [index, item] of costs.customItems.entries()) {
-        if (!item.name.trim()) continue
-        const allocation = distributeByShares(toWonNumber(item.total), item.shares, productIds)
-        await saveCustomCost(periodId, item.name.trim(), allocation, { sortOrder: index + 1 })
-      }
+      // 한 번에 맞춘다. 항목별로 저장하면 화면에서 지운 항목이 DB 에 남아
+      // 마감 때 원가에 계속 섞인다 (saveOperatingCosts 주석 참고)
+      await saveOperatingCosts({
+        periodId,
+        laborTotal: toWonNumber(costs.laborTotal),
+        laborShares: costs.productFees,
+        customItems: costs.customItems
+          .filter((item) => item.name.trim())
+          .map((item) => ({
+            name: item.name.trim(),
+            amountsByProduct: distributeByShares(toWonNumber(item.total), item.shares, productIds),
+          })),
+      })
       markEntrySaved(periodId) // 저장 완료 → 재접속 시 빈 폼
       return true
     } catch (error) {

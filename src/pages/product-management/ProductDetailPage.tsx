@@ -380,7 +380,10 @@ export function ProductDetailPage({
             <header>
               <div>
                 <h2 id="material-cost-title">원재료비 상세</h2>
-                <p>{analysisState.monthLabel} 수불자료로 입력된 실제 투입량입니다.</p>
+                <p>
+                  {analysisState.monthLabel} 수불자료로 입력된 실제 투입량입니다.
+                  {' '}수불자료를 올리지 않은 달은 <strong>기본 배합표</strong>로 계산합니다.
+                </p>
               </div>
               {isEditingRecipe ? (
                 <div className="recipe-edit-actions">
@@ -394,9 +397,9 @@ export function ProductDetailPage({
                   <button
                     type="button"
                     onClick={startEditRecipe}
-                    title="수불자료가 없는 달에 표준원가로 계산할 때 쓰는 1단위 배합입니다"
+                    title="수불자료를 올리지 않은 달은 이 배합으로 원가를 계산합니다. 제품 1kg 을 만드는 데 들어가는 재료의 수량과 단가입니다."
                   >
-                    표준 배합 수정
+                    기본 배합표 수정
                   </button>
                   <strong>{currencyFormatter.format(usageTotal)}</strong>
                 </div>
@@ -405,6 +408,11 @@ export function ProductDetailPage({
 
             {isEditingRecipe && (
               <div className="recipe-edit">
+                {/* 무엇을 적는 표인지 여기서 한 번 더 알린다. 버튼 이름만으로는 안 통했다 */}
+                <p className="recipe-edit__note">
+                  제품 <strong>1kg</strong> 을 만드는 데 들어가는 재료의 수량과 단가입니다.
+                  수불자료를 올리지 않은 달은 이 값에 생산량을 곱해 재료비를 계산합니다.
+                </p>
                 <div className="material-cost-list__head"><span>품명</span><span>수량(kg)</span><span>단가(원)</span><span /></div>
                 {recipeRows.map((row) => (
                   <div className="recipe-edit__row" key={row.materialId}>

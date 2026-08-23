@@ -34,8 +34,10 @@ import { confirmPeriod } from '../../lib/api/results'
 import { fetchPeriods, reopenPeriod } from '../../lib/api/periods'
 import { fetchOperatingCosts } from '../../lib/api/operating'
 import {
+  blockingIssues,
   describeBlockers,
   describeIssues,
+  describeOverInput,
   findConfirmBlockers,
   findProductionIssues,
 } from '../production-result/productionSanity'
@@ -67,6 +69,7 @@ type Row = {
 }
 
 const won = (n: number) => Math.round(n).toLocaleString('ko-KR')
+const kgText = (n: number) => `${Math.round(n).toLocaleString('ko-KR')} kg`
 
 
 export function RawMaterialEntryPage({
@@ -246,6 +249,20 @@ export function RawMaterialEntryPage({
     void build()
     return () => { cancelled = true }
   }, [periodId, products, loadSaved, onAction])
+
+  /**
+   * 제품별 투입 총량(kg). 생산량 입력칸 옆에 상한으로 보여준다.
+   *
+   * 질량 보존이라 생산량이 이 값을 넘을 수 없다 — 넘으면 마감이 막힌다.
+   * 입력하는 자리에서 미리 알려주지 않으면 마감 단계에서야 알게 된다.
+   */
+  const inputKgByProduct = useMemo(() => {
+    const totals = new Map<string, number>()
+    for (const line of usages) {
+      totals.set(line.productId, (totals.get(line.productId) ?? 0) + line.usage)
+    }
+    return totals
+  }, [usages])
 
   const updateRow = (id: string, patch: Partial<Row>) => {
     setRows((current) => current.map((row) => (row.id === id ? { ...row, ...patch } : row)))
@@ -544,6 +561,15 @@ export function RawMaterialEntryPage({
       }
 
       const issues = findProductionIssues(usageTotals, savedProductions)
+
+      // 생산량이 투입량을 넘는 것만은 막는다. 나머지 이상치는 경고로 넘어간다
+      const overInput = blockingIssues(issues)
+      if (overInput.length > 0) {
+        window.alert(describeOverInput(overInput))
+        setBusy('')
+        return
+      }
+
       const proceed = issues.length > 0
         ? window.confirm(describeIssues(issues))
         : window.confirm(
@@ -961,6 +987,8 @@ export function RawMaterialEntryPage({
               <div className="production-list__rows">
                 {visibleRows.map((row) => {
                   const isFilled = row.production.trim() !== ''
+                  const inputKg = inputKgByProduct.get(row.id) ?? 0
+                  const over = inputKg > 0 && Number(row.production) > inputKg
                   return (
                     <div className={`production-item${isFilled ? ' is-filled' : ''}`} key={row.id}>
                       <div className="production-item__name">
@@ -987,6 +1015,14 @@ export function RawMaterialEntryPage({
                           />
                           <em>kg</em>
                         </div>
+                        {/* 상한을 입력하는 자리에서 알린다. 마감 단계에서야 알면 늦다 */}
+                        {inputKg > 0 && (
+                          <small className={`production-item__hint${over ? ' is-error' : ''}`}>
+                            {over
+                              ? `투입량 ${kgText(inputKg)} 을(를) 초과할 수 없습니다`
+                              : `투입량 ${kgText(inputKg)}`}
+                          </small>
+                        )}
                       </label>
 
                     </div>

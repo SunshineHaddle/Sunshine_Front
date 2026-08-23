@@ -997,3 +997,18 @@
   font-size: 12.5px;
   line-height: 1.6;
 }
+
+/* 기본 배합표 편집 안내. 버튼 이름만으로는 무엇을 적는지 전달되지 않았다 */
+.recipe-edit__note {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  color: var(--color-text-subtle);
+  background: #faf9f9;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.recipe-edit__note strong {
+  color: var(--color-brand);
+}
