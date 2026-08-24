@@ -34,7 +34,7 @@
 
 .exchange-rate-card__label {
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   pointer-events: none;
 }
@@ -70,7 +70,7 @@
 }
 
 .exchange-rate-card__value strong {
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -78,20 +78,20 @@
 .exchange-rate-card__value strong small {
   margin-left: 2px;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 /* 실시간 조회 성공/실패를 구분해 보여준다. 실패 시 숫자는 코드에 박힌 기준값이다 */
 .exchange-rate-card__caption {
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   color: var(--color-text-subtle);
   white-space: nowrap;
 }
 
 .exchange-rate-card__caption.is-stale {
-  color: #b0771f;
+  color: var(--color-status-amber);
 }
 
 .exchange-rate-card__change.is-up {
@@ -138,14 +138,14 @@
 .cost-chart-card__unit {
   margin: 8px 0 0;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .card-heading h2,
 .profitability-card h2 {
   margin: 0;
   color: var(--color-text);
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 400;
   letter-spacing: -0.35px;
 }
@@ -153,7 +153,7 @@
 .card-heading p {
   margin: 4px 0 0;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .chart-heading {
@@ -175,17 +175,17 @@
   min-width: 52px;
   height: 28px;
   padding: 0 10px;
-  color: #777171;
+  color: var(--color-text-subtle);
   background: transparent;
   border: 0;
   border-radius: 5px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .chart-period-toggle button:hover {
-  color: #252020;
+  color: var(--color-text);
 }
 
 .chart-period-toggle button.is-active {
@@ -225,7 +225,7 @@
 .product-cost-carousel__heading h2 {
   margin: 0;
   gap: 8px;
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 500;
 }
 
@@ -284,7 +284,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--color-text);
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -309,7 +309,7 @@
   padding-top: 12px;
   border-top: 1px solid var(--color-border);
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-carousel__footer .table-pagination {
@@ -341,12 +341,12 @@
 
 .product-cost-slide__product strong {
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--text-md);
 }
 
 .product-cost-slide__product span {
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-slide__product > button {
@@ -360,7 +360,7 @@
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   white-space: nowrap;
   transition: color 140ms ease, background-color 140ms ease;
@@ -388,12 +388,12 @@
 
 .product-cost-slide__metric > span {
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-slide__metric strong {
   color: var(--color-text);
-  font-size: 24px;
+  font-size: var(--text-2xl);
   line-height: 1.15;
   letter-spacing: -0.6px;
   /* 카드끼리 자릿수가 달라도 숫자 폭이 같아 세로로 줄이 맞는다 */
@@ -403,7 +403,7 @@
 .product-cost-slide__metric small {
   margin-left: 4px;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   letter-spacing: 0;
 }
@@ -417,7 +417,7 @@
   padding: 3px 8px;
   gap: 4px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-style: normal;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -425,6 +425,8 @@
 }
 
 .product-cost-slide__metric em i {
+  /* ▲▼ 는 글자가 아니라 기호다. 본문 최소 크기(11px)를 따르면 배지 안에서
+     숫자보다 커 보여 타입 스케일을 쓰지 않는다 */
   font-size: 8px;
   font-style: normal;
   line-height: 1;
@@ -475,6 +477,8 @@
 
 .product-cost-slide__axis-label {
   fill: var(--color-text-subtle);
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 17px;
   font-variant-numeric: tabular-nums;
   /* 그래프 왼쪽 끝에 오른쪽 정렬로 붙인다. start 로 두면 안쪽으로 밀고 들어온다 */
@@ -522,11 +526,15 @@
 
 .product-cost-slide__tooltip text {
   fill: rgba(255, 255, 255, 0.72);
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 24px;
 }
 
 .product-cost-slide__tooltip .product-cost-slide__tooltip-value {
   fill: #fff;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 30px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -542,7 +550,7 @@
   height: 20px;
   margin-top: 2px;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .product-cost-slide__axis span {
@@ -559,7 +567,7 @@
   margin: 0;
   place-items: center;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .product-cost-carousel--compact {
@@ -568,7 +576,7 @@
 }
 
 .product-cost-carousel--compact .product-cost-carousel__heading h2 {
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 750;
 }
 
@@ -577,14 +585,14 @@
 }
 
 .product-cost-carousel--compact .product-cost-slide__product strong {
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .product-cost-carousel--compact .product-cost-slide__product span,
 .product-cost-carousel--compact .product-cost-slide__product button,
 .product-cost-carousel--compact .product-cost-slide__metric > span,
 .product-cost-carousel--compact .product-cost-slide__metric em {
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-carousel--compact .product-cost-slide__metric {
@@ -600,7 +608,7 @@
 }
 
 .product-cost-carousel--compact .product-cost-slide__metric strong {
-  font-size: 25px;
+  font-size: var(--text-2xl);
 }
 
 .product-cost-carousel--compact .product-cost-slide__metric em {
@@ -620,7 +628,7 @@
 .product-cost-carousel--compact .product-cost-slide__axis {
   height: 15px;
   margin-top: 0;
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-carousel--compact .product-cost-carousel__empty {
@@ -649,7 +657,7 @@
   margin: 0;
   gap: 8px;
   color: var(--color-text);
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 500;
 }
 
@@ -660,7 +668,7 @@
 .final-cost-summary-card__heading > span {
   flex: 0 0 auto;
   color: var(--color-text-subtle);
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .final-cost-summary-card__heading > span.is-ready {
@@ -676,12 +684,12 @@
 
 .final-cost-summary-card__metric > span {
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .final-cost-summary-card__metric strong {
   color: var(--color-text);
-  font-size: 34px;
+  font-size: var(--text-4xl);
   letter-spacing: -1px;
   line-height: 1.1;
   white-space: nowrap;
@@ -689,7 +697,7 @@
 
 .final-cost-summary-card__metric small {
   margin-left: 4px;
-  font-size: 13px;
+  font-size: var(--text-sm);
   letter-spacing: 0;
 }
 
@@ -739,7 +747,7 @@
 .final-cost-summary-card__costs dt,
 .final-cost-summary-card__costs dd {
   margin: 0;
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .final-cost-summary-card__costs dt {
@@ -764,13 +772,13 @@
   min-width: 0;
   gap: 3px;
   color: var(--color-text-subtle);
-  font-size: 8px;
+  font-size: var(--text-2xs);
 }
 
 .final-cost-summary-card__breakdown strong {
   overflow: hidden;
-  color: #4c4545;
-  font-size: 9px;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -786,7 +794,7 @@
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
 }
 
@@ -804,7 +812,7 @@
   border: 1px dashed var(--color-border);
   border-radius: 10px;
   color: var(--color-text-subtle);
-  font-size: 12.5px;
+  font-size: var(--text-xs);
   line-height: 1.7;
   text-align: center;
 }

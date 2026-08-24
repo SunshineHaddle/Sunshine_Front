@@ -129,11 +129,11 @@
   }
 
   .dashboard-header h1 {
-    font-size: 26px;
+    font-size: var(--text-2xl);
   }
 
   .dashboard-header p {
-    font-size: 14px;
+    font-size: var(--text-base);
   }
 
   .cost-chart-section {
@@ -198,7 +198,7 @@
   }
 
   .insight-card__metric strong {
-    font-size: 32px;
+    font-size: var(--text-4xl);
   }
 
   .insight-detail-placeholder {
@@ -215,7 +215,7 @@
   }
 
   .profitability-card__heading h2 {
-    font-size: 17px;
+    font-size: var(--text-md);
   }
 
   .profitability-card__month-picker {

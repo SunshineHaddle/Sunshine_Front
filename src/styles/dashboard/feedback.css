@@ -13,7 +13,7 @@
   pointer-events: none;
   transform: translateY(12px);
   transition: opacity 180ms ease, transform 180ms ease;
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 .toast.is-visible {

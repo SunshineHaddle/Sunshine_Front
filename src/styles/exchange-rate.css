@@ -20,7 +20,7 @@
 .exchange-calculator-header h1 {
   margin: 0;
   color: var(--color-text);
-  font-size: 34px;
+  font-size: var(--text-4xl);
   font-weight: 650;
   letter-spacing: -1.2px;
   line-height: 1.2;
@@ -30,52 +30,8 @@
   max-width: 650px;
   margin: 8px 0 0;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.65;
-}
-
-.exchange-calculator-header__actions {
-  display: flex;
-  flex: 0 0 auto;
-  gap: 10px;
-}
-
-.exchange-action {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 46px;
-  padding: 0 20px;
-  gap: 8px;
-  border-radius: 0;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 750;
-  transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
-}
-
-.exchange-action:active {
-  transform: translateY(1px);
-}
-
-.exchange-action--secondary {
-  color: #383234;
-  background: #fff;
-  border: 0;
-}
-
-.exchange-action--secondary:hover {
-  background: #f7f7f7;
-}
-
-.exchange-action--primary {
-  color: #fff;
-  background: #242020;
-  border: 0;
-}
-
-.exchange-action--primary:hover {
-  background: var(--color-brand);
 }
 
 .exchange-table-card {
@@ -94,7 +50,7 @@
   width: 100%;
   min-width: 720px;
   border-collapse: collapse;
-  color: #242020;
+  color: var(--color-text);
   font-variant-numeric: tabular-nums;
   table-layout: fixed;
 }
@@ -120,9 +76,13 @@
 }
 
 .exchange-table th:nth-child(2) { width: 16%; }
+
 .exchange-table th:nth-child(3) { width: 14%; }
+
 .exchange-table th:nth-child(4) { width: 16%; }
+
 .exchange-table th:nth-child(5) { width: 14%; }
+
 .exchange-table th:nth-child(6) {
   width: 22%;
   padding-right: 24px;
@@ -144,16 +104,16 @@
 }
 
 .exchange-currency-picker label span {
-  color: #8a8386;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .exchange-currency-picker select {
   min-width: 180px;
   padding: 11px 14px;
-  color: #2b2528;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 600;
   background: #fff;
   border: 1px solid #e2dde0;
@@ -167,8 +127,8 @@
 }
 
 .exchange-currency-picker__time {
-  color: #a49ea1;
-  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -189,7 +149,7 @@
   align-items: center;
   justify-content: center;
   width: 42px;
-  color: #665f61;
+  color: var(--color-text-muted);
   background: #fff;
   border: 1px solid #e2dde0;
   border-radius: 0;
@@ -229,15 +189,15 @@
 }
 
 .exchange-currency-form__fields span {
-  color: #8a8386;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .exchange-currency-form__fields input {
   padding: 11px 14px;
-  color: #2b2528;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 600;
   background: #fff;
   border: 1px solid #e2dde0;
@@ -261,14 +221,14 @@
   align-items: center;
   gap: 6px;
   padding: 11px 18px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   border-radius: 0;
   cursor: pointer;
 }
 
 .exchange-currency-form__cancel {
-  color: #665f61;
+  color: var(--color-text-muted);
   background: #fff;
   border: 1px solid #e2dde0;
 }
@@ -298,8 +258,8 @@
 
 .exchange-table thead th {
   height: 82px;
-  color: #554e50;
-  font-size: 11px;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -311,7 +271,7 @@
 
 .exchange-table tbody td {
   height: 78px;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .exchange-table tbody td:first-child strong,
@@ -320,18 +280,18 @@
 }
 
 .exchange-table tbody td:first-child strong {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 
 .exchange-table tbody td:first-child span {
   margin-top: 4px;
-  color: #8a8385;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .exchange-number {
-  color: #3c3537;
+  color: var(--color-text);
 }
 
 .exchange-margin-field {
@@ -347,21 +307,21 @@
 }
 
 /*
-  마진율·수량은 사용자가 직접 고치는 칸이다.
-  예전에는 테두리가 투명이라 hover 하기 전에는 입력칸인 줄 몰랐다.
+마진율·수량은 사용자가 직접 고치는 칸이다.
+예전에는 테두리가 투명이라 hover 하기 전에는 입력칸인 줄 몰랐다.
 */
 .exchange-margin-field input,
 .exchange-quantity-field input {
   width: 100%;
   height: 38px;
   padding: 0 30px 0 13px;
-  color: #2b2627;
+  color: var(--color-text);
   background: #fff;
   border: 1px solid #d8d2d4;
   border-radius: 6px;
   outline: 0;
   text-align: right;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   cursor: text;
@@ -395,8 +355,8 @@
   position: absolute;
   top: 50%;
   right: 12px;
-  color: #8a8385;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-style: normal;
   transform: translateY(-50%);
   pointer-events: none;
@@ -404,48 +364,9 @@
 
 .exchange-sale-price,
 .exchange-local-price {
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 750;
   white-space: nowrap;
-}
-
-.exchange-currency-field {
-  position: relative;
-  display: inline-block;
-  width: min(100%, 160px);
-}
-
-.exchange-currency-field::after {
-  position: absolute;
-  top: 50%;
-  right: 13px;
-  width: 7px;
-  height: 7px;
-  border-right: 1.5px solid #777174;
-  border-bottom: 1.5px solid #777174;
-  content: '';
-  transform: translateY(-70%) rotate(45deg);
-  pointer-events: none;
-}
-
-.exchange-currency-field select {
-  width: 100%;
-  height: 38px;
-  padding: 0 28px 0 10px;
-  color: #302a2c;
-  background: #f7f7f7;
-  border: 0;
-  border-radius: 0;
-  outline: 0;
-  appearance: none;
-  cursor: pointer;
-  font: inherit;
-  font-size: 10.5px;
-}
-
-.exchange-currency-field select:focus-visible {
-  outline: 3px solid rgba(186, 0, 54, 0.25);
-  outline-offset: 2px;
 }
 
 .exchange-table tfoot {
@@ -460,7 +381,7 @@
 }
 
 .exchange-table tfoot th {
-  font-size: 12px;
+  font-size: var(--text-xs);
   text-align: left;
 }
 
@@ -470,70 +391,15 @@
 }
 
 .exchange-table tfoot td > strong {
-  font-size: 15px;
+  font-size: var(--text-md);
   font-weight: 700;
   white-space: nowrap;
 }
 
 .exchange-table tfoot td > span {
   margin-top: 3px;
-  color: #7f787a;
-  font-size: 10px;
-}
-
-.exchange-status-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  margin-top: 24px;
-  gap: 16px;
-}
-
-.exchange-status-grid article {
-  position: relative;
-  min-height: 116px;
-  padding: 22px 24px;
-  overflow: hidden;
-  background: #fff;
-  border: 0;
-  border-radius: 0;
-}
-
-.exchange-status-grid article > span {
-  display: block;
-  color: #5e5759;
-  font-size: 10.5px;
-  font-weight: 650;
-}
-
-.exchange-status-grid article > strong {
-  display: block;
-  margin-top: 12px;
-  color: #252123;
-  font-size: 21px;
-  font-weight: 650;
-  letter-spacing: -0.4px;
-}
-
-.exchange-status-grid article > strong small {
-  color: #8a8385;
-  font-size: 10px;
-}
-
-.exchange-status-grid article > small {
-  display: block;
-  margin-top: 7px;
-  color: #8a8385;
-  font-size: 9.5px;
-}
-
-.exchange-status-grid article > em {
-  position: absolute;
-  right: 18px;
-  bottom: 19px;
-  color: var(--color-brand);
-  font-size: 9.5px;
-  font-style: normal;
-  font-weight: 700;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 @media (max-width: 1179px) {
@@ -546,10 +412,6 @@
   .exchange-calculator-header {
     align-items: flex-start;
     flex-direction: column;
-  }
-
-  .exchange-status-grid {
-    grid-template-columns: 1fr;
   }
 }
 
@@ -570,19 +432,7 @@
   }
 
   .exchange-calculator-header h1 {
-    font-size: 28px;
-  }
-
-  .exchange-calculator-header__actions {
-    display: grid;
-    width: 100%;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .exchange-action {
-    min-height: 42px;
-    padding-inline: 12px;
-    font-size: 10.5px;
+    font-size: var(--text-3xl);
   }
 
   .exchange-table-card {
@@ -629,9 +479,9 @@
   .exchange-table tbody td::before {
     display: block;
     margin-bottom: 6px;
-    color: #918a8c;
+    color: var(--color-text-subtle);
     content: attr(data-label);
-    font-size: 9px;
+    font-size: var(--text-2xs);
     font-weight: 650;
   }
 
@@ -639,8 +489,7 @@
     grid-column: 1 / -1;
   }
 
-  .exchange-margin-field,
-  .exchange-currency-field {
+  .exchange-margin-field {
     width: 100%;
   }
 
@@ -666,59 +515,22 @@
   .exchange-table tfoot td {
     margin-top: 12px;
   }
-
-  .exchange-status-grid article {
-    min-height: 108px;
-  }
 }
 
 /* 제품명은 제품 관리를 따라가므로 여기서 고치지 않는다 */
 .exchange-name {
   display: block;
   padding: 6px 8px 6px 0;
-  color: #242020;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 
 .exchange-table__empty {
   padding: 28px 12px;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
-}
-
-.exchange-cost-field {
-  display: inline-block;
-  width: min(100%, 150px);
-}
-
-.exchange-cost-field input {
-  width: 100%;
-  height: 36px;
-  padding: 0 12px;
-  color: #2b2627;
-  background: transparent;
-  border: 1px solid transparent;
-  outline: 0;
-  text-align: right;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  transition: background-color 120ms ease, border-color 120ms ease;
-}
-
-.exchange-cost-field input:hover {
-  background: #f6f5f5;
-  border-color: #ececec;
-}
-
-.exchange-cost-field input:focus {
-  background: #f6f5f5;
-  border-color: #d9d4d5;
-}
-
-.exchange-cost-field input::-webkit-inner-spin-button {
-  appearance: none;
 }
 
 /* 어느 열이 직접 입력 칸인지 머리글에서 미리 알린다 */
@@ -726,7 +538,7 @@
   display: block;
   margin-top: 4px;
   color: var(--color-brand);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-style: normal;
   font-weight: 700;
 }
@@ -736,7 +548,7 @@
   display: block;
   margin-top: 2px;
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-style: normal;
   font-weight: 500;
 }

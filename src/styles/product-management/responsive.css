@@ -31,11 +31,11 @@
   }
 
   .product-create-header h1 {
-    font-size: 26px;
+    font-size: var(--text-2xl);
   }
 
   .product-create-header p {
-    font-size: 14px;
+    font-size: var(--text-base);
   }
 
   .recipe-library-header {

@@ -5,11 +5,25 @@
   --color-canvas: #fcf9f8;
   --color-surface: #ffffff;
   --color-surface-muted: #f7f5f4;
-  --color-text: #181515;
-  --color-text-subtle: #6f6868;
+  /* ── 글자색 4단계 ────────────────────────────
+     예전에는 같은 '보조 설명'을 파일마다 #8a8385 · #9b9598 · #999397 처럼
+     조금씩 다른 회색으로 적어 화면끼리 톤이 어긋났다. 아래 네 개만 쓴다.
+     괄호 안은 흰 배경 대비비 — disabled 를 뺀 셋은 WCAG AA(4.5:1)를 넘는다. */
+  --color-text: #181515;          /* 제목·본문·금액        (15.9:1) */
+  --color-text-muted: #4f4949;    /* 라벨·부제            ( 8.9:1) */
+  --color-text-subtle: #6f6868;   /* 캡션·도움말          ( 5.3:1) */
+  --color-text-disabled: #a8a2a6; /* 비활성·placeholder 전용. 본문에 쓰지 않는다 */
   --color-sidebar-text: #5c3f45;
   --color-border: #e4dfdd;
   --color-positive: #d62d16;
+  /* ── 상태 색 ────────────────────────────────
+     정상·주의·위험을 나타내는 글자색. 예전 값(#20a648 · #d28700 · #ed4545)은
+     흰 배경에서 대비가 3:1 안팎이라 흐릿하게 보였다. 같은 색상을 유지한 채
+     명도만 낮춰 전부 4.5:1 을 넘긴다 */
+  --color-status-good: #1a863a;   /* (4.7:1) */
+  --color-status-warn: #a26800;   /* (4.6:1) */
+  --color-status-bad: #e81616;    /* (4.6:1) */
+  --color-status-amber: #a86315;  /* (4.7:1) 주의 카드·보조 수치 */
   /* 원가 증감 표시. '상승'은 브랜드 레드, '하락'은 초록 계열로 고정한다.
      예전에는 카드마다 #26734d 같은 값을 직접 박아 써서 화면끼리 조금씩 달랐다 */
   --color-trend-up: #ba0036;
@@ -30,6 +44,22 @@
   --shadow-workflow: 0 1px 3px rgba(16, 24, 40, 0.04), 0 6px 16px rgba(16, 24, 40, 0.035);
   --radius-card: 8px;
   --radius-control: 8px;
+  /* ── 글자 크기 ──────────────────────────────
+     8 · 8.5 · 9 · 9.5 · 10 · 10.5 · 11 · 11.5 · 12 · 12.5 · 13 · 13.5 · 14 · 14.5px
+     열네 가지가 섞여 있었다. 0.5px 차이는 눈에 보이지 않으면서 통일성만 깬다.
+     본문 최소는 11px — 그보다 작은 글씨는 화면에서 읽히지 않는다. */
+  --text-2xs: 11px;   /* 배지·표 머리글 등 가장 작은 글씨 */
+  --text-xs: 12px;    /* 캡션·보조 설명 */
+  --text-sm: 13px;    /* 본문 보조 */
+  --text-base: 14px;  /* 본문 */
+  --text-md: 16px;    /* 강조 값 */
+  --text-lg: 18px;    /* 카드 제목 */
+  --text-xl: 20px;    /* 섹션 제목 */
+  --text-2xl: 24px;   /* 지표 숫자 */
+  --text-3xl: 28px;   /* 큰 지표 숫자 */
+  --text-4xl: 34px;   /* 페이지 제목 */
+  --text-5xl: 40px;   /* 썸네일 대체 이니셜 등 가장 큰 글자 */
+
   --font-ui: Pretendard, -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', 'Segoe UI', sans-serif;
 
   color: var(--color-text);
@@ -104,7 +134,7 @@ button {
   padding: 10px 16px;
   background: var(--color-brand);
   color: #fff;
-  font-size: 13px;
+  font-size: var(--text-sm);
   text-align: center;
 }
 
@@ -114,7 +144,7 @@ button {
   min-height: 100vh;
   padding: 24px;
   color: var(--color-text-subtle);
-  font-size: 14px;
+  font-size: var(--text-base);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -151,14 +181,14 @@ button {
 .app-crash__box h1 {
   margin: 0 0 12px;
   color: var(--color-text);
-  font-size: 20px;
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
 .app-crash__box p {
   margin: 0 0 18px;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
@@ -170,7 +200,7 @@ button {
   color: #8a6a6a;
   background: #faf5f4;
   border-radius: 8px;
-  font-size: 11.5px;
+  font-size: var(--text-2xs);
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
@@ -188,7 +218,7 @@ button {
   border: 1px solid var(--color-brand);
   border-radius: var(--radius-control);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 600;
   cursor: pointer;
 }

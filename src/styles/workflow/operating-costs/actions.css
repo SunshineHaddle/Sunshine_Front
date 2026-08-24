@@ -12,13 +12,13 @@
 }
 
 .operating-cost-summary span {
-  color: #969094;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-summary strong {
-  color: #393336;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
 }
 

@@ -4,7 +4,7 @@
   display: grid;
   grid-template-columns: 258px minmax(0, 1fr);
   min-height: 100vh;
-  color: #1d2939;
+  color: var(--color-text);
   background: #fbfbfb;
 }
 
@@ -25,7 +25,7 @@
 .operating-heading h1,
 .production-heading h1 {
   margin: 0;
-  color: #101828;
+  color: var(--color-text);
   letter-spacing: -0.75px;
 }
 
@@ -47,7 +47,7 @@
 }
 
 .workflow-page-heading h1 {
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 700;
   line-height: normal;
   letter-spacing: -0.55px;
@@ -55,5 +55,5 @@
 
 .workflow-page-heading p {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }

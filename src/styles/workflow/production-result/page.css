@@ -2,7 +2,7 @@
   min-width: 0;
   min-height: 100vh;
   padding: 44px 48px 52px;
-  color: #272326;
+  color: var(--color-text);
   background: #fbfbfb;
 }
 
@@ -19,13 +19,13 @@
 }
 
 .production-heading h1 {
-  font-size: 22px;
+  font-size: var(--text-xl);
   font-weight: 700;
   letter-spacing: -0.55px;
 }
 
 .production-heading p {
   margin-top: 8px;
-  color: #8b8589;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
 }

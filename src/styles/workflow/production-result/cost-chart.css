@@ -11,13 +11,13 @@
 }
 
 .cost-composition__heading span {
-  color: #847e81;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .cost-composition__heading strong {
-  color: #3d383a;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -76,13 +76,13 @@
 
 .cost-composition__legend strong,
 .cost-composition__legend b {
-  color: #514b4e;
-  font-size: 10px;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
 }
 
 .cost-composition__legend small {
-  color: #aaa4a7;
-  font-size: 9px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .cost-composition__legend b {
@@ -103,7 +103,7 @@
 .cost-composition__legend-total strong,
 .cost-composition__legend-total b {
   color: #ba0036;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 700;
 }
 

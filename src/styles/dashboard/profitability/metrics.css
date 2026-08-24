@@ -14,7 +14,7 @@
 .metric-unit {
   margin-top: 3px;
   color: var(--color-text-subtle);
-  font-size: 9.5px;
+  font-size: var(--text-2xs);
   font-weight: 500;
 }
 
@@ -30,44 +30,44 @@
 }
 
 .money-cell {
-  color: #2f2a2a;
+  color: var(--color-text);
   font-weight: 550;
 }
 
 .money-cell--sale {
-  color: #171414;
+  color: var(--color-text);
   font-weight: 750;
 }
 
 .margin-pill {
   display: inline-flex;
   align-items: center;
-  font-size: 9.5px;
+  font-size: var(--text-2xs);
   font-weight: 700;
 }
 
 /* 판매가 미입력 — 숫자가 아니므로 tabular-nums 폭 고정이 필요 없다 */
 .margin-pill--unknown {
-  color: #6b6366;
+  color: var(--color-text-subtle);
   font-weight: 550;
   white-space: nowrap;
 }
 
 .rate-cell {
-  color: #3f3939;
+  color: var(--color-text);
   font-weight: 500;
 }
 
 .defect-cell--normal {
-  color: #20a648;
+  color: var(--color-status-good);
 }
 
 .defect-cell--watch {
-  color: #d28700;
+  color: var(--color-status-warn);
 }
 
 .defect-cell--risk {
-  color: #ed4545;
+  color: var(--color-status-bad);
 }
 
 .product-status {
@@ -102,8 +102,8 @@
   justify-content: space-between;
   min-height: 52px;
   padding: 8px 16px 8px 20px;
-  color: #9b9492;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .table-pagination {
@@ -118,12 +118,12 @@
   height: 28px;
   padding: 0;
   place-items: center;
-  color: #403a3a;
+  color: var(--color-text);
   background: transparent;
   border: 0;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   transition: color 140ms ease, background-color 140ms ease;
 }
 

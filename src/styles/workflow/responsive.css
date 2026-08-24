@@ -68,7 +68,7 @@
   .workflow-page-heading h1,
   .operating-heading h1,
   .production-heading h1 {
-    font-size: 22px;
+    font-size: var(--text-xl);
   }
 
   .workflow-page-heading p,
@@ -174,7 +174,7 @@
   }
 
   .production-grand-total strong {
-    font-size: 22px;
+    font-size: var(--text-xl);
   }
 
   .production-footer {

@@ -4,10 +4,10 @@
   margin-top: 18px;
   padding: 0;
   gap: 7px;
-  color: #8b8588;
+  color: var(--color-text-subtle);
   background: transparent;
   border: 0;
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .production-grand-total {
@@ -24,20 +24,20 @@
 .production-grand-total > span {
   display: grid;
   gap: 5px;
-  color: #3d373a;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .production-grand-total small {
-  color: #999396;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 400;
 }
 
 .production-grand-total strong {
   color: var(--color-brand);
-  font-size: 26px;
+  font-size: var(--text-2xl);
   font-variant-numeric: tabular-nums;
 }
 

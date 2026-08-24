@@ -19,16 +19,16 @@
 }
 
 .product-detail-header h1 {
-  color: #1d1d1d;
-  font-size: 27px;
+  color: var(--color-text);
+  font-size: var(--text-3xl);
   font-weight: 650;
   letter-spacing: -0.8px;
 }
 
 .product-detail-header p {
   margin-top: 7px;
-  color: #858585;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
 }
 
 .product-detail-header__photo-wrap {
@@ -54,8 +54,8 @@
 }
 
 .product-detail-header__photo-fallback {
-  color: #9b9598;
-  font-size: 26px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xl);
   font-weight: 650;
 }
 
@@ -102,7 +102,7 @@
   gap: 5px;
   min-height: 32px;
   color: #fff;
-  font-size: 11.5px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   background: var(--color-brand);
   border: 0;
@@ -121,7 +121,7 @@
   gap: 5px;
   min-height: 30px;
   color: #b42318;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   background: #fff;
   border: 1px solid #f0d9d6;
@@ -212,7 +212,7 @@
   min-width: 0;
   padding: 6px 0;
   color: #222;
-  font-size: 14px;
+  font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
   background: transparent;
   border: 0;
@@ -222,7 +222,7 @@
 .product-cost-overview__yield-unit {
   flex: 0 0 auto;
   color: #999 !important;
-  font-size: 11px !important;
+  font-size: var(--text-2xs) !important;
   font-weight: 600;
 }
 
@@ -230,7 +230,7 @@
   flex: 0 0 auto;
   padding: 0 12px;
   color: #fff;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
   background: var(--color-brand);
   border: 0;
@@ -245,7 +245,7 @@
 .product-cost-overview__unit-price {
   margin-top: 6px;
   color: var(--color-brand) !important;
-  font-size: 11px !important;
+  font-size: var(--text-2xs) !important;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
@@ -275,8 +275,8 @@
   flex: 1 1 auto;
   max-width: 190px;
   margin: 0;
-  color: #b0a29f;
-  font-size: 9px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 500;
   line-height: 1.5;
   text-align: right;
@@ -285,7 +285,7 @@
 
 /* 총 금액 카드는 배경이 로즈 톤이라 안내도 같은 계열로 맞춘다 */
 .product-cost-overview__hint.is-note {
-  color: #b09a97;
+  color: var(--color-text-subtle);
 }
 
 /*
@@ -310,7 +310,7 @@
   margin: 18px 0 0;
   padding-top: 12px;
   border-top: 1px solid #ecdedc;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -324,8 +324,8 @@
 
 .product-cost-overview__rates dt {
   flex: 0 0 auto;
-  color: #9a8b89;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -358,20 +358,20 @@
 
 .unit-price-trend__heading h3 {
   margin: 0;
-  color: #242424;
-  font-size: 13px;
+  color: var(--color-text);
+  font-size: var(--text-sm);
   font-weight: 650;
 }
 
 .unit-price-trend__heading p {
   margin: 4px 0 0;
-  color: #9b9598;
-  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .unit-price-trend__heading strong {
   color: var(--color-brand);
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -434,17 +434,23 @@
 
 .unit-price-trend__y-label {
   fill: #a9a3a6;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 9px;
   font-variant-numeric: tabular-nums;
 }
 
 .unit-price-trend__x-title {
   fill: #c3bdbf;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 9px;
 }
 
 .unit-price-trend__x-label {
   fill: #a9a3a6;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 10px;
 }
 
@@ -480,14 +486,16 @@
 
 .unit-price-trend__tooltip-month {
   display: block;
+  /* 어두운 툴팁(#2b2528) 위에 얹히는 글자라 흰 배경용 글자색 토큰을 쓰지 않는다.
+     이 값은 툴팁 배경 기준으로 대비 9:1 이 넘는다 */
   color: #cfc7ca;
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .unit-price-trend__tooltip strong {
   display: block;
   margin-top: 1px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -556,14 +564,14 @@
 
 .product-cost-overview span {
   color: #777;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .product-cost-overview strong {
   margin-top: 11px;
   color: #222;
-  font-size: 20px;
+  font-size: var(--text-xl);
   /* 줄 높이를 명시해야 카드마다 금액 위치가 흔들리지 않는다 */
   line-height: 1.3;
   font-variant-numeric: tabular-nums;
@@ -572,7 +580,7 @@
 .product-cost-overview small {
   margin-top: 5px;
   color: #aaa;
-  font-size: 9px;
+  font-size: var(--text-2xs);
 }
 
 .product-detail-grid {
@@ -611,20 +619,20 @@
 }
 
 .product-cost-panel header h2 {
-  color: #272727;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-weight: 650;
 }
 
 .product-cost-panel header p {
   margin-top: 4px;
   color: #999;
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .product-cost-panel header > strong {
   color: #333;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-variant-numeric: tabular-nums;
 }
 
@@ -638,7 +646,7 @@
   align-items: center;
   min-height: 44px;
   border-top: 1px solid #ededed;
-  font-size: 12.5px;
+  font-size: var(--text-xs);
 }
 
 .material-cost-list--with-price > div {
@@ -663,22 +671,22 @@
 
 .material-cost-list__head {
   min-height: 32px !important;
-  color: #8f8a8c;
-  font-size: 11px !important;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs) !important;
   font-weight: 600;
 }
 
 .material-cost-list strong {
   overflow: hidden;
   color: #333;
-  font-size: 12.5px;
+  font-size: var(--text-xs);
   font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .material-cost-list span {
-  color: #6f696b;
+  color: var(--color-text-subtle);
 }
 
 .material-cost-list b {
@@ -703,11 +711,11 @@
 .indirect-cost-panel dt,
 .indirect-cost-panel dd {
   margin: 0;
-  font-size: 18.5px;
+  font-size: var(--text-lg);
 }
 
 .indirect-cost-panel dt {
-  color: #6f696b;
+  color: var(--color-text-subtle);
   font-weight: 500;
 }
 
@@ -730,14 +738,14 @@
 }
 
 .indirect-cost-panel__total dd {
-  font-size: 21px;
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
 .indirect-cost-panel__share {
   margin-left: 8px;
   color: var(--color-brand);
-  font-size: 16.5px;
+  font-size: var(--text-md);
   font-weight: 600;
 }
 
@@ -760,14 +768,14 @@
 }
 
 .sales-info-panel__head h2 {
-  font-size: 15px;
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
 .sales-info-panel__head p {
   margin: 3px 0 0;
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .sales-info-panel__save {
@@ -775,7 +783,7 @@
   min-height: 34px;
   padding: 0 16px;
   color: #fff;
-  font-size: 12.5px;
+  font-size: var(--text-xs);
   font-weight: 600;
   background: var(--color-brand);
   border: 0;
@@ -807,7 +815,7 @@
   grid-template-rows: auto auto auto;
   gap: 6px;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 650;
 }
 
@@ -815,7 +823,7 @@
   height: 40px;
   padding: 0 12px;
   color: var(--color-text);
-  font-size: 13px;
+  font-size: var(--text-sm);
   background: #fff;
   border: 1px solid var(--color-border);
   border-radius: 8px;
@@ -834,7 +842,7 @@
   background: #fdf8ee;
   border: 1px solid #f0dcb5;
   color: #7a5a12;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.55;
 }
 
@@ -843,7 +851,7 @@
   align-self: start;
   min-height: 14px;
   color: var(--color-text-subtle);
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   font-weight: 500;
   line-height: 1.3;
 }
@@ -870,7 +878,7 @@
   padding: 0;
   list-style: none;
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 600;
 }
 
@@ -915,6 +923,8 @@
 .product-cost-trend__y-label,
 .product-cost-trend__x-label {
   fill: #a9a3a6;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
@@ -955,11 +965,15 @@
 
 .product-cost-trend__tooltip text {
   fill: rgba(255, 255, 255, 0.72);
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 10px;
 }
 
 .product-cost-trend__tooltip .product-cost-trend__tooltip-value {
   fill: #fff;
+  /* SVG viewBox 좌표 단위다. 화면 px 가 아니라 그래프 안에서만 통하는 값이라
+     타입 스케일 토큰을 쓰지 않는다 */
   font-size: 12px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -970,7 +984,7 @@
   margin: 0;
   padding: 20px 22px;
   color: var(--color-text-subtle);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1.6;
 }
 
@@ -982,19 +996,19 @@
 
 /* 세 지표 카드 — 이제 선택 버튼이 아니라 읽기 전용 요약이다 */
 .product-cost-overview__item.is-material strong { color: var(--color-navy); }
-.product-cost-overview__item.is-sub strong { color: #b8792c; }
+.product-cost-overview__item.is-sub strong { color: var(--color-status-amber); }
 
 .indirect-cost-panel__empty {
   margin: 12px 0 0;
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.55;
 }
 
 .material-cost-list__empty {
   padding: 20px 4px;
   color: var(--color-text-subtle);
-  font-size: 12.5px;
+  font-size: var(--text-xs);
   line-height: 1.6;
 }
 
@@ -1005,7 +1019,7 @@
   color: var(--color-text-subtle);
   background: #faf9f9;
   border-radius: 8px;
-  font-size: 12px;
+  font-size: var(--text-xs);
   line-height: 1.6;
 }
 
