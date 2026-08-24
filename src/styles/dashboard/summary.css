@@ -243,14 +243,40 @@
   margin-top: 18px;
 }
 
+/*
+  두 줄 높이를 같게 맞춘다. 빈 칸(placeholder)과 짝을 이뤄, 마지막 장에 카드가
+  1~3개만 남아도 격자 전체 높이가 4개일 때와 같아진다.
+  PDF(--expanded)에는 걸지 않는다 — 줄이 여러 개라 가장 큰 줄에 전부 맞추면
+  '확정된 원가 없음' 카드까지 늘어나 종이가 낭비된다.
+*/
+.product-cost-carousel:not(.product-cost-carousel--expanded) .product-cost-grid {
+  grid-auto-rows: 1fr;
+}
+
 .product-cost-slide {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   padding: 16px;
-  background: #fff;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 12px;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
   page-break-inside: avoid;
   break-inside: avoid;
+}
+
+/* 카드마다 '상세 보기'가 있어 누를 수 있는 영역임을 손에 잡히게 한다 */
+.product-cost-slide:hover {
+  border-color: #d9cdd0;
+  box-shadow: var(--shadow-card);
+}
+
+/* 마지막 장에 카드가 4개보다 적어도 격자 높이가 유지되게 하는 빈 칸.
+   없으면 페이지를 넘길 때마다 카드 전체가 위아래로 출렁인다 */
+.product-cost-slide--placeholder {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .product-cost-slide__name {
@@ -282,7 +308,7 @@
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--color-border);
-  color: #9b9492;
+  color: var(--color-text-subtle);
   font-size: 11px;
 }
 
@@ -327,15 +353,31 @@
   display: flex;
   align-items: center;
   flex: 0 0 auto;
-  padding: 6px 4px;
+  padding: 6px 8px;
   gap: 4px;
   color: var(--color-brand);
   background: transparent;
   border: 0;
+  border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
   white-space: nowrap;
+  transition: color 140ms ease, background-color 140ms ease;
+}
+
+.product-cost-slide__product > button:hover {
+  color: var(--color-brand-hover);
+  background: var(--color-brand-soft);
+}
+
+/* 화살표가 눌리는 방향으로 살짝 나간다 */
+.product-cost-slide__product > button svg {
+  transition: transform 140ms ease;
+}
+
+.product-cost-slide__product > button:hover svg {
+  transform: translateX(2px);
 }
 
 .product-cost-slide__metric {
@@ -354,26 +396,48 @@
   font-size: 24px;
   line-height: 1.15;
   letter-spacing: -0.6px;
+  /* 카드끼리 자릿수가 달라도 숫자 폭이 같아 세로로 줄이 맞는다 */
+  font-variant-numeric: tabular-nums;
 }
 
 .product-cost-slide__metric small {
   margin-left: 4px;
+  color: var(--color-text-subtle);
   font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0;
 }
 
+/* 증감은 색 글자 대신 배지로. 카드가 4개 깔리면 색만으로는 눈에 안 걸린다 */
 .product-cost-slide__metric em {
-  font-size: 10px;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  margin-top: 4px;
+  padding: 3px 8px;
+  gap: 4px;
+  border-radius: 999px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.product-cost-slide__metric em i {
+  font-size: 8px;
+  font-style: normal;
+  line-height: 1;
 }
 
 .product-cost-slide__metric .is-up {
-  color: var(--color-brand);
+  color: var(--color-trend-up);
+  background: var(--color-trend-up-soft);
 }
 
 .product-cost-slide__metric .is-down {
-  color: #26734d;
+  color: var(--color-trend-down);
+  background: var(--color-trend-down-soft);
 }
 
 .product-cost-slide__chart {
@@ -438,6 +502,13 @@
 .product-cost-slide__point:hover .product-cost-slide__point-dot,
 .product-cost-slide__point:focus .product-cost-slide__point-dot {
   stroke-width: 4;
+}
+
+/* 점은 tabIndex 로 초점을 받는데 outline 을 지워 둬서 키보드로 짚으면
+   어디에 있는지 보이지 않았다. 점 둘레에 옅은 원을 깔아 표시한다 */
+.product-cost-slide__point:focus-visible .product-cost-slide__point-hit {
+  fill: var(--color-brand);
+  fill-opacity: 0.14;
 }
 
 .product-cost-slide__tooltip {
@@ -723,8 +794,13 @@
 
 /* 확정된 원가가 없는 제품. 예전에는 지어낸 곡선을 그려 실제처럼 보였다 */
 .product-cost-slide__empty {
+  /* 그래프가 있는 옆 카드와 높이가 같아지도록 남은 자리를 채운다 */
+  display: grid;
+  flex: 1;
+  place-items: center;
   margin: 14px 0 0;
   padding: 24px 16px;
+  background: var(--color-surface-muted);
   border: 1px dashed var(--color-border);
   border-radius: 10px;
   color: var(--color-text-subtle);

@@ -10,6 +10,12 @@
   --color-sidebar-text: #5c3f45;
   --color-border: #e4dfdd;
   --color-positive: #d62d16;
+  /* 원가 증감 표시. '상승'은 브랜드 레드, '하락'은 초록 계열로 고정한다.
+     예전에는 카드마다 #26734d 같은 값을 직접 박아 써서 화면끼리 조금씩 달랐다 */
+  --color-trend-up: #ba0036;
+  --color-trend-up-soft: #fdecf0;
+  --color-trend-down: #1f6b47;
+  --color-trend-down-soft: #e8f4ee;
   --color-purple: #7a3fc1;
   --color-chart-target: #e9e7e7;
   --color-chip: #efeded;
