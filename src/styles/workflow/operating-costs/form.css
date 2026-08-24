@@ -77,6 +77,23 @@
   font-variant-numeric: tabular-nums;
 }
 
+.operating-cost-input:has(input:disabled) {
+  background: #f3f1f2;
+  border-style: dashed;
+}
+
+.operating-cost-input input:disabled {
+  color: #6e686c;
+  cursor: not-allowed;
+  -webkit-text-fill-color: #6e686c;
+}
+
+.operating-cost-group__name-input:disabled {
+  color: #242023;
+  -webkit-text-fill-color: #242023;
+  cursor: default;
+}
+
 .operating-cost-input small {
   flex: 0 0 auto;
   color: #aaa4a7;

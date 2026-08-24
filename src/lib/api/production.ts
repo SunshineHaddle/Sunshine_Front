@@ -73,6 +73,8 @@ export async function saveProduction(
 // ── §6-1. 투입 실적 조회 ────────────────────────────────────
 export type UsageLine = {
   productId: string
+  /** materials.id — 투입 실적을 표준 배합 편집 폼에 되채울 때 필요하다 */
+  materialId: string
   materialCode: string
   materialName: string
   usage: number
@@ -88,12 +90,13 @@ export async function fetchMaterialUsages(
 ): Promise<UsageLine[]> {
   let query = supabase
     .from('material_usages')
-    .select('product_id, usage_qty, unit, unit_price, amount, source, materials(code, name)')
+    .select('product_id, material_id, usage_qty, unit, unit_price, amount, source, materials(code, name)')
     .eq('period_id', periodId)
   if (productId) query = query.eq('product_id', productId)
 
   const rows = unwrap(await query) as unknown as {
     product_id: string
+    material_id: string
     usage_qty: number
     unit: MaterialUnit
     unit_price: number
@@ -104,6 +107,7 @@ export async function fetchMaterialUsages(
 
   return rows.map((row) => ({
     productId: row.product_id,
+    materialId: row.material_id,
     materialCode: row.materials?.code ?? '',
     materialName: row.materials?.name ?? '',
     usage: num(row.usage_qty),
@@ -175,12 +179,13 @@ export async function fetchProductUsagesByMonth(
     await supabase
       .from('material_usages')
       // !inner 가 없으면 기간 필터가 적용되지 않는다
-      .select('product_id, usage_qty, unit, unit_price, amount, source,'
+      .select('product_id, material_id, usage_qty, unit, unit_price, amount, source,'
         + ' materials(code, name), cost_periods!inner(period)')
       .eq('product_id', productId)
       .eq('cost_periods.period', `${month}-01`),
   ) as unknown as {
     product_id: string
+    material_id: string
     usage_qty: number
     unit: MaterialUnit
     unit_price: number
@@ -192,6 +197,7 @@ export async function fetchProductUsagesByMonth(
   return rows
     .map((row) => ({
       productId: row.product_id,
+      materialId: row.material_id,
       materialCode: row.materials?.code ?? '',
       materialName: row.materials?.name ?? '',
       usage: num(row.usage_qty),

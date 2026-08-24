@@ -928,6 +928,16 @@
   font-size: 13px;
 }
 
+.recipe-edit__hint {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  border-radius: var(--radius-control);
+  background: var(--color-blue-soft);
+  color: var(--color-navy);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .recipe-edit__add {
   display: flex;
   align-items: center;

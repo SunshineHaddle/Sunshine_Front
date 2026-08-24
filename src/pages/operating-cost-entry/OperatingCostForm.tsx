@@ -15,6 +15,8 @@ type OperatingCostFormProps = {
   products: RecipeProduct[]
   costs: OperatingCosts
   productions: ProductionShare[]
+  /** 마감된 회차 — 저장값만 보여주고 입력·추가·삭제를 막는다 */
+  readOnly?: boolean
   onCostChange: (field: CostField, value: string) => void
   onProductFeeChange: (productId: string, value: string) => void
   onEqualizeProductFees: () => void
@@ -32,16 +34,17 @@ type CostInputProps = {
   value: string
   icon?: IconName
   suffix?: string
+  disabled?: boolean
   onChange: (field: CostField, value: string) => void
 }
 
-function CostInput({ field, label, value, icon, suffix, onChange }: CostInputProps) {
+function CostInput({ field, label, value, icon, suffix, disabled, onChange }: CostInputProps) {
   return (
     <label className="operating-cost-field">
       <span>{label}</span>
       <span className="operating-cost-input">
         {icon && <Icon name={icon} size={16} />}
-        <NumberInput value={value} onValueChange={(raw) => onChange(field, raw)} />
+        <NumberInput value={value} disabled={disabled} onValueChange={(raw) => onChange(field, raw)} />
         {suffix && <small>{suffix}</small>}
       </span>
     </label>
@@ -60,6 +63,7 @@ type ProductFeeListProps = {
   /** 환산 금액 앞에 붙일 말 (인건비 섹션은 '인건비', 추가 항목은 생략) */
   amountLabel?: string
   onEqualize?: () => void
+  disabled?: boolean
 }
 
 function ProductFeeList({
@@ -72,6 +76,7 @@ function ProductFeeList({
   totalAmount,
   amountLabel,
   onEqualize,
+  disabled = false,
 }: ProductFeeListProps) {
   const shareTotal = sumProductFees(values)
   const isValid = Math.round(shareTotal * 10) / 10 === 100
@@ -83,7 +88,7 @@ function ProductFeeList({
         <span className="operating-cost-labor__products-title">{title}</span>
         {showShareTotal && (
           <div className="operating-cost-labor__products-actions">
-            {onEqualize && (
+            {onEqualize && !disabled && (
               <button type="button" className="operating-cost-labor__equalize" onClick={onEqualize}>
                 균등 분배
               </button>
@@ -115,6 +120,7 @@ function ProductFeeList({
                     type="number"
                     aria-label={`${product.name} ${title} (${unit})`}
                     value={values[product.id] ?? ''}
+                    disabled={disabled}
                     onChange={(event) => onChange(product.id, event.target.value)}
                   />
                   <small>{unit}</small>
@@ -126,7 +132,7 @@ function ProductFeeList({
           <p className="operating-cost-labor__empty">등록된 제품이 없습니다.</p>
         )}
       </div>
-      {showShareTotal && !isValid && (
+      {showShareTotal && !isValid && !disabled && (
         <p className="operating-cost-labor__share-warning">제품별 비율의 합이 100%가 되어야 합니다.</p>
       )}
     </div>
@@ -137,6 +143,7 @@ export function OperatingCostForm({
   products,
   costs,
   productions,
+  readOnly = false,
   onCostChange,
   onProductFeeChange,
   onEqualizeProductFees,
@@ -157,7 +164,7 @@ export function OperatingCostForm({
           <header><Icon name="users" size={18} /><h2 id="labor-cost-title">인건비</h2></header>
           <div className="operating-cost-labor">
             <div className="operating-cost-labor__total">
-              <CostInput field="laborTotal" label="총 인건비" value={costs.laborTotal} suffix="원" onChange={onCostChange} />
+              <CostInput field="laborTotal" label="총 인건비" value={costs.laborTotal} suffix="원" disabled={readOnly} onChange={onCostChange} />
             </div>
             <ProductFeeList
               products={excelProducts}
@@ -169,6 +176,7 @@ export function OperatingCostForm({
               totalAmount={costs.laborTotal}
               amountLabel="인건비"
               onEqualize={onEqualizeProductFees}
+              disabled={readOnly}
             />
           </div>
         </section>
@@ -184,16 +192,19 @@ export function OperatingCostForm({
                   aria-label="추가 항목 이름"
                   value={item.name}
                   placeholder="항목 이름"
+                  disabled={readOnly}
                   onChange={(event) => onUpdateCustomItemName(item.id, event.target.value)}
                 />
-                <button
-                  type="button"
-                  className="operating-cost-group__remove"
-                  aria-label="항목 삭제"
-                  onClick={() => onRemoveCustomItem(item.id)}
-                >
-                  <Icon name="trash" size={15} />
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    className="operating-cost-group__remove"
+                    aria-label="항목 삭제"
+                    onClick={() => onRemoveCustomItem(item.id)}
+                  >
+                    <Icon name="trash" size={15} />
+                  </button>
+                )}
               </header>
               <div className="operating-cost-labor">
                 <div className="operating-cost-labor__total">
@@ -202,6 +213,7 @@ export function OperatingCostForm({
                     <span className="operating-cost-input">
                       <NumberInput
                         value={item.total}
+                        disabled={readOnly}
                         onValueChange={(raw) => onUpdateCustomItemTotal(item.id, raw)}
                       />
                       <small>원</small>
@@ -217,6 +229,7 @@ export function OperatingCostForm({
                   showShareTotal
                   totalAmount={item.total}
                   onEqualize={() => onEqualizeCustomItemShares(item.id)}
+                  disabled={readOnly}
                 />
               </div>
             </section>
@@ -224,9 +237,11 @@ export function OperatingCostForm({
         })}
       </div>
 
-      <button type="button" className="operating-cost-add" onClick={onAddCustomItem}>
-        <Icon name="add" size={16} /> 항목 추가
-      </button>
+      {!readOnly && (
+        <button type="button" className="operating-cost-add" onClick={onAddCustomItem}>
+          <Icon name="add" size={16} /> 항목 추가
+        </button>
+      )}
     </>
   )
 }

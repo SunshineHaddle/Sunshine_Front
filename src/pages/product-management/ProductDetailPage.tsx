@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
@@ -96,22 +96,71 @@ export function ProductDetailPage({
       setSavingSales(false)
     }
   }
+  /**
+   * §6-1 : 선택한 달에 실제로 투입한 재료.
+   * 레시피(recipe_items)는 1단위 표준 배합이라 월별 실적과 다르다.
+   * 원재료비 상세는 수불자료로 들어온 실적을 보여준다.
+   */
+  const [usages, setUsages] = useState<UsageLine[]>([])
+  const [usagesLoading, setUsagesLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+    void (async () => {
+      const rows = await fetchProductUsagesByMonth(product.id, analysisState.activeMonth)
+        .catch((error: unknown) => {
+          console.error('[원재료비 상세] 조회 실패', error)
+          return [] as UsageLine[]
+        })
+      if (cancelled) return
+      setUsages(rows)
+      setUsagesLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [product.id, analysisState.activeMonth])
+
   const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
   const [savingRecipe, setSavingRecipe] = useState(false)
 
+  /**
+   * 편집 폼의 출발값. 화면 표에 보이는 이 달 수불자료 투입량을 먼저 채우고,
+   * 이 달에 쓰지 않은 재료만 표준 배합(recipe_items) 값으로 뒤에 붙인다.
+   *
+   * 표준 배합을 먼저 쓰면 안 된다 — 엑셀로 자동 등록된 제품은 배합이 비어 있는 게
+   * 아니라 수량 0·단가 0 인 껍데기로 만들어진다(importSubul). 표에는 재료가
+   * 가득한데 [표준 배합 수정] 을 누르면 0 만 줄줄이 뜨는 화면이 그래서 나왔다.
+   */
+  const recipeSeed = useMemo<{ rows: RecipeRow[]; source: 'recipe' | 'usage' | 'none' }>(() => {
+    const seen = new Set<string>()
+    const fromUsage = usages.flatMap((line) => {
+      if (!line.materialId || seen.has(line.materialId)) return []
+      seen.add(line.materialId)
+      return [{
+        materialId: line.materialId,
+        name: line.materialName,
+        usage: String(line.usage),
+        unitPrice: String(line.unitPrice),
+      }]
+    })
+    const fromRecipe = product.ingredients.flatMap((ingredient) => {
+      if (!ingredient.materialId || seen.has(ingredient.materialId)) return []
+      seen.add(ingredient.materialId)
+      return [{
+        materialId: ingredient.materialId,
+        name: ingredient.name,
+        usage: String(ingredient.usage),
+        unitPrice: String(ingredient.unitPrice ?? 0),
+      }]
+    })
+    const rows = [...fromUsage, ...fromRecipe]
+    return {
+      rows,
+      source: fromUsage.length > 0 ? 'usage' : rows.length > 0 ? 'recipe' : 'none',
+    }
+  }, [product.ingredients, usages])
+
   const startEditRecipe = () => {
-    setRecipeRows(
-      product.ingredients.flatMap((ingredient) =>
-        ingredient.materialId
-          ? [{
-              materialId: ingredient.materialId,
-              name: ingredient.name,
-              usage: String(ingredient.usage),
-              unitPrice: String(ingredient.unitPrice ?? 0),
-            }]
-          : [],
-      ),
-    )
+    setRecipeRows(recipeSeed.rows)
     setIsEditingRecipe(true)
   }
 
@@ -150,29 +199,6 @@ export function ProductDetailPage({
       setSavingRecipe(false)
     }
   }
-
-  /**
-   * §6-1 : 선택한 달에 실제로 투입한 재료.
-   * 레시피(recipe_items)는 1단위 표준 배합이라 월별 실적과 다르다.
-   * 원재료비 상세는 수불자료로 들어온 실적을 보여준다.
-   */
-  const [usages, setUsages] = useState<UsageLine[]>([])
-  const [usagesLoading, setUsagesLoading] = useState(true)
-
-  useEffect(() => {
-    let cancelled = false
-    void (async () => {
-      const rows = await fetchProductUsagesByMonth(product.id, analysisState.activeMonth)
-        .catch((error: unknown) => {
-          console.error('[원재료비 상세] 조회 실패', error)
-          return [] as UsageLine[]
-        })
-      if (cancelled) return
-      setUsages(rows)
-      setUsagesLoading(false)
-    })()
-    return () => { cancelled = true }
-  }, [product.id, analysisState.activeMonth])
 
   const usageTotal = usages.reduce((sum, line) => sum + line.amount, 0)
 
@@ -412,6 +438,12 @@ export function ProductDetailPage({
                   제품 <strong>1kg</strong> 을 만드는 데 들어가는 재료의 수량과 단가입니다.
                   수불자료를 올리지 않은 달은 이 값에 생산량을 곱해 재료비를 계산합니다.
                 </p>
+                {recipeSeed.source === 'usage' && (
+                  <p className="recipe-edit__hint">
+                    {analysisState.monthLabel} 수불자료 투입량을 그대로 채웠습니다.
+                    저장하면 이 값이 표준 배합이 됩니다.
+                  </p>
+                )}
                 <div className="material-cost-list__head"><span>품명</span><span>수량(kg)</span><span>단가(원)</span><span /></div>
                 {recipeRows.map((row) => (
                   <div className="recipe-edit__row" key={row.materialId}>

@@ -371,14 +371,14 @@ function App() {
     // 해시를 직접 고쳐 허용되지 않은 route 로 들어와도 1단계로 떨어뜨린다
     page =
       route === 'data-entry-2' ? (
-        <OperatingCostEntryPage {...entryProps} />
+        <OperatingCostEntryPage {...entryProps} isLocked={period?.status === 'confirmed'} />
       ) : (
         rawMaterialEntryPage
       )
   } else if (route === 'data-entry-1') {
     page = rawMaterialEntryPage
   } else if (route === 'data-entry-2') {
-    page = <OperatingCostEntryPage {...entryProps} />
+    page = <OperatingCostEntryPage {...entryProps} isLocked={period?.status === 'confirmed'} />
   } else if (route === 'data-entry-3') {
     page = (
       <ProductionResultPage

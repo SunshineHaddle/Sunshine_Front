@@ -28,6 +28,8 @@ type OperatingCostEntryPageProps = {
   periodId: string | null
   /** worker 처럼 재접속 시 저장값을 화면에 불러오지 않고 빈 폼으로 시작 */
   freshEntry?: boolean
+  /** 이 회차가 마감(잠금)되었는지. 마감되면 저장값을 읽기전용으로 보여준다 */
+  isLocked?: boolean
   onNavigate: (route: AppRoute) => void
   onAction: (message: string) => void
   hideSidebar?: boolean
@@ -38,6 +40,7 @@ export function OperatingCostEntryPage({
   month,
   periodId,
   freshEntry = false,
+  isLocked = false,
   onNavigate,
   onAction,
   hideSidebar = false,
@@ -54,6 +57,10 @@ export function OperatingCostEntryPage({
   /** DB 에 이미 있는 항목 id. 삭제 시 필요하다 */
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [busy, setBusy] = useState(false)
+
+  // 1단계와 같은 규칙 — worker·재접속(freshEntry)은 빈 폼이지만,
+  // 마감된 회차는 그와 무관하게 저장된 값을 읽기전용으로 보여준다.
+  const loadSaved = !freshEntry || isLocked
 
   const totals = calculateOperatingCosts(costs)
   const laborShareTotal = sumProductFees(costs.productFees)
@@ -92,7 +99,7 @@ export function OperatingCostEntryPage({
     let cancelled = false
     const load = async () => {
       // worker 는 재접속마다 빈 폼으로 시작한다 (저장값을 화면에 되불러오지 않음)
-      if (freshEntry) {
+      if (!loadSaved) {
         setCosts(initialOperatingCosts)
         setSavedIds(new Set())
         return
@@ -133,7 +140,7 @@ export function OperatingCostEntryPage({
     }
     void load()
     return () => { cancelled = true }
-  }, [periodId, onAction, freshEntry, loadedProductions])
+  }, [periodId, onAction, loadSaved, loadedProductions])
 
   const updateCost = (field: CostField, value: string) => {
     setCosts((current) => ({ ...current, [field]: value }))
@@ -202,6 +209,7 @@ export function OperatingCostEntryPage({
   }
 
   const resetEntry = () => {
+    if (isLocked) return
     if (!window.confirm('입력한 인건비와 비율, 운영 항목을 화면에서 지울까요?\n이미 저장된 데이터는 그대로 남습니다.')) return
     setCosts(initialOperatingCosts)
     onAction('입력 내용을 초기화했습니다.')
@@ -209,6 +217,7 @@ export function OperatingCostEntryPage({
 
   // §7-3 이미 저장된 항목이면 DB 에서도 지운다
   const removeCustomItem = (id: string) => {
+    if (isLocked) return
     setCosts((current) => ({
       ...current,
       customItems: current.customItems.filter((item) => item.id !== id),
@@ -252,6 +261,11 @@ export function OperatingCostEntryPage({
   }
 
   const goToNextStep = async () => {
+    // 마감된 회차는 RLS 가 쓰기를 막는다. 저장 시도 자체를 하지 않는다.
+    if (isLocked) {
+      onAction('마감된 회차입니다. 값을 고치려면 1단계에서 마감을 취소하세요.')
+      return
+    }
     if (!isLaborShareValid) {
       onAction(`제품별 가공비 비율의 합이 100%가 되어야 합니다. (현재 ${laborShareTotal.toLocaleString('ko-KR', { maximumFractionDigits: 1 })}%)`)
       return
@@ -284,15 +298,26 @@ export function OperatingCostEntryPage({
             <h1>2단계: 현장 운영비</h1>
             <p>제조 공정의 인건비와 운영 항목을 입력하세요.</p>
           </div>
-          <button className="workflow-outline-button" type="button" onClick={resetEntry}>
+          <button className="workflow-outline-button" type="button" onClick={resetEntry} disabled={isLocked}>
             <Icon name="trash" size={16} /> 초기화
           </button>
         </header>
+
+        {isLocked && (
+          <p className="entry-locked" role="status">
+            <Icon name="info" size={15} />
+            <span>
+              {month.replace('-', '년 ')}월은 마감되어 있습니다. 저장된 인건비와 운영 항목을 읽기전용으로 보여줍니다.
+              값을 고치려면 1단계에서 <strong>마감 풀고 수정</strong> 을 누르세요.
+            </span>
+          </p>
+        )}
 
         <OperatingCostForm
           products={products}
           costs={costs}
           productions={productions}
+          readOnly={isLocked}
           onCostChange={updateCost}
           onProductFeeChange={updateProductFee}
           onEqualizeProductFees={equalizeProductFees}
@@ -316,7 +341,8 @@ export function OperatingCostEntryPage({
             className="workflow-coral-button"
             type="button"
             onClick={() => void goToNextStep()}
-            disabled={!isLaborShareValid || Boolean(invalidCustomItem) || busy || !periodId}
+            disabled={isLocked || !isLaborShareValid || Boolean(invalidCustomItem) || busy || !periodId}
+            title={isLocked ? '마감된 회차입니다. 수정하려면 1단계에서 마감을 취소하세요.' : undefined}
           >
             {hideSidebar ? '저장' : '다음 단계'} <Icon name="chevron-right" size={16} />
           </button>
