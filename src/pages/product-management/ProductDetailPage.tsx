@@ -159,11 +159,6 @@ export function ProductDetailPage({
     }
   }, [product.ingredients, usages])
 
-  const startEditRecipe = () => {
-    setRecipeRows(recipeSeed.rows)
-    setIsEditingRecipe(true)
-  }
-
   const updateRecipeRow = (materialId: string, patch: Partial<RecipeRow>) => {
     setRecipeRows((current) =>
       current.map((row) => (row.materialId === materialId ? { ...row, ...patch } : row)),
@@ -419,13 +414,6 @@ export function ProductDetailPage({
                 </div>
               ) : (
                 <div className="recipe-edit-actions">
-                  <button
-                    type="button"
-                    onClick={startEditRecipe}
-                    title="수불자료를 올리지 않은 달은 이 배합으로 원가를 계산합니다. 제품 1kg 을 만드는 데 들어가는 재료의 수량과 단가입니다."
-                  >
-                    기본 배합표 수정
-                  </button>
                   <strong>{currencyFormatter.format(usageTotal)}</strong>
                 </div>
               )}
