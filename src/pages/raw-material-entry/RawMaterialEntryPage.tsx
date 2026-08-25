@@ -151,7 +151,13 @@ export function RawMaterialEntryPage({
 
   // 저장된 값을 화면에 되불러올지. worker·재접속(freshEntry)은 빈 폼이지만,
   // 마감된 회차는 그와 무관하게 저장된 값을 읽기전용으로 보여준다.
-  const loadSaved = !freshEntry || isLocked
+  // 이 화면에서 마감을 취소한 회차도 저장값을 유지한다 — 취소 직후 isLocked 가
+  // 풀리면서 loadSaved 가 false 로 떨어지면, 방금 되불러온 생산량·투입내역
+  // (=생산량 상한 힌트)이 빈 배열로 덮여 편집 중에 전부 사라진다.
+  // 회차 id 를 같이 기억해 두어, 다른 달로 옮기면 자동으로 무효가 된다.
+  const [reopenedPeriodId, setReopenedPeriodId] = useState<string | null>(null)
+  const reopenedHere = reopenedPeriodId !== null && reopenedPeriodId === periodId
+  const loadSaved = !freshEntry || isLocked || reopenedHere
 
   // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
   // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
@@ -499,6 +505,7 @@ export function RawMaterialEntryPage({
     setBusy('마감을 취소하는 중…')
     try {
       await reopenPeriod(periodId)
+      setReopenedPeriodId(periodId)
       // 재접속 후 마감 회차는 빈 폼(freshEntry)으로 열린다. 수정하려면
       // 저장된 생산량·투입내역을 화면에 되불러와야 한다.
       // reloadUsages/History 는 freshEntry 면 빈 배열을 주므로 여기서 직접 읽는다
@@ -1019,8 +1026,8 @@ export function RawMaterialEntryPage({
                         {inputKg > 0 && (
                           <small className={`production-item__hint${over ? ' is-error' : ''}`}>
                             {over
-                              ? `투입량 ${kgText(inputKg)} 을(를) 초과할 수 없습니다`
-                              : `투입량 ${kgText(inputKg)}`}
+                              ? `최대 ${kgText(inputKg)} — 투입량을 초과했습니다`
+                              : `최대 ${kgText(inputKg)}`}
                           </small>
                         )}
                       </label>
