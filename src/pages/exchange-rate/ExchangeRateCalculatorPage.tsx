@@ -259,9 +259,10 @@ export function ExchangeRateCalculatorPage({
             <h1>제품별 환율 산출</h1>
             <p>
               등록된 제품의 원가를 기준으로 마진과 고정 환율을 적용해 현지 판매가를 계산합니다.
+              <br />
               {costMonthLabel
-                ? ` 원가는 마지막으로 마감한 ${costMonthLabel} 기준입니다.`
-                : ' 아직 마감한 달이 없어 원가가 비어 있습니다.'}
+                ? `원가는 마지막으로 마감한 ${costMonthLabel} 기준입니다.`
+                : '아직 마감한 달이 없어 원가가 비어 있습니다.'}
             </p>
           </div>
           <div className="exchange-currency-picker">
