@@ -10,11 +10,11 @@
 .production-finish {
   min-height: 44px;
   padding: 0 18px;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .production-back {
-  color: #5f595c;
+  color: var(--color-text-muted);
   background: #fff;
   border: 1px solid #d7d2d5;
 }

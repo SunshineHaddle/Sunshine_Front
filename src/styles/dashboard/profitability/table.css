@@ -23,7 +23,7 @@
   border-radius: 6px;
   background: #fff;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -44,7 +44,7 @@
 }
 
 .profitability-card__heading h2 {
-  font-size: 18px;
+  font-size: var(--text-lg);
   font-weight: 700;
   letter-spacing: -0.3px;
 }
@@ -52,7 +52,7 @@
 .profitability-card__heading p {
   margin: 4px 0 0;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   line-height: 1.45;
 }
 
@@ -70,12 +70,12 @@
   min-height: 32px;
   padding: 0 10px;
   gap: 6px;
-  color: #4f4848;
+  color: var(--color-text-muted);
   background: #fff;
   border: 1px solid #ddd8d6;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
   transition: color 150ms ease, border-color 150ms ease, background-color 150ms ease;
 }
@@ -101,7 +101,7 @@
   border-collapse: collapse;
   table-layout: fixed;
   color: var(--color-text);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .profitability-card th,
@@ -115,7 +115,7 @@
 .profitability-card th small {
   display: block;
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 500;
   letter-spacing: -0.1px;
 }
@@ -156,12 +156,12 @@
   height: 46px;
   color: var(--color-text-subtle);
   background: rgba(248, 247, 247, 0.84);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 500;
 }
 
 .profitability-card th {
-  color: #4f4949;
+  color: var(--color-text-muted);
   font-weight: 600;
 }
 

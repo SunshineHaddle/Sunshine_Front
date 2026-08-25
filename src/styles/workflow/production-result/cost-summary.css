@@ -17,20 +17,20 @@
 }
 
 .production-section-heading h2 {
-  color: #302b2e;
-  font-size: 15px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
 .production-section-heading p {
   margin-top: 5px;
-  color: #9b9598;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .production-section-heading > span {
-  color: #746e71;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .production-cost-layout {
@@ -59,13 +59,13 @@
 }
 
 .cost-summary-title-row span {
-  color: #847e81;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .cost-summary-title-row strong {
-  color: #292426;
-  font-size: 22px;
+  color: var(--color-text);
+  font-size: var(--text-xl);
   font-variant-numeric: tabular-nums;
 }
 
@@ -74,7 +74,7 @@
   color: var(--color-brand);
   background: transparent;
   border: 0;
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .material-cost-table {
@@ -104,14 +104,14 @@
 
 .material-cost-table th {
   height: 30px;
-  color: #9b9598;
-  font-size: 9px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 500;
 }
 
 .material-cost-table td {
-  color: #514b4e;
-  font-size: 10px;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -125,11 +125,11 @@
 .material-cost-table th:last-child,
 .material-cost-table td:last-child {
   padding-right: 0;
-  color: #3d383a;
+  color: var(--color-text);
   font-weight: 600;
 }
 
-.material-cost-table__empty td { color: #c5c0c2; }
+.material-cost-table__empty td { color: var(--color-text-subtle); }
 
 .material-cost-table__total {
   display: flex;
@@ -141,14 +141,14 @@
 }
 
 .material-cost-table__total span {
-  color: #6a6467;
-  font-size: 10.5px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .material-cost-table__total strong {
   color: #ba0036;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -173,11 +173,11 @@
 .production-operating-summary dt,
 .production-operating-summary dd {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
-.production-operating-summary dt { color: #777174; }
-.production-operating-summary dd { color: #3d383a; font-weight: 600; font-variant-numeric: tabular-nums; }
+.production-operating-summary dt { color: var(--color-text-subtle); }
+.production-operating-summary dd { color: var(--color-text); font-weight: 600; font-variant-numeric: tabular-nums; }
 
 .result-products {
   margin-top: 22px;
@@ -189,8 +189,8 @@
 
 .result-products__empty {
   margin: 16px 0 0;
-  color: #b3adb0;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
 }
 
 .result-products__list {
@@ -222,14 +222,14 @@
 }
 
 .result-product__title strong {
-  color: #242023;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-weight: 700;
 }
 
 .result-product__title span {
-  color: #999397;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .result-product__figures {
@@ -240,13 +240,13 @@
 
 .result-product__figures span {
   color: #ba0036;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .result-product__figures strong {
-  color: #242023;
-  font-size: 15px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -260,22 +260,22 @@
 .result-product__table th,
 .result-product__table td {
   padding: 7px 0;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   text-align: right;
   font-variant-numeric: tabular-nums;
   border-bottom: 1px solid #f2f0f1;
 }
 
 .result-product__table th {
-  color: #9b9598;
+  color: var(--color-text-subtle);
   font-weight: 500;
-  font-size: 9.5px;
+  font-size: var(--text-2xs);
 }
 
 .result-product__table th:first-child,
 .result-product__table td:first-child {
   text-align: left;
-  color: #4b4549;
+  color: var(--color-text-muted);
 }
 
 .result-product__table td:first-child {
@@ -285,7 +285,7 @@
 .production-operating-summary__share {
   margin-left: 6px;
   color: #ba0036;
-  font-size: 9.5px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 

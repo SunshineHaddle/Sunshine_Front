@@ -18,7 +18,7 @@
   background: var(--color-brand-soft);
   border-radius: var(--radius-control);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 10px;
+  font-size: var(--text-2xs);
   font-weight: 700;
 }
 
@@ -29,7 +29,7 @@
 
 .recipe-builder-section__heading h2 {
   color: var(--color-text);
-  font-size: 16px;
+  font-size: var(--text-md);
   font-weight: 700;
   letter-spacing: -0.25px;
 }
@@ -37,7 +37,7 @@
 .recipe-builder-section__heading p {
   margin-top: 4px;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   line-height: 1.5;
 }
 
@@ -87,7 +87,7 @@
   justify-items: center;
   gap: 5px;
   color: var(--color-text-subtle);
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .product-info-photo__remove {
@@ -99,7 +99,7 @@
   background: transparent;
   border: 0;
   cursor: pointer;
-  font-size: 10px;
+  font-size: var(--text-2xs);
 }
 
 .product-info-photo__remove:hover {
@@ -118,7 +118,7 @@
   display: grid;
   gap: 7px;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 650;
 }
 
@@ -131,7 +131,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   outline: 0;
-  font-size: 12px;
+  font-size: var(--text-xs);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -172,14 +172,14 @@
 .new-ingredient h3 {
   margin: 0 0 4px;
   color: var(--color-text);
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
 }
 
 .new-ingredient__hint {
   margin: 0 0 12px;
   color: var(--color-text-subtle);
-  font-size: 12px;
+  font-size: var(--text-xs);
 }
 
 .new-ingredient__fields {
@@ -193,7 +193,7 @@
   display: grid;
   gap: 7px;
   color: var(--color-text-subtle);
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 650;
 }
 
@@ -205,7 +205,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   outline: 0;
-  font-size: 12px;
+  font-size: var(--text-xs);
   transition: border-color 160ms ease, box-shadow 160ms ease;
 }
 
@@ -225,7 +225,7 @@
   background: var(--color-brand);
   border: 0;
   border-radius: var(--radius-control);
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-weight: 700;
   white-space: nowrap;
   cursor: pointer;

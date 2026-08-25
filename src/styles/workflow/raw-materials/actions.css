@@ -12,7 +12,7 @@
   gap: 7px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 11.5px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   transition: background-color 150ms ease, border-color 150ms ease, transform 150ms ease;
 }
@@ -40,7 +40,7 @@
 }
 
 .workflow-outline-button {
-  color: #4b454a;
+  color: var(--color-text-muted);
   background: #fff;
   border: 1px solid #d4cfd2;
 }

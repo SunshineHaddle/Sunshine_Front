@@ -15,13 +15,13 @@
   min-height: 35px;
   padding-bottom: 10px;
   gap: 8px;
-  color: #242023;
+  color: var(--color-text);
   border-bottom: 1px solid #e7e4e5;
 }
 
 .operating-cost-group h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-base);
   font-weight: 750;
 }
 
@@ -43,8 +43,8 @@
 
 .operating-cost-field > span:first-child {
   padding-left: 11px;
-  color: #999397;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-input {
@@ -53,7 +53,7 @@
   height: 42px;
   padding: 0 14px;
   gap: 8px;
-  color: #aaa4a7;
+  color: var(--color-text-subtle);
   background: #fafafa;
   border: 1px solid #e8e5e6;
   border-radius: 6px;
@@ -68,12 +68,12 @@
   width: 100%;
   min-width: 0;
   padding: 0;
-  color: #4b4549;
+  color: var(--color-text-muted);
   background: transparent;
   border: 0;
   outline: 0;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
 }
 
@@ -96,8 +96,8 @@
 
 .operating-cost-input small {
   flex: 0 0 auto;
-  color: #aaa4a7;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-alloc {
@@ -112,13 +112,13 @@
 }
 
 .operating-cost-alloc__name {
-  color: #6d676a;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
 }
 
 .operating-cost-alloc__amount {
-  color: #4b4549;
-  font-size: 12px;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
   font-weight: 650;
   font-variant-numeric: tabular-nums;
 }
@@ -127,13 +127,13 @@
   display: flex;
   justify-content: space-between;
   margin: 12px 10px 0;
-  color: #999397;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-group__subtotal strong {
-  color: #4b4549;
-  font-size: 11px;
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-labor {
@@ -147,8 +147,8 @@
   display: block;
   margin-bottom: 12px;
   padding-left: 11px;
-  color: #999397;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-labor__products-list {
@@ -162,8 +162,8 @@
 .operating-cost-labor__empty {
   grid-column: 1 / -1;
   margin: 0;
-  color: #b3adb0;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-groups--utility {
@@ -183,13 +183,13 @@
 
 .operating-cost-group__per-product span {
   color: #ba0036;
-  font-size: 10.5px;
+  font-size: var(--text-2xs);
   font-weight: 600;
 }
 
 .operating-cost-group__per-product strong {
   color: #ba0036;
-  font-size: 13px;
+  font-size: var(--text-sm);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -202,8 +202,8 @@
   flex: 1 1 auto;
   min-width: 0;
   padding: 4px 2px;
-  color: #242023;
-  font-size: 14px;
+  color: var(--color-text);
+  font-size: var(--text-base);
   font-weight: 750;
   background: transparent;
   border: 0;
@@ -222,7 +222,7 @@
   width: 26px;
   height: 26px;
   padding: 0;
-  color: #b3adb0;
+  color: var(--color-text-subtle);
   background: transparent;
   border: 0;
   border-radius: 6px;
@@ -240,8 +240,8 @@
   gap: 6px;
   margin-top: 18px;
   padding: 8px 14px;
-  color: #6a6467;
-  font-size: 12px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-xs);
   font-weight: 600;
   background: #fff;
   border: 0;
@@ -269,8 +269,8 @@
 
 .operating-cost-labor__equalize {
   padding: 4px 12px;
-  color: #6a6467;
-  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
   font-weight: 600;
   background: #fff;
   border: 1px solid #d7d2d5;
@@ -290,13 +290,13 @@
   justify-content: space-between;
   gap: 10px;
   padding-left: 11px;
-  color: #999397;
-  font-size: 10px;
+  color: var(--color-text-subtle);
+  font-size: var(--text-2xs);
 }
 
 .operating-cost-field__amount {
   color: #ba0036;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   font-style: normal;
   font-variant-numeric: tabular-nums;
@@ -304,7 +304,7 @@
 
 .operating-cost-labor__share-total {
   color: #b42318;
-  font-size: 11px;
+  font-size: var(--text-2xs);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -316,7 +316,7 @@
 .operating-cost-labor__share-warning {
   margin: 10px 0 0;
   color: #b42318;
-  font-size: 11px;
+  font-size: var(--text-2xs);
 }
 
 .workflow-coral-button:disabled {

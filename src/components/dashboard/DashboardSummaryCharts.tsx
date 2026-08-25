@@ -216,6 +216,9 @@ export function ProductCostTrendCarousel({
                   <span>{monthLabelOf(trend.latestMonth)} 재료비</span>
                   <strong>{numberFormatter.format(trend.currentCost)}<small>원</small></strong>
                   <em className={trend.changeRate >= 0 ? 'is-up' : 'is-down'}>
+                    {/* 화살표는 색과 같은 뜻이라 읽어 줄 필요가 없다.
+                        CSS ::before 로 넣으면 PDF 캡처에서 빠질 때가 있어 마크업에 둔다 */}
+                    <i aria-hidden="true">{trend.changeRate >= 0 ? '▲' : '▼'}</i>
                     전월 대비 {Math.abs(trend.changeRate).toFixed(1)}% {changeDirection}
                   </em>
                 </div>
@@ -289,14 +292,27 @@ export function ProductCostTrendCarousel({
                 </>
               ) : (
                 <p className="product-cost-slide__empty">
-                  확정된 원가가 없습니다.
-                  <br />
-                  데이터 입력 3단계에서 <strong>원가 계산</strong>을 실행하면 표시됩니다.
+                  {/* 안내문은 한 덩어리로 감싼다. p 를 그대로 grid 로 만들면
+                      줄바꿈·<strong> 마다 칸이 쪼개져 문장이 흩어진다 */}
+                  <span>
+                    확정된 원가가 없습니다.
+                    <br />
+                    데이터 입력 3단계에서 <strong>원가 계산</strong>을 실행하면 표시됩니다.
+                  </span>
                 </p>
               )}
             </article>
           )
         })}
+
+        {/*
+          마지막 장에 카드가 4개보다 적으면 격자가 한 줄로 줄어 카드 전체 높이가
+          바뀐다. 페이지를 넘길 때마다 아래 내용이 출렁이지 않게 빈 칸을 채운다.
+        */}
+        {showPagination
+          && Array.from({ length: PRODUCTS_PER_PAGE - visibleProducts.length }, (_, index) => (
+            <div className="product-cost-slide product-cost-slide--placeholder" key={`placeholder-${index}`} aria-hidden="true" />
+          ))}
       </div>
 
       {showPagination && (
