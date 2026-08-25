@@ -699,7 +699,7 @@ export function RawMaterialEntryPage({
               <button
                 className="production-upload__template"
                 type="button"
-                onClick={downloadProductionTemplate}
+                onClick={() => downloadProductionTemplate(month)}
               >
                 <Icon name="download" size={16} /> 엑셀 양식 다운로드
               </button>
