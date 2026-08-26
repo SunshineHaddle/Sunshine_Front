@@ -394,6 +394,9 @@ export async function deleteProduct(productId: string) {
     if (res.error) throw new Error(res.error.message)
   }
 
+  // ponytail: 자식 테이블을 하나씩 지운다. 트랜잭션이 아니라 중간에 실패하면
+  // 일부만 지워진 채로 남는다. 앞서 findLockedPeriods 로 막히는 경우를 걸러
+  // 실패 확률을 낮춰 두었다. 반쪽 삭제가 실제로 발생하면 삭제용 RPC 로 옮긴다.
   await wipe('operating_cost_allocations')
   await wipe('product_cost_summaries')
   await wipe('material_usages')

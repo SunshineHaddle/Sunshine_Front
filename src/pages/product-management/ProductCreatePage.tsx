@@ -56,6 +56,9 @@ export function ProductCreatePage({
     // shrinkImage 는 이미지를 못 읽으면 원본을 그대로 돌려준다. 이 경로는
     // 결과가 data URL 로 products.image_url 에 바로 들어가므로, 그때는
     // 10MB 짜리 문자열이 제품 목록을 읽을 때마다 따라온다. 여기서 끊는다.
+    // ponytail: 생성 화면은 제품 id 가 아직 없어 Storage 에 못 올린다. data URL 로
+    // products.image_url 에 넣고 크기만 막는다. 제품 목록을 읽을 때마다 이미지가
+    // 따라오므로, 제품이 수십 개가 되거나 목록이 느려지면 Storage 업로드로 통일한다.
     if (small.size > MAX_STORED_IMAGE_BYTES) {
       onAction('사진을 줄이지 못했습니다. 다른 이미지로 시도해주세요.')
       return

@@ -232,6 +232,9 @@ export async function fetchProductUsagesByMonth(
  *                   그 사이 생산 기록이 없는 제품은 결과에서 빠지고,
  *                   화면은 표준 배합으로 떨어진다.
  */
+// ponytail: 응답 상한(1,000행)을 서버 집계 대신 기간 좁히기로 피한다.
+// 제품 수 × 재료 수 × 개월이 1,000을 넘으면 다시 잘린다. 제품이 20종을 넘거나
+// 콘솔에 잘림 경고가 찍히기 시작하면 월별 집계 뷰로 옮긴다.
 export async function fetchLatestUsageMaterials(
   fromPeriod: string,
 ): Promise<ProductMaterialNames> {

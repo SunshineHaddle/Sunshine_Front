@@ -18,6 +18,9 @@ import type { ProfitStatus } from '../types'
  * 대신 **판매가를 바꾸면 과거 달 마진율도 함께 바뀐다.** 그때 팔던 가격으로
  * 고정하고 싶어지면 아래 salePrice 를 스냅샷 값으로 되돌리면 된다.
  */
+// ponytail: 판매가를 스냅샷에서 읽지 않고 products 의 현재 값으로 쓴다.
+// 마감 후 판매가를 입력해도 표에 반영되는 대신, 판매가를 바꾸면 과거 달 마진율도
+// 함께 바뀐다. "그때 팔던 가격" 이 필요해지면 스냅샷 값으로 되돌린다.
 export function profitFrom(unitCost: number, salePrice: number): {
   marginRate: number
   costRate: number

@@ -253,6 +253,9 @@ export type ProductMonthlyCost = {
   laborCost: number
   utilityCost: number
   /** 노무비 + 경비. 화면에서 부자재비로 부른다 */
+  // ponytail: materials 에 원자재/부자재 분류 컬럼이 없어, 화면의 '부자재비' 는
+  // 실제 부자재가 아니라 노무비 + 경비다. 분류 컬럼이 생기면(REQUIREMENTS-GAP §5)
+  // 진짜 부자재비와 이름이 충돌하므로 그때 함께 정리한다.
   subMaterialCost: number
   totalCost: number
   unitCost: number
