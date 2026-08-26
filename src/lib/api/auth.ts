@@ -1,5 +1,5 @@
 /** §11 — 로그인 / 프로필 */
-import { supabase } from '../supabase'
+import { setAuthFailureHandler, supabase } from '../supabase'
 import type { ProfileRow, UserRole } from '../types'
 
 /**
@@ -67,14 +67,56 @@ export async function signOut() {
  * @returns 구독 해제 함수
  */
 export function onSessionLost(handler: () => void): () => void {
+  let fired = false
+  /** 한 번만 알린다. 이벤트와 화면 복귀 확인이 겹쳐 두 번 불릴 수 있다 */
+  const lost = () => {
+    if (fired) return
+    fired = true
+    handler()
+  }
+
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
+    // 다시 로그인하면 감지를 되살린다. 이 구독은 앱이 살아 있는 동안 유지되므로,
+    // 되살리지 않으면 두 번째 만료부터는 알리지 못한다
+    if (event === 'SIGNED_IN' && session) {
+      fired = false
+      return
+    }
     // SIGNED_OUT : 로그아웃 · 다른 기기에서의 signOut · 토큰 무효화
     // TOKEN_REFRESHED 인데 세션이 없으면 갱신 실패다
     if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-      handler()
+      lost()
     }
   })
-  return () => data.subscription.unsubscribe()
+
+  /**
+   * 화면으로 돌아올 때 세션을 직접 확인한다.
+   *
+   * 이벤트만 기다리면 놓치는 경우가 있다 — 노트북을 덮어두거나 탭을 오래
+   * 방치하면 그 사이 갱신 타이머가 멈춰 있어서, 다시 열었을 때 만료된 토큰을
+   * 들고 조용히 조회를 계속한다. RLS 는 권한 없는 읽기에 에러 대신 빈 배열을
+   * 주므로(§7) 화면은 '데이터가 없다' 처럼 보인다.
+   *
+   * getSession() 은 만료가 임박하면 스스로 갱신을 시도하고, 실패하면 null 을 준다.
+   */
+  const check = () => {
+    if (document.visibilityState === 'hidden') return
+    void supabase.auth.getSession().then(({ data: current }) => {
+      if (!current.session) lost()
+    })
+  }
+
+  document.addEventListener('visibilitychange', check)
+  window.addEventListener('focus', check)
+  // 만료된 토큰으로 나간 요청(401)도 세션이 끊긴 것으로 본다
+  setAuthFailureHandler(lost)
+
+  return () => {
+    data.subscription.unsubscribe()
+    document.removeEventListener('visibilitychange', check)
+    window.removeEventListener('focus', check)
+    setAuthFailureHandler(null)
+  }
 }
 
 // ── §11-3 내 프로필 ─────────────────────────────────────────
