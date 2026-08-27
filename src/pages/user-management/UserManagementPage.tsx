@@ -323,6 +323,7 @@ export function UserManagementPage({
             </header>
             <p className="password-modal__description">
               <strong>{passwordTarget.name} ({passwordTarget.login_id})</strong> 계정의 비밀번호를 변경합니다.
+              <br />
               기존 비밀번호가 맞아야 새 비밀번호로 바뀝니다.
             </p>
 
