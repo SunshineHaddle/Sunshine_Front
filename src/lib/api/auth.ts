@@ -1,4 +1,5 @@
 /** §11 — 로그인 / 프로필 */
+import { createClient } from '@supabase/supabase-js'
 import { setAuthFailureHandler, supabase } from '../supabase'
 import type { ProfileRow, UserRole } from '../types'
 
@@ -168,4 +169,45 @@ export async function setProfileRole(userId: string, role: UserRole): Promise<bo
     .from('profiles').update({ role }).eq('id', userId).select('id')
   if (error) throw new Error(error.message)
   return (data?.length ?? 0) > 0
+}
+
+// ── 비밀번호 변경 ────────────────────────────────────────────
+export type ChangePasswordResult = 'ok' | 'wrong_password' | 'failed'
+
+/**
+ * 기존 비밀번호가 맞아야 새 비밀번호로 바뀐다. DB 함수 없이 Auth API 만 쓴다.
+ *
+ * 방법: 세션을 저장하지 않는 별도 클라이언트로 대상 계정에 기존 비밀번호로
+ * 로그인해 본다 → 성공하면 그 임시 세션으로 updateUser({ password }) → 폐기.
+ * 관리자 본인의 세션(메인 supabase 클라이언트)은 전혀 건드리지 않는다.
+ *
+ * 실무자·관리자 어느 계정이든 기존 비밀번호만 알면 바꿀 수 있다.
+ */
+export async function changePassword(
+  loginId: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<ChangePasswordResult> {
+  const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+  if (!url || !anonKey) return 'failed'
+
+  // 메인 클라이언트와 저장소·401 핸들러를 공유하지 않도록 완전히 분리한다
+  const temp = createClient(url, anonKey, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+
+  try {
+    const signIn = await temp.auth.signInWithPassword({
+      email: toEmail(loginId),
+      password: currentPassword,
+    })
+    if (signIn.error || !signIn.data.session) return 'wrong_password'
+
+    const update = await temp.auth.updateUser({ password: newPassword })
+    if (update.error) throw new Error(update.error.message)
+    return 'ok'
+  } finally {
+    await temp.auth.signOut({ scope: 'local' }).catch(() => undefined)
+  }
 }

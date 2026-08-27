@@ -485,8 +485,8 @@
 
 .password-modal {
   width: 100%;
-  max-width: 440px;
-  padding: 28px;
+  max-width: 520px;
+  padding: 32px 36px;
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 24px 64px rgba(20, 16, 18, 0.28);
@@ -549,8 +549,14 @@
 .password-modal__form {
   display: flex;
   flex-direction: column;
-  gap: 14px;
-  margin-top: 20px;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.password-modal__divider {
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid #ece9ea;
 }
 
 .password-modal__form label {
@@ -566,7 +572,7 @@
 }
 
 .password-modal__form input {
-  min-height: 42px;
+  min-height: 46px;
   padding: 0 12px;
   color: #252122;
   background: #fbfafa;
@@ -639,6 +645,13 @@
 .password-modal__cancel:active,
 .password-modal__submit:active {
   transform: translateY(1px);
+}
+
+.password-modal__form input:disabled,
+.password-modal__cancel:disabled,
+.password-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 719px) {

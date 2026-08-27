@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { fetchProfiles, setProfileActive } from '../../lib/api/auth'
+import { changePassword, fetchProfiles, setProfileActive } from '../../lib/api/auth'
 import { fetchFileHistory, type FileHistoryItem } from '../../lib/api/files'
 import { describeDbError } from '../../lib/api/errors'
 import type { ProfileRow, UserRole } from '../../lib/types'
@@ -15,7 +15,7 @@ type UserManagementPageProps = {
 /** 이력에 보여줄 최대 건수. 그 이상은 화면이 길어지기만 한다 */
 const HISTORY_LIMIT = 20
 
-/** 비밀번호 최소 길이 (프론트 검증만, 실제 변경 API 는 아직 없음) */
+/** 비밀번호 최소 길이 (Supabase Auth 기본 최소값과 동일) */
 const PASSWORD_MIN_LENGTH = 6
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -53,9 +53,11 @@ export function UserManagementPage({
 
   // 비밀번호 변경 팝업 — 대상 사용자가 있으면 열린 상태
   const [passwordTarget, setPasswordTarget] = useState<ProfileRow | null>(null)
+  const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   // §11-4 : setState 는 await 뒤에서만 (이펙트 본문 동기 setState 금지)
   const reload = useCallback(async () => {
@@ -94,17 +96,21 @@ export function UserManagementPage({
   }
 
   const openPasswordModal = (user: ProfileRow) => {
+    setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
     setPasswordError('')
+    setPasswordSaving(false)
     setPasswordTarget(user)
   }
 
   const closePasswordModal = useCallback(() => {
     setPasswordTarget(null)
+    setCurrentPassword('')
     setNewPassword('')
     setConfirmPassword('')
     setPasswordError('')
+    setPasswordSaving(false)
   }, [])
 
   useEffect(() => {
@@ -117,21 +123,42 @@ export function UserManagementPage({
   }, [passwordTarget, closePasswordModal])
 
   const validatePassword = (): string => {
+    if (!currentPassword) return '기존 비밀번호를 입력해주세요.'
     if (newPassword.length < PASSWORD_MIN_LENGTH) {
       return `새 비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다.`
     }
     if (newPassword !== confirmPassword) return '새 비밀번호가 서로 일치하지 않습니다.'
+    if (newPassword === currentPassword) return '새 비밀번호가 기존 비밀번호와 같습니다.'
     return ''
   }
 
-  // TODO: 백엔드 연동 전 — 검증만 하고 닫는다
-  const handlePasswordSubmit = (event: FormEvent<HTMLFormElement>) => {
+  // 기존 비밀번호 대조는 Auth 로그인 시도로 한다 (auth.ts changePassword 참고)
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    if (passwordSaving) return
     const message = validatePassword()
     setPasswordError(message)
     if (message || !passwordTarget) return
-    onAction(`${passwordTarget.name} 계정의 비밀번호를 변경했습니다.`)
-    closePasswordModal()
+
+    setPasswordSaving(true)
+    try {
+      const result = await changePassword(passwordTarget.login_id, currentPassword, newPassword)
+      if (result === 'wrong_password') {
+        setPasswordError('기존 비밀번호가 올바르지 않습니다.')
+        setCurrentPassword('')
+        return
+      }
+      if (result !== 'ok') {
+        setPasswordError('비밀번호를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      onAction(`${passwordTarget.name} 계정의 비밀번호를 변경했습니다.`)
+      closePasswordModal()
+    } catch (error) {
+      setPasswordError(`변경 실패: ${describeDbError(error)}`)
+    } finally {
+      setPasswordSaving(false)
+    }
   }
 
   return (
@@ -277,17 +304,33 @@ export function UserManagementPage({
               </button>
             </header>
             <p className="password-modal__description">
-              <strong>{passwordTarget.name} ({passwordTarget.login_id})</strong> 계정의 새 비밀번호를 설정합니다.
+              <strong>{passwordTarget.name} ({passwordTarget.login_id})</strong> 계정의 비밀번호를 변경합니다.
+              기존 비밀번호가 맞아야 새 비밀번호로 바뀝니다.
             </p>
 
-            <form className="password-modal__form" onSubmit={handlePasswordSubmit} noValidate>
+            <form className="password-modal__form" onSubmit={(event) => void handlePasswordSubmit(event)} noValidate>
+              <label>
+                <span>기존 비밀번호</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  autoFocus
+                  value={currentPassword}
+                  placeholder="현재 사용 중인 비밀번호"
+                  disabled={passwordSaving}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
+              </label>
+
+              <hr className="password-modal__divider" />
+
               <label>
                 <span>새 비밀번호</span>
                 <input
                   type="password"
                   autoComplete="new-password"
-                  autoFocus
                   value={newPassword}
+                  disabled={passwordSaving}
                   placeholder={`${PASSWORD_MIN_LENGTH}자 이상`}
                   onChange={(event) => setNewPassword(event.target.value)}
                 />
@@ -298,6 +341,7 @@ export function UserManagementPage({
                   type="password"
                   autoComplete="new-password"
                   value={confirmPassword}
+                  disabled={passwordSaving}
                   placeholder="새 비밀번호 다시 입력"
                   onChange={(event) => setConfirmPassword(event.target.value)}
                 />
@@ -308,11 +352,16 @@ export function UserManagementPage({
               )}
 
               <div className="password-modal__actions">
-                <button className="password-modal__cancel" type="button" onClick={closePasswordModal}>
+                <button
+                  className="password-modal__cancel"
+                  type="button"
+                  disabled={passwordSaving}
+                  onClick={closePasswordModal}
+                >
                   취소
                 </button>
-                <button className="password-modal__submit" type="submit">
-                  변경하기
+                <button className="password-modal__submit" type="submit" disabled={passwordSaving}>
+                  {passwordSaving ? '변경 중…' : '변경하기'}
                 </button>
               </div>
             </form>
