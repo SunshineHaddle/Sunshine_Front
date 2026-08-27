@@ -196,12 +196,12 @@ export function RawMaterialEntryPage({
   // 선택된 연도. month 는 'YYYY-MM' 이라 앞 4자리가 연도다
   const selectedYear = Number(month.slice(0, 4)) || new Date().getFullYear()
 
-  /** 헤더 연도 선택지 — 회차가 있는 가장 오래된 해부터 내년까지 */
+  /** 헤더 연도 선택지 — 올해 ±5년. 회차가 그보다 오래됐으면 그 해까지 넓힌다 */
   const yearOptions = useMemo(() => {
     const thisYear = new Date().getFullYear()
     const periodYears = periods.map((p) => Number(p.period.slice(0, 4)))
-    const start = Math.min(thisYear - 1, selectedYear, ...periodYears)
-    const end = Math.max(thisYear + 1, selectedYear)
+    const start = Math.min(thisYear - 5, selectedYear, ...periodYears)
+    const end = Math.max(thisYear + 5, selectedYear)
     return Array.from({ length: end - start + 1 }, (_, i) => start + i)
   }, [periods, selectedYear])
 
