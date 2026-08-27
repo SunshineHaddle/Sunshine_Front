@@ -193,24 +193,37 @@ export function RawMaterialEntryPage({
    * DB 에 있는 회차만 보여주면 입력한 달만 띄엄띄엄 떠서 줄 수가 들쭉날쭉했다.
    * 회차가 없는 달은 아직 아무것도 입력하지 않은 것이므로 '미입력' 으로 둔다.
    */
+  // 선택된 연도. month 는 'YYYY-MM' 이라 앞 4자리가 연도다
+  const selectedYear = Number(month.slice(0, 4)) || new Date().getFullYear()
+
+  /** 헤더 연도 선택지 — 회차가 있는 가장 오래된 해부터 내년까지 */
+  const yearOptions = useMemo(() => {
+    const thisYear = new Date().getFullYear()
+    const periodYears = periods.map((p) => Number(p.period.slice(0, 4)))
+    const start = Math.min(thisYear - 1, selectedYear, ...periodYears)
+    const end = Math.max(thisYear + 1, selectedYear)
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  }, [periods, selectedYear])
+
+  const changeYear = (year: number) => {
+    onMonthChange(`${year}-${month.slice(5, 7) || '01'}`)
+  }
+
   const monthChips = useMemo(() => {
     const statusByMonth = new Map(
       periods.map((p) => [p.period.slice(0, 7), p.status] as const),
     )
-    const today = new Date()
-    // 왼쪽이 가장 오래된 달, 오른쪽 끝이 이번 달 — 달력을 읽는 순서와 같다
+    // 선택된 연도의 1월부터 12월까지 — 연도는 헤더에서 고른다
     return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const key = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
       const status = statusByMonth.get(key)
       return {
         key,
-        // '26년 8월' 형태. 두 자리 연도라 12칸이 한 줄에 들어간다
-        label: `${String(d.getFullYear()).slice(2)}년 ${d.getMonth() + 1}월`,
+        label: `${i + 1}월`,
         state: status === 'confirmed' ? 'locked' : status ? 'draft' : 'empty',
       } as const
     })
-  }, [periods])
+  }, [periods, selectedYear])
 
   // 월별 마감 여부 목록. 1단계(onPeriodChanged 있음)에서만 쓴다 — worker·admin 공통.
   // isLocked 가 바뀌면(=이 화면에서 마감/마감취소) 배지도 다시 읽는다.
@@ -636,18 +649,21 @@ export function RawMaterialEntryPage({
               )
             )}
             <label className="entry-month-picker">
-              <span className="visually-hidden">기준 월</span>
+              <span className="visually-hidden">기준 연도</span>
               <Icon name="calendar" size={17} />
-              <input
-                type="month"
-                value={month}
-                onChange={(event) => onMonthChange(event.target.value)}
-              />
+              <select
+                value={selectedYear}
+                onChange={(event) => changeYear(Number(event.target.value))}
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>{year}년</option>
+                ))}
+              </select>
             </label>
           </div>
         </header>
 
-        {/* 캘린더를 열지 않아도 늘 보인다. 최근 12개월이 한 줄에 들어간다 */}
+        {/* 선택된 연도의 12개월이 한 줄에 들어간다 */}
         {onPeriodChanged && (
           <div className="entry-month-chips is-open">
             <div className="entry-month-chips__inner" role="list" aria-label="월별 마감 상태">
