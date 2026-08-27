@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { Icon } from '../../components/common/Icon'
 import { Sidebar } from '../../components/layout/Sidebar'
 import type { AppRoute } from '../../data/navigation'
-import { fetchProfiles, setProfileActive, setProfileRole } from '../../lib/api/auth'
+import { changePassword, fetchProfiles, setProfileActive } from '../../lib/api/auth'
 import { fetchFileHistory, type FileHistoryItem } from '../../lib/api/files'
 import { describeDbError } from '../../lib/api/errors'
 import type { ProfileRow, UserRole } from '../../lib/types'
@@ -15,6 +15,12 @@ type UserManagementPageProps = {
 /** 이력에 보여줄 최대 건수. 그 이상은 화면이 길어지기만 한다 */
 const HISTORY_LIMIT = 20
 
+/** 접힌 상태에서 보여줄 건수. 그 이상은 "더 보기" 로 펼친다 */
+const HISTORY_PREVIEW = 5
+
+/** 비밀번호 최소 길이 (Supabase Auth 기본 최소값과 동일) */
+const PASSWORD_MIN_LENGTH = 6
+
 const ROLE_LABEL: Record<UserRole, string> = {
   admin: '시스템 관리자',
   entry: '데이터 입력',
@@ -26,16 +32,6 @@ const ROLE_CLASS: Record<UserRole, string> = {
   entry: 'is-entry',
   reviewer: 'is-reviewer',
 }
-
-/**
- * 새로 줄 수 있는 역할. 미팅에서 요구한 것은 관리자·실무자 둘뿐이다 (03:57).
- *
- * reviewer 는 enum 에만 남아 있고 쓰임새가 정해지지 않았다.
- * toLoginRole() 이 admin 화면으로 보내는데 원가 읽기는 is_admin() 이 막으므로,
- * 지금 이 역할을 주면 빈 대시보드를 보게 된다. 그래서 목록에서 뺀다.
- * 이미 reviewer 인 사용자가 있으면 그 사람 칸에만 선택지로 남긴다.
- */
-const ASSIGNABLE_ROLES: UserRole[] = ['admin', 'entry']
 
 function formatLastActive(iso: string | null) {
   if (!iso) return '접속 기록 없음'
@@ -57,6 +53,15 @@ export function UserManagementPage({
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [history, setHistory] = useState<FileHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyExpanded, setHistoryExpanded] = useState(false)
+
+  // 비밀번호 변경 팝업 — 대상 사용자가 있으면 열린 상태
+  const [passwordTarget, setPasswordTarget] = useState<ProfileRow | null>(null)
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSaving, setPasswordSaving] = useState(false)
 
   // §11-4 : setState 는 await 뒤에서만 (이펙트 본문 동기 setState 금지)
   const reload = useCallback(async () => {
@@ -94,17 +99,69 @@ export function UserManagementPage({
     }
   }
 
-  const changeRole = async (user: ProfileRow, role: UserRole) => {
-    if (role === user.role) return
+  const openPasswordModal = (user: ProfileRow) => {
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setPasswordError('')
+    setPasswordSaving(false)
+    setPasswordTarget(user)
+  }
+
+  const closePasswordModal = useCallback(() => {
+    setPasswordTarget(null)
+    setCurrentPassword('')
+    setNewPassword('')
+    setConfirmPassword('')
+    setPasswordError('')
+    setPasswordSaving(false)
+  }, [])
+
+  useEffect(() => {
+    if (!passwordTarget) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closePasswordModal()
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [passwordTarget, closePasswordModal])
+
+  const validatePassword = (): string => {
+    if (!currentPassword) return '기존 비밀번호를 입력해주세요.'
+    if (newPassword.length < PASSWORD_MIN_LENGTH) {
+      return `새 비밀번호는 ${PASSWORD_MIN_LENGTH}자 이상이어야 합니다.`
+    }
+    if (newPassword !== confirmPassword) return '새 비밀번호가 서로 일치하지 않습니다.'
+    if (newPassword === currentPassword) return '새 비밀번호가 기존 비밀번호와 같습니다.'
+    return ''
+  }
+
+  // 기존 비밀번호 대조는 Auth 로그인 시도로 한다 (auth.ts changePassword 참고)
+  const handlePasswordSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (passwordSaving) return
+    const message = validatePassword()
+    setPasswordError(message)
+    if (message || !passwordTarget) return
+
+    setPasswordSaving(true)
     try {
-      if (!(await setProfileRole(user.id, role))) {
-        onAction('권한이 없어 변경되지 않았습니다. 관리자만 수정할 수 있습니다.')
+      const result = await changePassword(passwordTarget.login_id, currentPassword, newPassword)
+      if (result === 'wrong_password') {
+        setPasswordError('기존 비밀번호가 올바르지 않습니다.')
+        setCurrentPassword('')
         return
       }
-      await reload()
-      onAction(`${user.name}의 역할을 ${ROLE_LABEL[role]}(으)로 변경했습니다.`)
+      if (result !== 'ok') {
+        setPasswordError('비밀번호를 변경하지 못했습니다. 잠시 후 다시 시도해주세요.')
+        return
+      }
+      onAction(`${passwordTarget.name} 계정의 비밀번호를 변경했습니다.`)
+      closePasswordModal()
     } catch (error) {
-      onAction(`변경 실패: ${describeDbError(error)}`)
+      setPasswordError(`변경 실패: ${describeDbError(error)}`)
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -126,6 +183,7 @@ export function UserManagementPage({
               <span role="columnheader">성함</span>
               <span role="columnheader">역할</span>
               <span role="columnheader">상태</span>
+              <span role="columnheader">비밀번호</span>
             </div>
 
             <div className="user-table__body" role="rowgroup">
@@ -144,19 +202,9 @@ export function UserManagementPage({
                   </div>
 
                   <div role="cell">
-                    <select
-                      className={`user-role user-role--select ${ROLE_CLASS[user.role]}`}
-                      aria-label={`${user.name} 역할`}
-                      value={user.role}
-                      onChange={(event) => void changeRole(user, event.target.value as UserRole)}
-                    >
-                      {(ASSIGNABLE_ROLES.includes(user.role)
-                        ? ASSIGNABLE_ROLES
-                        : [user.role, ...ASSIGNABLE_ROLES]
-                      ).map((key) => (
-                        <option key={key} value={key}>{ROLE_LABEL[key]}</option>
-                      ))}
-                    </select>
+                    <span className={`user-role ${ROLE_CLASS[user.role]}`}>
+                      {ROLE_LABEL[user.role]}
+                    </span>
                   </div>
 
                   <div role="cell">
@@ -173,6 +221,17 @@ export function UserManagementPage({
                         <span />
                       </button>
                     )}
+                  </div>
+
+                  <div role="cell">
+                    <button
+                      className="user-password-button"
+                      type="button"
+                      aria-label={`${user.name} 비밀번호 변경`}
+                      onClick={() => openPasswordModal(user)}
+                    >
+                      비밀번호 변경
+                    </button>
                   </div>
                 </div>
               ))}
@@ -196,7 +255,7 @@ export function UserManagementPage({
               </p>
             ) : (
               <ol className="entry-history__list">
-                {history.map((item, index) => (
+                {(historyExpanded ? history : history.slice(0, HISTORY_PREVIEW)).map((item, index) => (
                   <li className="entry-history__item" key={item.id}>
                     <div className="entry-history__info">
                       <span className="entry-history__badge" aria-hidden="true">
@@ -220,9 +279,114 @@ export function UserManagementPage({
                 ))}
               </ol>
             )}
+
+            {!historyLoading && history.length > HISTORY_PREVIEW && (
+              <button
+                className="entry-history__toggle"
+                type="button"
+                aria-expanded={historyExpanded}
+                onClick={() => setHistoryExpanded((prev) => !prev)}
+              >
+                {historyExpanded
+                  ? '접기'
+                  : `더 보기 (${history.length - HISTORY_PREVIEW}건 더)`}
+                <Icon name={historyExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
+              </button>
+            )}
           </section>
         </section>
       </main>
+
+      {passwordTarget && (
+        <div
+          className="password-modal__backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closePasswordModal()
+          }}
+        >
+          <div
+            className="password-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="password-modal-title"
+          >
+            <header className="password-modal__header">
+              <h2 id="password-modal-title">비밀번호 변경</h2>
+              <button
+                className="password-modal__close"
+                type="button"
+                aria-label="닫기"
+                onClick={closePasswordModal}
+              >
+                ×
+              </button>
+            </header>
+            <p className="password-modal__description">
+              <strong>{passwordTarget.name} ({passwordTarget.login_id})</strong> 계정의 비밀번호를 변경합니다.
+              <br />
+              기존 비밀번호가 맞아야 새 비밀번호로 바뀝니다.
+            </p>
+
+            <form className="password-modal__form" onSubmit={(event) => void handlePasswordSubmit(event)} noValidate>
+              <label>
+                <span>기존 비밀번호</span>
+                <input
+                  type="password"
+                  autoComplete="current-password"
+                  autoFocus
+                  value={currentPassword}
+                  placeholder="현재 사용 중인 비밀번호"
+                  disabled={passwordSaving}
+                  onChange={(event) => setCurrentPassword(event.target.value)}
+                />
+              </label>
+
+              <hr className="password-modal__divider" />
+
+              <label>
+                <span>새 비밀번호</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={newPassword}
+                  disabled={passwordSaving}
+                  placeholder={`${PASSWORD_MIN_LENGTH}자 이상`}
+                  onChange={(event) => setNewPassword(event.target.value)}
+                />
+              </label>
+              <label>
+                <span>새 비밀번호 확인</span>
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirmPassword}
+                  disabled={passwordSaving}
+                  placeholder="새 비밀번호 다시 입력"
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                />
+              </label>
+
+              {passwordError && (
+                <p className="password-modal__error" role="alert">{passwordError}</p>
+              )}
+
+              <div className="password-modal__actions">
+                <button
+                  className="password-modal__cancel"
+                  type="button"
+                  disabled={passwordSaving}
+                  onClick={closePasswordModal}
+                >
+                  취소
+                </button>
+                <button className="password-modal__submit" type="submit" disabled={passwordSaving}>
+                  {passwordSaving ? '변경 중…' : '변경하기'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

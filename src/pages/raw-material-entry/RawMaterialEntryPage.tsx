@@ -151,7 +151,13 @@ export function RawMaterialEntryPage({
 
   // 저장된 값을 화면에 되불러올지. worker·재접속(freshEntry)은 빈 폼이지만,
   // 마감된 회차는 그와 무관하게 저장된 값을 읽기전용으로 보여준다.
-  const loadSaved = !freshEntry || isLocked
+  // 이 화면에서 마감을 취소한 회차도 저장값을 유지한다 — 취소 직후 isLocked 가
+  // 풀리면서 loadSaved 가 false 로 떨어지면, 방금 되불러온 생산량·투입내역
+  // (=생산량 상한 힌트)이 빈 배열로 덮여 편집 중에 전부 사라진다.
+  // 회차 id 를 같이 기억해 두어, 다른 달로 옮기면 자동으로 무효가 된다.
+  const [reopenedPeriodId, setReopenedPeriodId] = useState<string | null>(null)
+  const reopenedHere = reopenedPeriodId !== null && reopenedPeriodId === periodId
+  const loadSaved = !freshEntry || isLocked || reopenedHere
 
   // setState 는 항상 await 뒤에서 일어나야 한다. periodId 가 없을 때도
   // Promise.resolve 를 거쳐 마이크로태스크로 미룬다 (이펙트 본문 동기 setState 금지)
@@ -187,24 +193,37 @@ export function RawMaterialEntryPage({
    * DB 에 있는 회차만 보여주면 입력한 달만 띄엄띄엄 떠서 줄 수가 들쭉날쭉했다.
    * 회차가 없는 달은 아직 아무것도 입력하지 않은 것이므로 '미입력' 으로 둔다.
    */
+  // 선택된 연도. month 는 'YYYY-MM' 이라 앞 4자리가 연도다
+  const selectedYear = Number(month.slice(0, 4)) || new Date().getFullYear()
+
+  /** 헤더 연도 선택지 — 올해 ±5년. 회차가 그보다 오래됐으면 그 해까지 넓힌다 */
+  const yearOptions = useMemo(() => {
+    const thisYear = new Date().getFullYear()
+    const periodYears = periods.map((p) => Number(p.period.slice(0, 4)))
+    const start = Math.min(thisYear - 5, selectedYear, ...periodYears)
+    const end = Math.max(thisYear + 5, selectedYear)
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  }, [periods, selectedYear])
+
+  const changeYear = (year: number) => {
+    onMonthChange(`${year}-${month.slice(5, 7) || '01'}`)
+  }
+
   const monthChips = useMemo(() => {
     const statusByMonth = new Map(
       periods.map((p) => [p.period.slice(0, 7), p.status] as const),
     )
-    const today = new Date()
-    // 왼쪽이 가장 오래된 달, 오른쪽 끝이 이번 달 — 달력을 읽는 순서와 같다
+    // 선택된 연도의 1월부터 12월까지 — 연도는 헤더에서 고른다
     return Array.from({ length: 12 }, (_, i) => {
-      const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1)
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const key = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
       const status = statusByMonth.get(key)
       return {
         key,
-        // '26년 8월' 형태. 두 자리 연도라 12칸이 한 줄에 들어간다
-        label: `${String(d.getFullYear()).slice(2)}년 ${d.getMonth() + 1}월`,
+        label: `${i + 1}월`,
         state: status === 'confirmed' ? 'locked' : status ? 'draft' : 'empty',
       } as const
     })
-  }, [periods])
+  }, [periods, selectedYear])
 
   // 월별 마감 여부 목록. 1단계(onPeriodChanged 있음)에서만 쓴다 — worker·admin 공통.
   // isLocked 가 바뀌면(=이 화면에서 마감/마감취소) 배지도 다시 읽는다.
@@ -499,6 +518,7 @@ export function RawMaterialEntryPage({
     setBusy('마감을 취소하는 중…')
     try {
       await reopenPeriod(periodId)
+      setReopenedPeriodId(periodId)
       // 재접속 후 마감 회차는 빈 폼(freshEntry)으로 열린다. 수정하려면
       // 저장된 생산량·투입내역을 화면에 되불러와야 한다.
       // reloadUsages/History 는 freshEntry 면 빈 배열을 주므로 여기서 직접 읽는다
@@ -629,18 +649,21 @@ export function RawMaterialEntryPage({
               )
             )}
             <label className="entry-month-picker">
-              <span className="visually-hidden">기준 월</span>
+              <span className="visually-hidden">기준 연도</span>
               <Icon name="calendar" size={17} />
-              <input
-                type="month"
-                value={month}
-                onChange={(event) => onMonthChange(event.target.value)}
-              />
+              <select
+                value={selectedYear}
+                onChange={(event) => changeYear(Number(event.target.value))}
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>{year}년</option>
+                ))}
+              </select>
             </label>
           </div>
         </header>
 
-        {/* 캘린더를 열지 않아도 늘 보인다. 최근 12개월이 한 줄에 들어간다 */}
+        {/* 선택된 연도의 12개월이 한 줄에 들어간다 */}
         {onPeriodChanged && (
           <div className="entry-month-chips is-open">
             <div className="entry-month-chips__inner" role="list" aria-label="월별 마감 상태">
@@ -1019,8 +1042,8 @@ export function RawMaterialEntryPage({
                         {inputKg > 0 && (
                           <small className={`production-item__hint${over ? ' is-error' : ''}`}>
                             {over
-                              ? `투입량 ${kgText(inputKg)} 을(를) 초과할 수 없습니다`
-                              : `투입량 ${kgText(inputKg)}`}
+                              ? `최대 ${kgText(inputKg)} — 투입량을 초과했습니다`
+                              : `최대 ${kgText(inputKg)}`}
                           </small>
                         )}
                       </label>

@@ -124,12 +124,18 @@
   white-space: nowrap;
 }
 
-.entry-month-picker input {
+.entry-month-picker input,
+.entry-month-picker select {
   border: 0;
   background: transparent;
   font: inherit;
   color: inherit;
   outline-offset: 4px;
+}
+
+.entry-month-picker select {
+  cursor: pointer;
+  padding-right: 4px;
 }
 
 .entry-locked {

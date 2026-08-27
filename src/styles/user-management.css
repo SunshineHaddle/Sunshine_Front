@@ -72,7 +72,7 @@
 .user-table__header,
 .user-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1.7fr) minmax(150px, 0.8fr) 110px;
+  grid-template-columns: minmax(260px, 1.7fr) minmax(150px, 0.8fr) 110px 130px;
   align-items: center;
   column-gap: 26px;
 }
@@ -86,7 +86,8 @@
   font-weight: 650;
 }
 
-.user-table__header span:nth-child(3) {
+.user-table__header span:nth-child(3),
+.user-table__header span:nth-child(4) {
   text-align: center;
 }
 
@@ -254,6 +255,36 @@
   font-size: var(--text-xs);
 }
 
+.entry-history__toggle {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  color: #6f696b;
+  background: #faf9f9;
+  border: 1px dashed #ddd9d7;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.entry-history__toggle:hover {
+  color: var(--color-brand);
+  background: #fff7f7;
+  border-color: var(--color-brand);
+}
+
+.entry-history__toggle:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
 .entry-history__list {
   display: grid;
   margin: 16px 0 0;
@@ -338,7 +369,7 @@
 
   .user-table__header,
   .user-row {
-    grid-template-columns: minmax(220px, 1.5fr) minmax(120px, 0.8fr) 84px;
+    grid-template-columns: minmax(220px, 1.5fr) minmax(120px, 0.8fr) 84px 110px;
     column-gap: 14px;
   }
 }
@@ -428,4 +459,246 @@
   color: var(--color-text-subtle);
   font-size: var(--text-base);
   text-align: center;
+}
+
+/* ── 비밀번호 변경 버튼 (표 4번째 열) ─────────────────────── */
+.user-row > div:nth-child(4) {
+  display: flex;
+  justify-content: center;
+}
+
+.user-password-button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  color: #3d3739;
+  background: #fff;
+  border: 1px solid #ddd9d7;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.user-password-button:hover {
+  color: var(--color-brand);
+  border-color: var(--color-brand);
+  background: #fff7f7;
+}
+
+.user-password-button:active {
+  transform: translateY(1px);
+}
+
+.user-password-button:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* ── 비밀번호 변경 팝업 ─────────────────────────────────────── */
+.password-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(20, 16, 18, 0.5);
+  animation: password-modal-fade 160ms ease-out;
+}
+
+.password-modal {
+  width: 100%;
+  max-width: 520px;
+  padding: 32px 36px;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 24px 64px rgba(20, 16, 18, 0.28);
+  animation: password-modal-pop 180ms cubic-bezier(0.2, 0.8, 0.3, 1.1);
+}
+
+@keyframes password-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes password-modal-pop {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.password-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.password-modal__header h2 {
+  margin: 0;
+  color: #1f1b1d;
+  font-size: 18px;
+  font-weight: 750;
+}
+
+.password-modal__close {
+  display: inline-flex;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  margin-right: -8px;
+  color: #6f696b;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.password-modal__close:hover {
+  color: #1f1b1d;
+  background: #f2efef;
+}
+
+.password-modal__description {
+  margin: 8px 0 0;
+  color: #8b8589;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.password-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.password-modal__divider {
+  margin: 2px 0;
+  border: 0;
+  border-top: 1px solid #ece9ea;
+}
+
+.password-modal__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.password-modal__form label > span {
+  color: #6f696b;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.password-modal__form input {
+  min-height: 46px;
+  padding: 0 12px;
+  color: #252122;
+  background: #fbfafa;
+  border: 1px solid #ddd9d7;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.password-modal__form input::placeholder {
+  color: #b3adb0;
+}
+
+.password-modal__form input:focus {
+  background: #fff;
+  border-color: var(--color-brand);
+  outline: none;
+}
+
+.password-modal__error {
+  margin: 0;
+  color: var(--color-brand);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.password-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.password-modal__cancel,
+.password-modal__submit {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background-color 150ms ease, transform 150ms ease;
+}
+
+.password-modal__cancel {
+  color: #3d3739;
+  background: #fff;
+  border: 1px solid #ddd9d7;
+}
+
+.password-modal__cancel:hover {
+  background: #f6f4f4;
+}
+
+.password-modal__submit {
+  color: #fff;
+  background: #171515;
+  border: 0;
+}
+
+.password-modal__submit:hover {
+  background: var(--color-brand);
+}
+
+.password-modal__cancel:active,
+.password-modal__submit:active {
+  transform: translateY(1px);
+}
+
+.password-modal__form input:disabled,
+.password-modal__cancel:disabled,
+.password-modal__submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 719px) {
+  .user-row > div:nth-child(4) {
+    justify-content: flex-start;
+  }
+
+  .password-modal {
+    padding: 22px 20px;
+  }
+
+  .password-modal__actions {
+    flex-direction: column-reverse;
+  }
+
+  .password-modal__cancel,
+  .password-modal__submit {
+    width: 100%;
+  }
 }
