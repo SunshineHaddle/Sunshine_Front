@@ -15,6 +15,9 @@ type UserManagementPageProps = {
 /** 이력에 보여줄 최대 건수. 그 이상은 화면이 길어지기만 한다 */
 const HISTORY_LIMIT = 20
 
+/** 접힌 상태에서 보여줄 건수. 그 이상은 "더 보기" 로 펼친다 */
+const HISTORY_PREVIEW = 5
+
 /** 비밀번호 최소 길이 (Supabase Auth 기본 최소값과 동일) */
 const PASSWORD_MIN_LENGTH = 6
 
@@ -50,6 +53,7 @@ export function UserManagementPage({
   const [users, setUsers] = useState<ProfileRow[]>([])
   const [history, setHistory] = useState<FileHistoryItem[]>([])
   const [historyLoading, setHistoryLoading] = useState(true)
+  const [historyExpanded, setHistoryExpanded] = useState(false)
 
   // 비밀번호 변경 팝업 — 대상 사용자가 있으면 열린 상태
   const [passwordTarget, setPasswordTarget] = useState<ProfileRow | null>(null)
@@ -251,7 +255,7 @@ export function UserManagementPage({
               </p>
             ) : (
               <ol className="entry-history__list">
-                {history.map((item, index) => (
+                {(historyExpanded ? history : history.slice(0, HISTORY_PREVIEW)).map((item, index) => (
                   <li className="entry-history__item" key={item.id}>
                     <div className="entry-history__info">
                       <span className="entry-history__badge" aria-hidden="true">
@@ -274,6 +278,20 @@ export function UserManagementPage({
                   </li>
                 ))}
               </ol>
+            )}
+
+            {!historyLoading && history.length > HISTORY_PREVIEW && (
+              <button
+                className="entry-history__toggle"
+                type="button"
+                aria-expanded={historyExpanded}
+                onClick={() => setHistoryExpanded((prev) => !prev)}
+              >
+                {historyExpanded
+                  ? '접기'
+                  : `더 보기 (${history.length - HISTORY_PREVIEW}건 더)`}
+                <Icon name={historyExpanded ? 'chevron-up' : 'chevron-down'} size={14} />
+              </button>
             )}
           </section>
         </section>
