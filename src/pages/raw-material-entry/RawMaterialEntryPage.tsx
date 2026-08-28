@@ -196,12 +196,19 @@ export function RawMaterialEntryPage({
   // 선택된 연도. month 는 'YYYY-MM' 이라 앞 4자리가 연도다
   const selectedYear = Number(month.slice(0, 4)) || new Date().getFullYear()
 
-  /** 헤더 연도 선택지 — 올해 ±5년. 회차가 그보다 오래됐으면 그 해까지 넓힌다 */
+  /**
+   * 헤더 연도 선택지 — 지난 5년부터 올해까지. 회차가 더 오래됐거나(또는 미래에
+   * 만들어져 있으면) 그 해까지 넓힌다.
+   *
+   * 위쪽을 올해로 끊는 이유: 연도를 바꾸면 그 달로 바로 이동하는데, 미래 연도를
+   * 고르면 그 달 회차가 만들어져 빈 회차가 쌓인다. 월 칩에서 미래 달을 막은 것과
+   * 같은 이유다. 아직 오지 않은 해의 원가를 넣을 일은 없다.
+   */
   const yearOptions = useMemo(() => {
     const thisYear = new Date().getFullYear()
     const periodYears = periods.map((p) => Number(p.period.slice(0, 4)))
     const start = Math.min(thisYear - 5, selectedYear, ...periodYears)
-    const end = Math.max(thisYear + 5, selectedYear)
+    const end = Math.max(thisYear, selectedYear, ...periodYears)
     return Array.from({ length: end - start + 1 }, (_, i) => start + i)
   }, [periods, selectedYear])
 
@@ -213,6 +220,10 @@ export function RawMaterialEntryPage({
     const statusByMonth = new Map(
       periods.map((p) => [p.period.slice(0, 7), p.status] as const),
     )
+    // 아직 오지 않은 달. 누르면 그 달 회차가 만들어져 빈 미래 회차가 쌓인다
+    const now = new Date()
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
     // 선택된 연도의 1월부터 12월까지 — 연도는 헤더에서 고른다
     return Array.from({ length: 12 }, (_, i) => {
       const key = `${selectedYear}-${String(i + 1).padStart(2, '0')}`
@@ -221,6 +232,8 @@ export function RawMaterialEntryPage({
         key,
         label: `${i + 1}월`,
         state: status === 'confirmed' ? 'locked' : status ? 'draft' : 'empty',
+        // 이미 회차가 있으면 열어준다 — 시드나 다른 경로로 만들어졌을 수 있다
+        future: key > thisMonth && !status,
       } as const
     })
   }, [periods, selectedYear])
@@ -673,10 +686,12 @@ export function RawMaterialEntryPage({
                   type="button"
                   role="listitem"
                   className={`entry-month-chip is-${chip.state}${chip.key === month ? ' is-current' : ''}`}
+                  disabled={chip.future}
                   title={
-                    chip.state === 'locked' ? '마감됨'
-                      : chip.state === 'draft' ? '작성중'
-                        : '아직 입력하지 않은 달'
+                    chip.future ? '아직 오지 않은 달입니다'
+                      : chip.state === 'locked' ? '마감됨'
+                        : chip.state === 'draft' ? '작성중'
+                          : '아직 입력하지 않은 달'
                   }
                   onClick={() => onMonthChange(chip.key)}
                 >

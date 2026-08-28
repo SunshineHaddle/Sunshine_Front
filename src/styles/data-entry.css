@@ -1124,3 +1124,9 @@
 }
 
 
+
+/* 아직 오지 않은 달. 누르면 빈 회차가 만들어져 쌓인다 */
+.entry-month-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
