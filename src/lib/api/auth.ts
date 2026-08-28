@@ -58,8 +58,11 @@ export async function signOut() {
   await supabase.auth.signOut()
 }
 
+/** 로그인 화면으로 돌려보내는 이유. 안내 문구가 달라진다 */
+export type SessionLostReason = 'expired' | 'deactivated'
+
 /**
- * 세션이 끊기면 알려준다. 다른 기기에서 로그아웃했거나 토큰 갱신에 실패한 경우다.
+ * 세션이 끊기거나 계정이 비활성화되면 알려준다.
  *
  * 이게 없으면 앱은 세션이 죽은 줄 모르고 계속 조회한다. RLS 는 권한 없는 읽기에
  * **에러 대신 빈 배열**을 주므로(§7) 화면은 "데이터가 없다"처럼 보인다.
@@ -67,13 +70,13 @@ export async function signOut() {
  *
  * @returns 구독 해제 함수
  */
-export function onSessionLost(handler: () => void): () => void {
+export function onSessionLost(handler: (reason: SessionLostReason) => void): () => void {
   let fired = false
   /** 한 번만 알린다. 이벤트와 화면 복귀 확인이 겹쳐 두 번 불릴 수 있다 */
-  const lost = () => {
+  const lost = (reason: SessionLostReason) => {
     if (fired) return
     fired = true
-    handler()
+    handler(reason)
   }
 
   const { data } = supabase.auth.onAuthStateChange((event, session) => {
@@ -86,7 +89,7 @@ export function onSessionLost(handler: () => void): () => void {
     // SIGNED_OUT : 로그아웃 · 다른 기기에서의 signOut · 토큰 무효화
     // TOKEN_REFRESHED 인데 세션이 없으면 갱신 실패다
     if (event === 'SIGNED_OUT' || (event === 'TOKEN_REFRESHED' && !session)) {
-      lost()
+      lost('expired')
     }
   })
 
@@ -99,18 +102,28 @@ export function onSessionLost(handler: () => void): () => void {
    * 주므로(§7) 화면은 '데이터가 없다' 처럼 보인다.
    *
    * getSession() 은 만료가 임박하면 스스로 갱신을 시도하고, 실패하면 null 을 준다.
+   *
+   * 비활성화 여부도 여기서 본다. is_active 는 profiles 컬럼일 뿐이라 Auth 는
+   * 모른다 — 관리자가 계정을 꺼도 이미 로그인한 사람의 토큰은 계속 갱신된다.
+   * 쓰기는 RLS 가 막지만(my_role 이 is_active 를 본다) 읽기 정책은 열려 있어
+   * 자료를 계속 볼 수 있었다. 로그인·세션 복구 때만 검사하던 것을 여기서도 한다.
    */
   const check = () => {
     if (document.visibilityState === 'hidden') return
-    void supabase.auth.getSession().then(({ data: current }) => {
-      if (!current.session) lost()
+    void supabase.auth.getSession().then(async ({ data: current }) => {
+      const userId = current.session?.user.id
+      if (!userId) { lost('expired'); return }
+      const profile = await fetchMyProfile(userId)
+      // 조회 실패(null)는 네트워크 문제일 수 있으니 끊지 않는다.
+      // 행이 있는데 is_active 가 false 인 경우만 막는다
+      if (profile && !profile.is_active) lost('deactivated')
     })
   }
 
   document.addEventListener('visibilitychange', check)
   window.addEventListener('focus', check)
   // 만료된 토큰으로 나간 요청(401)도 세션이 끊긴 것으로 본다
-  setAuthFailureHandler(lost)
+  setAuthFailureHandler(() => lost('expired'))
 
   return () => {
     data.subscription.unsubscribe()

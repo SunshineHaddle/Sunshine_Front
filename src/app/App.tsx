@@ -295,11 +295,15 @@ function App() {
    */
   useEffect(() => {
     if (!isSupabaseConfigured) return
-    return onSessionLost(() => {
+    return onSessionLost((reason) => {
       // 사용자가 직접 누른 로그아웃은 handleSignOut 이 이미 정리했다.
       // 그때는 loginRole 이 null 이라 이 안내가 뜨지 않는다.
       setLoginRole((current) => {
-        if (current) announce('로그인이 만료되었습니다. 다시 로그인해 주세요.')
+        if (current) {
+          announce(reason === 'deactivated'
+            ? '계정이 비활성화되었습니다. 관리자에게 문의해 주세요.'
+            : '로그인이 만료되었습니다. 다시 로그인해 주세요.')
+        }
         return current
       })
       resetToLogin()
