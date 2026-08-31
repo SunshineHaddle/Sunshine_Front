@@ -34,7 +34,15 @@ import { ensurePeriod } from '../lib/api/periods'
 import { fetchRecipeCostSummary, type RecipeCostSummary } from '../lib/api/results'
 import type { CostPeriodRow } from '../lib/types'
 import { isSupabaseConfigured } from '../lib/supabase'
-import { fetchMyProfile, getSessionUserId, onSessionLost, signOut, toLoginRole } from '../lib/api/auth'
+import {
+  fetchMyProfile,
+  getSessionUserId,
+  HEARTBEAT_MS,
+  onSessionLost,
+  signOut,
+  toLoginRole,
+  touchLastActive,
+} from '../lib/api/auth'
 import { describeDbError } from '../lib/api/errors'
 import { SessionProvider } from '../lib/session'
 import {
@@ -310,6 +318,29 @@ function App() {
     })
   }, [announce, resetToLogin])
 
+
+  /**
+   * 쓰는 동안 자리를 지킨다.
+   *
+   * 한 아이디 동시 접속을 막는 판정이 profiles.last_active_at 하나뿐이라,
+   * 갱신을 멈추면 남이 들어올 수 있다. 반대로 브라우저를 그냥 닫으면 갱신이
+   * 끊겨 유효시간 뒤에 자리가 풀린다 — 그게 이 방식이 잠기지 않는 이유다.
+   *
+   * 탭이 숨겨져 있으면 보내지 않는다. 다른 창을 보는 동안 자리를 붙잡을 이유가 없다.
+   */
+  useEffect(() => {
+    if (!isSupabaseConfigured || !loginRole) return
+    const beat = () => {
+      if (document.visibilityState === 'visible') void touchLastActive()
+    }
+    beat()
+    const timer = window.setInterval(beat, HEARTBEAT_MS)
+    document.addEventListener('visibilitychange', beat)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', beat)
+    }
+  }, [loginRole])
 
   const navigate = (requestedRoute: AppRoute) => {
     // worker 는 3단계로 못 간다. 예전엔 조용히 무시했는데, 2단계에서 저장하면

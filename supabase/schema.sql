@@ -27,6 +27,7 @@ drop view if exists v_product_recipe_cost, v_cost_trend_monthly cascade;
 
 drop function if exists
   confirm_period(uuid), create_product_with_recipe(jsonb, jsonb), touch_last_active(),
+  release_session(),
   my_role(), is_admin(), is_editor(), is_draft(uuid), set_updated_at() cascade;
 
 drop type if exists user_role, material_unit, product_status, period_status,
@@ -491,11 +492,20 @@ end $$;
 
 -- 마지막 접속 갱신. 컬럼을 특정한 이 함수로만 허용한다 (§7 주석 참고)
 create or replace function touch_last_active() returns void
-language sql security definer set search_path = public as $$
+language sql security definer set search_path = public as $$  
   update profiles set last_active_at = now() where id = auth.uid();
 $$;
 
 grant execute on function touch_last_active() to authenticated;
+
+-- 로그아웃할 때 자리를 비운다. 한 아이디 동시 접속 판정에 쓴다 —
+-- last_active_at 이 최근이면 '사용 중' 으로 보고 두 번째 로그인을 거부한다.
+create or replace function release_session() returns void
+language sql security definer set search_path = public as $$
+  update profiles set last_active_at = null where id = auth.uid();
+$$;
+
+grant execute on function release_session() to authenticated;
 
 
 -- §10. Storage ---------------------------------------------------------------

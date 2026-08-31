@@ -19,6 +19,22 @@ export type SignInResult =
   | { ok: true; profile: ProfileRow; role: LoginRole }
   | { ok: false; message: string }
 
+/**
+ * 한 아이디 동시 접속을 막는 기준.
+ *
+ * 화면이 열려 있는 동안 앱이 HEARTBEAT_MS 마다 last_active_at 을 갱신한다.
+ * 그 값이 이 시간 안이면 누군가 쓰고 있는 것으로 본다.
+ *
+ * 브라우저를 그냥 닫으면 release_session() 이 불리지 않으므로, 이 시간이
+ * 지나야 자리가 풀린다. 하트비트 주기보다 넉넉해야 잠깐 끊긴 네트워크 때문에
+ * 멀쩡히 쓰는 사람이 밀려나지 않는다.
+ */
+const ACTIVE_WINDOW_MS = 3 * 60 * 1000
+export const HEARTBEAT_MS = 60 * 1000
+
+const isInUse = (lastActiveAt: string | null) =>
+  Boolean(lastActiveAt) && Date.now() - new Date(lastActiveAt!).getTime() < ACTIVE_WINDOW_MS
+
 // ── §11-1 로그인 ────────────────────────────────────────────
 export async function signIn(loginId: string, password: string): Promise<SignInResult> {
   const { data, error } = await supabase.auth.signInWithPassword({
@@ -44,13 +60,19 @@ export async function signIn(loginId: string, password: string): Promise<SignInR
     return { ok: false, message: '비활성화된 계정입니다.' }
   }
 
-  // 한 아이디로 여러 곳에서 동시에 쓰지 못하게, 먼저 들어와 있던 세션을 끊는다.
-  // 계정이 둘뿐이라 공유해 쓰기 쉬운데, 같은 달을 두 사람이 동시에 고치면
-  // 나중에 저장한 쪽이 앞사람 입력을 덮어쓴다 (월별 입력은 upsert 다).
+  // 이미 쓰고 있는 사람이 있으면 막는다. 계정이 둘뿐이라 공유하기 쉬운데,
+  // 같은 달을 두 사람이 동시에 고치면 월별 입력이 upsert 라 나중에 저장한
+  // 쪽이 앞사람 것을 조용히 덮어쓴다.
   //
-  // 끊긴 쪽은 다음 토큰 갱신에서 막히고 onSessionLost 가 로그인 화면으로 돌린다.
-  // 접속 토큰이 남아 있는 동안(최대 1시간)은 조회가 되므로 즉시 차단은 아니다.
-  await supabase.auth.signOut({ scope: 'others' }).catch(() => undefined)
+  // scope:'local' 이어야 한다 — 기본값(global)은 지금 쓰고 있는 사람의 세션까지
+  // 끊어 버린다. 들어오지 못한 쪽만 정리한다.
+  if (isInUse(profile.last_active_at)) {
+    await supabase.auth.signOut({ scope: 'local' })
+    return {
+      ok: false,
+      message: '이미 다른 곳에서 접속 중입니다. 사용 중인 화면에서 로그아웃한 뒤 다시 시도해주세요.',
+    }
+  }
 
   void touchLastActive()
   return { ok: true, profile, role: toLoginRole(profile.role) }
@@ -63,6 +85,8 @@ export async function getSessionUserId(): Promise<string | null> {
 }
 
 export async function signOut() {
+  // 자리를 먼저 비운다. 이게 없으면 로그아웃 직후 재로그인이 ACTIVE_WINDOW 만큼 막힌다
+  await Promise.resolve(supabase.rpc('release_session')).catch(() => undefined)
   await supabase.auth.signOut()
 }
 
