@@ -44,6 +44,14 @@ export async function signIn(loginId: string, password: string): Promise<SignInR
     return { ok: false, message: '비활성화된 계정입니다.' }
   }
 
+  // 한 아이디로 여러 곳에서 동시에 쓰지 못하게, 먼저 들어와 있던 세션을 끊는다.
+  // 계정이 둘뿐이라 공유해 쓰기 쉬운데, 같은 달을 두 사람이 동시에 고치면
+  // 나중에 저장한 쪽이 앞사람 입력을 덮어쓴다 (월별 입력은 upsert 다).
+  //
+  // 끊긴 쪽은 다음 토큰 갱신에서 막히고 onSessionLost 가 로그인 화면으로 돌린다.
+  // 접속 토큰이 남아 있는 동안(최대 1시간)은 조회가 되므로 즉시 차단은 아니다.
+  await supabase.auth.signOut({ scope: 'others' }).catch(() => undefined)
+
   void touchLastActive()
   return { ok: true, profile, role: toLoginRole(profile.role) }
 }
