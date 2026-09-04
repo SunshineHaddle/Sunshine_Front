@@ -71,7 +71,7 @@ const SUMMARY_SELECT = `
   product_id, production_qty, material_cost, labor_cost, utility_cost,
   manufacturing_cost, total_cost, unit_cost, cost_source,
   sale_price, margin_rate, cost_rate, status,
-  products!inner ( sku, name, variant, specification, package_unit, sale_price )
+  products!inner ( sku, name, variant, specification, package_unit, sale_price, unit_weight_kg )
 `
 
 
@@ -99,11 +99,18 @@ export async function fetchCostSummaries(periodId: string): Promise<CostSummary[
       variant: string | null
       specification: string | null
       package_unit: string | null
+      unit_weight_kg: number | null
       sale_price: number | null
     } | null
 
     // 현재 판매가가 있으면 그것을 쓰고, 없으면 마감 당시 스냅샷으로 떨어진다
-    const unitCost = num(row.unit_cost)
+    // 포장무게는 판매가와 마찬가지로 products 의 현재 값을 쓴다.
+    // total_cost 는 스냅샷 그대로고(설계결정 ②) 나누는 단위만 지금 것으로 바꾸는 셈이라
+    // 과거 원가가 소급 변경되지는 않는다. 무게를 고치면 마감을 풀지 않아도 바로 반영된다.
+    const productionQty = num(row.production_qty)
+    const unitCost = productionQty > 0
+      ? num(row.total_cost) / productionQty * (num(product?.unit_weight_kg) || 1)
+      : num(row.unit_cost)
     const salePrice = product?.sale_price != null && num(product.sale_price) > 0
       ? num(product.sale_price)
       : num(row.sale_price)
